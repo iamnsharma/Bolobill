@@ -17,6 +17,7 @@ import {useAuthStore, useLanguageStore, useThemeStore} from './src/stores';
 import './src/lang';
 
 const navigationRef = createNavigationContainerRef();
+const APP_ROOT_ROUTES = new Set(['RootTabs', 'Home', 'Voice', 'Settings']);
 
 function App() {
   const {t} = useTranslation();
@@ -70,6 +71,11 @@ function App() {
 
     const onHardwareBack = () => {
       if (!navigationRef.isReady()) {
+        return showExitAlert();
+      }
+
+      const currentRouteName = navigationRef.getCurrentRoute()?.name;
+      if (currentRouteName && APP_ROOT_ROUTES.has(currentRouteName)) {
         return showExitAlert();
       }
 
