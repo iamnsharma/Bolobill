@@ -1,0 +1,178 @@
+Table of Contents
+
+BoloBill - AI Prompts & IDE Instructions
+Complete Prompt Library for Fast Development with AI Coding Assistants
+Document 4: AI Prompts & Implementation Guide
+Version 1.0 | March 6, 2026
+
+Table of Contents
+	•	How to Use This Document
+	•	Environment Setup Prompts
+	•	Backend Development Prompts
+	•	React Native App Prompts
+	•	AI Integration Prompts
+	•	PDF Generation Prompts
+	•	Security Implementation Prompts
+	•	Testing Prompts
+	•	Deployment Prompts
+	•	Troubleshooting Prompts
+
+1. How to Use This Document
+1.1 Purpose
+This document contains ready-to-use prompts for AI coding assistants (like Claude, Cursor, GitHub Copilot, or ChatGPT) to speed up development.
+1.2 How to Use These Prompts
+Step 1: Copy the entire prompt Step 2: Paste into your AI coding assistant Step 3: Review and execute the generated code Step 4: Test thoroughly before moving to next step
+1.3 Recommended AI Tools
+	•	Cursor IDE: Best for full-file generation
+	•	Claude (web): Best for architecture/planning
+	•	GitHub Copilot: Best for inline code completion
+	•	ChatGPT: Best for debugging
+
+2. Environment Setup Prompts
+PROMPT 2.1: Initialize Backend Project
+Create a complete Node.js + Express backend project for BoloBill invoice app with this structure:  bolobill-backend/ ├── server.js (main entry point) ├── package.json ├── .env.example ├── .gitignore ├── models/ │   ├── User.js │   ├── Invoice.js │   └── Subscription.js ├── routes/ │   ├── auth.js │   ├── invoice.js │   ├── subscription.js │   └── verify.js ├── middleware/ │   ├── auth.js │   └── validation.js ├── utils/ │   ├── pdfGenerator.js │   └── storage.js └── config/     └── database.js  Requirements: 1. Use Express 4.x 2. MongoDB with Mongoose 3. JWT authentication 4. Proper error handling 5. CORS enabled 6. Environment variables for secrets 7. Include all necessary dependencies in package.json  Generate complete, production-ready code for all files.
+PROMPT 2.2: Initialize React Native Project
+Create a complete React Native + Expo project for BoloBill mobile app with this structure:  bolobill-app/ ├── App.js ├── app.json ├── package.json ├── babel.config.js ├── src/ │   ├── screens/ │   │   ├── LoginScreen.js │   │   ├── HomeScreen.js │   │   ├── VoiceInvoiceScreen.js │   │   ├── InvoiceHistoryScreen.js │   │   └── ProfileScreen.js │   ├── components/ │   │   ├── VoiceRecorder.js │   │   └── InvoiceCard.js │   ├── navigation/ │   │   └── AppNavigator.js │   ├── services/ │   │   ├── api.js │   │   └── auth.js │   ├── context/ │   │   └── AuthContext.js │   └── utils/ │       └── constants.js  Requirements: 1. Use Expo SDK 50 2. React Navigation 6.x 3. Context API for state 4. Axios for API calls 5. AsyncStorage for local data 6. React Native Paper for UI components 7. expo-av for audio recording  Generate complete, working code for all files with proper navigation flow.
+PROMPT 2.3: Setup Environment Variables
+Create .env file structure for BoloBill with ALL required environment variables:  Backend (.env): - Database connection - JWT secret - OpenAI API key - Anthropic Claude API key - Razorpay keys - Firebase credentials - Cloudflare R2 credentials - CORS allowed origins  Frontend (app.json): - API base URL - Razorpay key (public) - App version  Provide: 1. .env.example file with placeholders 2. Instructions on where to get each API key 3. Security notes (what NOT to commit)
+
+3. Backend Development Prompts
+PROMPT 3.1: Create User Model
+Create a complete Mongoose User model for BoloBill with these requirements:  Fields: - phone (required, unique, validated Indian number) - firebaseUid - name - email (optional) - accountType (personal/verified_shop/premium) - shopName, shopAddress, gstNumber (for shops) - isVerified (boolean) - verificationDocuments (array of URLs) - subscriptionTier (free/verified/premium) - subscriptionExpiry (date) - monthlyInvoiceCount (number, resets monthly) - lastResetDate (date) - createdAt, updatedAt  Include: 1. Proper validation and regex 2. Indexes for performance 3. Virtual fields if needed 4. Pre-save hooks 5. Instance methods for common operations 6. Static methods for queries  Make it production-ready with error handling.
+PROMPT 3.2: Create Authentication API
+Create complete authentication system for BoloBill:  File: routes/auth.js  Endpoints needed: 1. POST /api/auth/send-otp - Send OTP via Firebase 2. POST /api/auth/verify-otp - Verify OTP and login/signup 3. GET /api/auth/me - Get current user details 4. PUT /api/auth/update-profile - Update user profile  Requirements: - Use Firebase Admin SDK for OTP - Generate JWT tokens (30-day expiry) - Validate phone numbers (Indian format) - Handle new vs existing users - Return user object without sensitive fields - Include rate limiting (3 OTPs per hour per phone) - Proper error handling  Provide complete, tested code.
+PROMPT 3.3: Create Voice-to-Invoice API
+Create the core invoice creation endpoint that processes voice input:  File: routes/invoice.js Endpoint: POST /api/invoice/create  Flow: 1. Receive audio file upload (multer) 2. Check user's free tier limit (10/month) 3. Transcribe with OpenAI Whisper API 4. Extract items with Claude API using this prompt:    "Convert this Hindi/Punjabi voice to invoice items. Return JSON: {items: [{name, quantity, totalPrice}]}" 5. Calculate totals 6. Generate unique invoice ID (format: KB-TIMESTAMP-RANDOM) 7. Generate PDF with shop details 8. Upload PDF to Cloudflare R2 9. Save to database 10. Update user's monthly count 11. Return invoice data  Include: - Full error handling - Proper response format - Audio file cleanup - Logging for debugging  Provide complete working code with all imports.
+
+4. React Native App Prompts
+PROMPT 4.1: Create Voice Recording Screen
+Create a complete VoiceInvoiceScreen component for BoloBill:  File: src/screens/VoiceInvoiceScreen.js  Features: 1. Large circular record button (changes color when recording) 2. Shows "Tap to record" / "Tap to stop" text 3. Uses expo-av for recording 4. Shows loading spinner while processing 5. On success: navigate to InvoicePreviewScreen with data 6. On error: show alert with message 7. If free limit reached: show upgrade prompt  UI should be: - Clean and minimal - Large touch targets (accessibility) - Visual feedback (button color change, pulse animation) - Status messages - Loading overlay during API call  Include: - Permission handling for microphone - Error handling - Navigation - API integration  Provide complete working component with styles.
+PROMPT 4.2: Create Invoice Preview Screen
+Create InvoicePreviewScreen component that shows invoice before confirmation:  File: src/screens/InvoicePreviewScreen.js  Features: 1. Display invoice details from API response:    - Shop name and badge (✓ or ⚠)    - Invoice ID    - Date/time    - List of items (name, quantity, price)    - Total amount 2. Edit button (allows changing items/prices) 3. Confirm button → generates final PDF 4. Share via WhatsApp button (if verified account) 5. Download PDF button 6. Cancel button → go back  UI: - Card-based design - Clear hierarchy - Action buttons at bottom - Verified badge prominent  Include full code with: - State management - API calls (edit, confirm) - File download logic - WhatsApp sharing - Navigation
+PROMPT 4.3: Create Invoice History Screen
+Create InvoiceHistoryScreen with list of all user's invoices:  File: src/screens/InvoiceHistoryScreen.js  Features: 1. FlatList of invoice cards 2. Each card shows:    - Invoice ID    - Total amount    - Date    - First 2 items    - Badge (verified/personal) 3. Pull-to-refresh 4. Pagination (load more on scroll) 5. Search bar (filter by items) 6. Date filter (last 7 days, 30 days, custom) 7. Tap card → navigate to detail screen  UI: - Clean list layout - Skeleton loaders while loading - Empty state ("No invoices yet") - Search and filters collapsible  Provide complete component with: - API integration - State management - Infinite scroll - Search/filter logic
+
+5. AI Integration Prompts
+PROMPT 5.1: Optimize Whisper API Call
+Create a robust function to transcribe audio with OpenAI Whisper:  File: utils/whisperTranscribe.js  Requirements: 1. Accept audio file path 2. Specify language (hi/pa/en) 3. Handle file size limits (max 25 MB) 4. Retry logic (3 attempts with exponential backoff) 5. Error handling for:    - Network errors    - Invalid file format    - API rate limits    - Audio too short/long 6. Return transcript text 7. Log for debugging  Include: - Input validation - Proper error messages - TypeScript types (optional) - Unit tests  Provide production-ready code.
+PROMPT 5.2: Create Claude Invoice Extraction Prompt
+Create the optimal prompt for Claude API to extract invoice items from Hindi/Punjabi/English transcript:  Context: User speaks: "teen kilo chawal pachaas, do oil do sau, ek namak bees" Expected output: JSON with items array  Your task: 1. Write the best possible system prompt for Claude 2. Include examples (few-shot learning) 3. Handle edge cases:    - Mixed languages    - Unclear prices ("chawal 50 do kilo" vs "do kilo chawal 50")    - Missing quantities (default to "1 piece")    - Missing prices (default to 0)    - Common item variations (chawal/rice, daal/lentils) 4. Ensure strict JSON output (no markdown, no explanation) 5. Include validation rules  Provide: - Complete prompt text - Example inputs/outputs - Error handling strategy
+PROMPT 5.3: Add Common Items Database
+Create a smart system to improve AI accuracy by maintaining common items database:  File: utils/commonItems.js  Features: 1. Database of 100+ common grocery items in Hindi/Punjabi/English 2. Fuzzy matching ("chaawal" matches "chawal") 3. Auto-suggest corrections before API call 4. Learn from user's frequently used items 5. Export as JSON for offline use  Structure: {   "chawal": { en: "Rice", category: "grains", commonPrices: [40, 50, 60] },   "oil": { en: "Oil", category: "cooking", commonPrices: [100, 150, 200] } }  Include: - Pre-populated database - Fuzzy search function - Learning algorithm - API to add/update items  Provide complete implementation.
+
+6. PDF Generation Prompts
+PROMPT 6.1: Create Professional Invoice PDF
+Create a function to generate beautiful, professional invoice PDF:  File: utils/pdfGenerator.js  Requirements: 1. Use PDFKit library 2. Template for verified shops:    - Header: "✓ VERIFIED SHOP" badge in green    - Shop name (large, bold)    - Address, phone, GST    - Invoice ID and date    - Items table (name, qty, price)    - Total (large, bold)    - QR code for verification    - Footer: "Made with BoloBill" 3. Template for personal accounts:    - Warning: "⚠ PERSONAL INVOICE" in orange    - No shop name    - Same structure but with watermark 4. A4 size, professional margins 5. Good typography (readable fonts)  Provide: - Complete generateInvoicePDF function - Takes invoice data object - Returns PDF buffer - Handles errors - Includes QR code generation  Code should be production-ready, well-commented.
+PROMPT 6.2: Add Watermark to Free Tier PDFs
+Create a function to add "UNVERIFIED" watermark to PDFs:  Requirements: 1. Diagonal watermark across page 2. Semi-transparent (don't obscure content) 3. Large text 4. Only for free/personal accounts 5. Should not affect verified shops  Extend the PDF generation function to conditionally add watermark based on account type.  Provide complete code.
+
+7. Security Implementation Prompts
+PROMPT 7.1: Create JWT Authentication Middleware
+Create complete authentication middleware for protecting routes:  File: middleware/auth.js  Requirements: 1. Extract token from Authorization header (Bearer token) 2. Verify JWT signature 3. Check token expiry 4. Attach user ID to request object 5. Handle errors:    - No token provided    - Invalid token    - Expired token 6. Return proper HTTP status codes 7. Include detailed error messages  Also create: - generateToken function - refreshToken function (optional)  Provide complete, tested code.
+PROMPT 7.2: Implement Rate Limiting
+Create rate limiting system for BoloBill APIs:  File: middleware/rateLimiter.js  Rate limits needed: 1. OTP requests: 3 per hour per phone 2. Invoice creation: 10 per minute per user 3. General API: 100 requests per 15 min per IP 4. Registration: 5 per hour per IP  Requirements: - Use express-rate-limit - Different limits for different endpoints - Clear error messages - Consider user tier (free vs paid) - Redis-based storage (optional, for scaling)  Provide complete implementation with usage examples.
+PROMPT 7.3: Create Fraud Detection System
+Create fraud detection rules for BoloBill:  File: utils/fraudDetection.js  Detect: 1. Too many invoices in short time (>50 in 24 hours) 2. Invoices created at unusual hours (11 PM - 6 AM) 3. Unusual amounts (5x average) 4. Multiple accounts from same device 5. Rapid account creation from same IP  Actions: - Flag for review - Send alert to admin - Temporarily block account - Log incident  Provide: - Detection functions - Alert system - Admin notification - Logging mechanism  Complete, production-ready code.
+
+8. Testing Prompts
+PROMPT 8.1: Create Unit Tests for Auth
+Create complete Jest test suite for authentication:  File: tests/auth.test.js  Test cases: 1. Send OTP - success 2. Send OTP - invalid phone number 3. Send OTP - rate limit exceeded 4. Verify OTP - success (new user) 5. Verify OTP - success (existing user) 6. Verify OTP - wrong OTP 7. Verify OTP - expired OTP 8. Get user details - with valid token 9. Get user details - with invalid token  Requirements: - Mock Firebase Admin - Mock database - Test all edge cases - Use beforeEach/afterEach for cleanup - Clear, descriptive test names  Provide complete test file.
+PROMPT 8.2: Create Integration Tests
+Create end-to-end integration tests for complete invoice creation flow:  File: tests/invoice.integration.test.js  Test flow: 1. User registers 2. Logs in 3. Creates invoice (within free limit) 4. Verifies invoice exists in database 5. PDF generated and stored 6. Tries to create 11th invoice (should fail) 7. Upgrades to verified 8. Creates more invoices (should succeed)  Requirements: - Use Supertest for API testing - Real database (test database) - Real file generation - Cleanup after tests - Test success and failure paths  Provide complete test suite.
+
+9. Deployment Prompts
+PROMPT 9.1: Create Docker Setup
+Create complete Docker setup for BoloBill backend:  Files needed: 1. Dockerfile 2. docker-compose.yml (with MongoDB) 3. .dockerignore  Requirements: - Node.js 20 Alpine base image - Multi-stage build (small image size) - Environment variables from .env - MongoDB service - Networking between containers - Volume for persistent data - Health checks  Provide complete, production-ready Docker files.
+PROMPT 9.2: Create Nginx Configuration
+Create Nginx configuration for deploying BoloBill on useaifast.com:  File: nginx/bolobill.conf  Requirements: 1. Reverse proxy to Node.js (port 3000) 2. SSL/TLS with Let's Encrypt 3. HTTP to HTTPS redirect 4. CORS headers 5. Rate limiting 6. Gzip compression 7. Static file caching 8. WebSocket support (future) 9. Security headers:    - X-Frame-Options    - X-Content-Type-Options    - Strict-Transport-Security  Provide complete nginx config.
+PROMPT 9.3: Create Deployment Script
+Create automated deployment script for BoloBill:  File: deploy.sh  Steps: 1. Pull latest code from Git 2. Install dependencies 3. Run database migrations 4. Build React Native app (Android APK) 5. Run tests 6. Deploy backend to server 7. Restart PM2 process 8. Verify deployment (health check) 9. Send notification (Slack/email)  Requirements: - Error handling (rollback on failure) - Logging - Backup before deployment - Zero-downtime deployment  Provide complete bash script.
+
+10. Troubleshooting Prompts
+PROMPT 10.1: Debug Audio Upload Issues
+I'm getting errors when uploading audio files to my Node.js backend. Create a comprehensive debugging guide with:  1. Common issues:    - File size too large    - Wrong MIME type    - Multer configuration    - CORS issues    - Memory limits 2. How to diagnose each issue 3. Solutions with code examples 4. Test cases to verify fix  Provide step-by-step troubleshooting guide.
+PROMPT 10.2: Fix PDF Generation Not Working
+My PDF generation is failing silently. Create debugging checklist:  1. How to verify PDFKit is installed correctly 2. How to test PDF generation locally 3. Common errors:    - Font not found    - Image not loading    - Buffer issues    - Memory errors 4. How to add logging 5. How to test generated PDFs  Provide complete debugging guide with fixes.
+PROMPT 10.3: Resolve React Native Build Errors
+My React Native app won't build. Create comprehensive guide to fix:  Android build errors: - Gradle issues - SDK version mismatch - Dependency conflicts - Permission errors  Solutions: - Clear cache commands - Gradle settings - Android manifest fixes - Dependency resolution  Provide step-by-step guide with all commands.
+
+11. Quick Reference: Common Commands
+Backend Commands
+# Install dependencies npm install  # Run development server npm run dev  # Run production server npm start  # Run tests npm test  # Database migration npm run migrate  # Seed database npm run seed
+Frontend Commands
+# Install dependencies npm install  # Start Expo development server npx expo start  # Run on Android npx expo run:android  # Run on iOS npx expo run:ios  # Build APK eas build --platform android  # Build for production npm run build
+Deployment Commands
+# SSH to server ssh user@useaifast.com  # Deploy backend ./deploy.sh  # Check logs pm2 logs bolobill  # Restart app pm2 restart bolobill  # Database backup mongodump --db bolobill --out backup/
+
+12. Final Tips for Using This Document
+Best Practices
+	•	Read Documentation First
+	•	Review all 4 documents before starting
+	•	Understand the architecture
+	•	Know the security requirements
+	•	Use Prompts in Order
+	•	Start with setup prompts
+	•	Then backend
+	•	Then frontend
+	•	Finally deployment
+	•	Test After Each Prompt
+	•	Don’t generate all code at once
+	•	Test each component
+	•	Fix bugs before moving on
+	•	Customize Prompts
+	•	Add your specific requirements
+	•	Include your domain name (useaifast.com)
+	•	Add your branding
+	•	Review Generated Code
+	•	AI can make mistakes
+	•	Check for security issues
+	•	Verify error handling
+	•	Add comments
+Recommended Development Order
+Week 1: 1. Setup backend project (Prompt 2.1) 2. Create database models (Prompt 3.1) 3. Create auth API (Prompt 3.2) 4. Test authentication
+Week 2: 5. Create voice-to-invoice API (Prompt 3.3) 6. Integrate Whisper (Prompt 5.1) 7. Integrate Claude (Prompt 5.2) 8. Create PDF generator (Prompt 6.1) 9. Test end-to-end invoice creation
+Week 3: 10. Setup React Native project (Prompt 2.2) 11. Create voice recording screen (Prompt 4.1) 12. Create invoice preview (Prompt 4.2) 13. Create history screen (Prompt 4.3) 14. Test mobile app
+Week 4: 15. Add security features (Prompts 7.1-7.3) 16. Add rate limiting 17. Create tests (Prompts 8.1-8.2) 18. Fix bugs
+Week 5: 19. Deploy backend (Prompts 9.1-9.3) 20. Build Android APK 21. Beta test with 20 users 22. Fix feedback issues
+
+13. Example: Complete Flow Using Prompts
+Scenario: Create Invoice Creation Feature
+Step 1: Use Prompt 3.3 to generate backend API
+[Copy Prompt 3.3] → Paste in Claude → Review code → Save to routes/invoice.js
+Step 2: Use Prompt 5.1 to integrate Whisper
+[Copy Prompt 5.1] → Paste in Claude → Save to utils/whisperTranscribe.js
+Step 3: Use Prompt 5.2 to create Claude extraction
+[Copy Prompt 5.2] → Get optimal prompt → Add to invoice.js
+Step 4: Use Prompt 6.1 to generate PDF
+[Copy Prompt 6.1] → Save to utils/pdfGenerator.js
+Step 5: Use Prompt 4.1 to create mobile screen
+[Copy Prompt 4.1] → Save to screens/VoiceInvoiceScreen.js
+Step 6: Test
+1. Run backend: npm run dev 2. Run app: npx expo start 3. Record voice → Check if invoice created 4. Fix any bugs 5. Move to next feature
+
+End of Document 4: AI Prompts & Implementation Guide
+
+Summary of All 4 Documents
+You now have complete documentation:
+	•	Document 1: Project Overview
+	•	Business model
+	•	Revenue projections
+	•	User journeys
+	•	Timeline
+	•	Document 2: Technical Specifications
+	•	Architecture
+	•	Database schemas
+	•	API specs
+	•	Code examples
+	•	Document 3: Security & Anti-Fraud
+	•	Fraud prevention
+	•	Security measures
+	•	Testing checklist
+	•	Incident response
+	•	Document 4: AI Prompts (This Document)
+	•	Ready-to-use prompts
+	•	Fast development
+	•	Troubleshooting
+	•	Best practices
+Next Steps: 1. Review all documents 2. Set up development environment 3. Start with Prompt 2.1 (Backend setup) 4. Build incrementally 5. Test frequently 6. Launch in 4-6 weeks!
+Good luck with BoloBill! 🚀

@@ -1,0 +1,153 @@
+Table of Contents
+
+BoloBill - Technical Specifications
+Complete Technical Architecture & Implementation Guide
+Document 2: Technical Specifications
+Version 1.0 | March 6, 2026
+
+Table of Contents
+	•	System Architecture Overview
+	•	Database Schemas
+	•	API Specifications
+	•	React Native App Structure
+	•	Voice Processing Pipeline
+	•	PDF Generation System
+	•	Security Implementation
+	•	Deployment Architecture
+	•	Performance Optimization
+	•	Testing Strategy
+
+1. System Architecture Overview
+1.1 High-Level Architecture
+┌─────────────────────────────────────────────────────────────┐ │                    MOBILE APP (React Native)                 │ │  ┌─────────────┐ ┌──────────────┐ ┌────────────────────┐   │ │  │ Voice Input │→│ Invoice Edit │→│ WhatsApp/Download  │   │ │  └─────────────┘ └──────────────┘ └────────────────────┘   │ └────────────────────────┬────────────────────────────────────┘                          │ HTTPS/REST API                          ↓ ┌─────────────────────────────────────────────────────────────┐ │              BACKEND (Node.js + Express)                     │ │  ┌──────────┐ ┌───────────┐ ┌─────────────┐ ┌──────────┐  │ │  │   Auth   │ │  Invoice  │ │  Payment    │ │  Admin   │  │ │  │  Service │ │  Service  │ │  Service    │ │  Panel   │  │ │  └──────────┘ └───────────┘ └─────────────┘ └──────────┘  │ └────────┬────────────┬────────────┬──────────────────────────┘          │            │            │          ↓            ↓            ↓ ┌────────────┐ ┌──────────┐ ┌────────────┐ │  MongoDB   │ │   AI     │ │ Cloudflare │ │  Database  │ │ Services │ │  R2/S3     │ │            │ │ (Whisper,│ │ (PDFs)     │ │            │ │  Claude) │ │            │ └────────────┘ └──────────┘ └────────────┘
+1.2 Technology Stack Breakdown
+Frontend (Mobile App)
+	•	Framework: React Native 0.73
+	•	Build Tool: Expo SDK 50
+	•	State Management: React Context + AsyncStorage
+	•	Navigation: React Navigation 6.x
+	•	Audio: expo-av
+	•	File System: expo-file-system
+	•	Payments: react-native-razorpay
+	•	UI Components: React Native Paper
+Backend (API Server)
+	•	Runtime: Node.js 20 LTS
+	•	Framework: Express 4.x
+	•	Database: MongoDB 7.0 + Mongoose 8.x
+	•	Authentication: JWT + Firebase Auth
+	•	File Upload: Multer
+	•	PDF Generation: PDFKit
+	•	Payment: Razorpay Node SDK
+Third-Party Services
+	•	Speech-to-Text: OpenAI Whisper API
+	•	AI Processing: Anthropic Claude API
+	•	Storage: Cloudflare R2 (or AWS S3)
+	•	Phone Auth: Firebase Auth
+	•	Payments: Razorpay
+
+2. Database Schemas
+2.1 User Schema
+const UserSchema = new mongoose.Schema({   // Identity   _id: mongoose.Schema.Types.ObjectId,   phone: {     type: String,     required: true,     unique: true,     match: /^[6-9]\d{9}$/  // Indian phone number   },   countryCode: {     type: String,     default: '+91'   },      // Account Type   accountType: {     type: String,     enum: ['personal', 'verified_shop', 'premium'],     default: 'personal'   },      // Personal Info   name: {     type: String,     required: true,     trim: true   },   email: {     type: String,     lowercase: true,     trim: true   },      // Shop Details (for verified/premium accounts)   shopName: String,   shopAddress: String,   gstNumber: {     type: String,     match: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/   },      // Verification   isVerified: {     type: Boolean,     default: false   },   verificationDocuments: [{     type: String,  // Cloudflare R2 URL     uploadedAt: Date   }],   verifiedAt: Date,   verifiedBy: mongoose.Schema.Types.ObjectId,  // Admin who verified      // Subscription   subscriptionTier: {     type: String,     enum: ['free', 'verified', 'premium'],     default: 'free'   },   subscriptionStart: Date,   subscriptionExpiry: Date,   subscriptionId: String,  // Razorpay subscription ID      // Usage Limits (for free tier)   monthlyInvoiceCount: {     type: Number,     default: 0   },   lastResetDate: {     type: Date,     default: Date.now   },      // Security   firebaseUid: String,   lastLogin: Date,   deviceTokens: [String],  // For push notifications      // Metadata   createdAt: {     type: Date,     default: Date.now   },   updatedAt: {     type: Date,     default: Date.now   },   isActive: {     type: Boolean,     default: true   } });  // Indexes UserSchema.index({ phone: 1 }); UserSchema.index({ email: 1 }); UserSchema.index({ accountType: 1 }); UserSchema.index({ subscriptionExpiry: 1 });  module.exports = mongoose.model('User', UserSchema);
+2.2 Invoice Schema
+const InvoiceSchema = new mongoose.Schema({   // Unique Identifier   invoiceId: {     type: String,     required: true,     unique: true     // Format: KB-TIMESTAMP-RANDOM (e.g., KB-1234567890-A3F)   },      // Owner   userId: {     type: mongoose.Schema.Types.ObjectId,     ref: 'User',     required: true   },      // Shop Details (denormalized for performance)   shopName: String,   shopPhone: String,   shopAddress: String,   gstNumber: String,      // Invoice Items   items: [{     name: {       type: String,       required: true     },     quantity: {       type: String,  // "3 kg", "2 bottles", "5 pieces"       required: true     },     pricePerUnit: Number,     totalPrice: {       type: Number,       required: true     }   }],      // Totals   subtotal: {     type: Number,     required: true   },   taxAmount: {     type: Number,     default: 0   },   total: {     type: Number,     required: true   },      // Voice Data   voiceTranscript: String,  // Original Hindi/Punjabi text   voiceLanguage: {     type: String,     enum: ['hi', 'pa', 'en', 'mixed']   },   audioFileUrl: String,  // Cloudflare R2 URL (optional, for debugging)      // PDF   pdfUrl: {     type: String,     required: true   },   pdfGenerated: {     type: Boolean,     default: false   },      // Verification Status   isVerified: Boolean,  // Is this from a verified shop?      // Sharing   sharedVia: {     type: String,     enum: ['whatsapp', 'email', 'download', null],     default: null   },   sharedAt: Date,      // Customer Info (optional)   customerName: String,   customerPhone: String,      // Metadata   createdAt: {     type: Date,     default: Date.now   },   updatedAt: {     type: Date,     default: Date.now   } });  // Indexes InvoiceSchema.index({ invoiceId: 1 }); InvoiceSchema.index({ userId: 1, createdAt: -1 }); InvoiceSchema.index({ shopPhone: 1 }); InvoiceSchema.index({ createdAt: -1 });  module.exports = mongoose.model('Invoice', InvoiceSchema);
+2.3 Subscription Schema
+const SubscriptionSchema = new mongoose.Schema({   userId: {     type: mongoose.Schema.Types.ObjectId,     ref: 'User',     required: true   },      // Razorpay Details   razorpaySubscriptionId: {     type: String,     required: true,     unique: true   },   razorpayPlanId: String,   razorpayCustomerId: String,      // Subscription Details   tier: {     type: String,     enum: ['verified', 'premium'],     required: true   },   status: {     type: String,     enum: ['active', 'paused', 'cancelled', 'expired'],     default: 'active'   },      // Billing   amount: {     type: Number,     required: true  // In paise (19900 = ₹199)   },   currency: {     type: String,     default: 'INR'   },   billingPeriod: {     type: String,     enum: ['monthly', 'yearly'],     required: true   },      // Dates   startDate: {     type: Date,     required: true   },   currentPeriodStart: Date,   currentPeriodEnd: Date,   nextBillingDate: Date,   cancelledAt: Date,      // Payment History   payments: [{     razorpayPaymentId: String,     amount: Number,     status: String,     paidAt: Date   }],      // Metadata   createdAt: {     type: Date,     default: Date.now   },   updatedAt: {     type: Date,     default: Date.now   } });  // Indexes SubscriptionSchema.index({ userId: 1 }); SubscriptionSchema.index({ status: 1 }); SubscriptionSchema.index({ nextBillingDate: 1 });  module.exports = mongoose.model('Subscription', SubscriptionSchema);
+
+3. API Specifications
+3.1 Authentication APIs
+POST /api/auth/send-otp
+Send OTP to phone number
+Request:
+{   "phone": "9876543210",   "countryCode": "+91" }
+Response:
+{   "success": true,   "message": "OTP sent successfully",   "verificationId": "firebase_verification_id" }
+POST /api/auth/verify-otp
+Verify OTP and login/signup
+Request:
+{   "phone": "9876543210",   "otp": "123456",   "verificationId": "firebase_verification_id",   "name": "Ram Singh",  // Required for new users   "accountType": "shop"  // Optional: "personal" or "shop" }
+Response:
+{   "success": true,   "token": "jwt_token_here",   "user": {     "_id": "user_id",     "phone": "9876543210",     "name": "Ram Singh",     "accountType": "personal",     "subscriptionTier": "free",     "isVerified": false   } }
+GET /api/auth/me
+Get current user details
+Headers:
+Authorization: Bearer {jwt_token}
+Response:
+{   "success": true,   "user": {     "_id": "user_id",     "phone": "9876543210",     "name": "Ram Singh",     "accountType": "verified_shop",     "shopName": "Ram Kirana Store",     "subscriptionTier": "verified",     "subscriptionExpiry": "2027-03-06T00:00:00.000Z",     "isVerified": true,     "monthlyInvoiceCount": 45   } }
+3.2 Invoice APIs
+POST /api/invoice/create
+Create invoice from voice
+Headers:
+Authorization: Bearer {jwt_token} Content-Type: multipart/form-data
+Request (Form Data):
+audio: [audio file - .m4a, .wav, .mp3] language: "hi"  // Optional: "hi", "pa", "en"
+Response:
+{   "success": true,   "invoice": {     "invoiceId": "KB-1709730000-X7Y",     "items": [       {         "name": "Rice",         "quantity": "3 kg",         "pricePerUnit": 50,         "totalPrice": 150       },       {         "name": "Oil",         "quantity": "2 bottles",         "pricePerUnit": 100,         "totalPrice": 200       }     ],     "subtotal": 350,     "taxAmount": 0,     "total": 350,     "voiceTranscript": "teen kilo chawal pachaas, do oil do sau",     "pdfUrl": "https://r2.useaifast.com/invoices/KB-1709730000-X7Y.pdf",     "isVerified": true,     "createdAt": "2026-03-06T13:45:00.000Z"   } }
+Error Response (Free tier limit):
+{   "success": false,   "error": "FREE_TIER_LIMIT_REACHED",   "message": "You've reached your monthly limit of 10 invoices",   "limit": 10,   "used": 10,   "upgradeRequired": true }
+GET /api/invoice/history
+Get user’s invoice history
+Headers:
+Authorization: Bearer {jwt_token}
+Query Parameters:
+?page=1&limit=20&search=rice&startDate=2026-03-01&endDate=2026-03-06
+Response:
+{   "success": true,   "invoices": [     {       "invoiceId": "KB-1709730000-X7Y",       "total": 350,       "items": [{"name": "Rice", "quantity": "3 kg", "totalPrice": 150}],       "createdAt": "2026-03-06T13:45:00.000Z",       "pdfUrl": "https://...",       "isVerified": true     }   ],   "pagination": {     "page": 1,     "limit": 20,     "total": 145,     "pages": 8   } }
+GET /api/invoice/:invoiceId
+Get single invoice details
+Response:
+{   "success": true,   "invoice": {     "invoiceId": "KB-1709730000-X7Y",     "shopName": "Ram Kirana Store",     "shopPhone": "9876543210",     "items": [...],     "total": 350,     "pdfUrl": "https://...",     "isVerified": true,     "createdAt": "2026-03-06T13:45:00.000Z"   } }
+PUT /api/invoice/:invoiceId/edit
+Edit invoice items before finalizing
+Request:
+{   "items": [     {       "name": "Rice (Basmati)",       "quantity": "3 kg",       "totalPrice": 180     }   ] }
+Response:
+{   "success": true,   "invoice": {     "invoiceId": "KB-1709730000-X7Y",     "items": [...],     "total": 380,     "pdfUrl": "https://... (regenerated)"   } }
+3.3 Payment APIs
+POST /api/subscription/create
+Create Razorpay subscription
+Request:
+{   "plan": "verified",  // "verified" or "premium"   "billingPeriod": "monthly"  // "monthly" or "yearly" }
+Response:
+{   "success": true,   "subscription": {     "razorpaySubscriptionId": "sub_xxxxx",     "amount": 19900,  // In paise     "currency": "INR",     "tier": "verified"   },   "razorpayKey": "rzp_live_xxxxx" }
+POST /api/subscription/verify-payment
+Verify Razorpay payment signature
+Request:
+{   "razorpay_payment_id": "pay_xxxxx",   "razorpay_subscription_id": "sub_xxxxx",   "razorpay_signature": "signature_xxxxx" }
+Response:
+{   "success": true,   "message": "Payment verified successfully",   "user": {     "accountType": "verified_shop",     "subscriptionTier": "verified",     "subscriptionExpiry": "2027-03-06T00:00:00.000Z"   } }
+3.4 Verification APIs
+GET /api/verify/:invoiceId
+Public invoice verification (no auth required)
+Response:
+{   "success": true,   "invoice": {     "invoiceId": "KB-1709730000-X7Y",     "shopName": "Ram Kirana Store",     "shopPhone": "9876543210",     "total": 350,     "createdAt": "2026-03-06T13:45:00.000Z",     "isVerified": true,     "status": "AUTHENTIC"   } }
+Error Response (fake invoice):
+{   "success": false,   "error": "INVOICE_NOT_FOUND",   "message": "This invoice does not exist in our system",   "status": "INVALID" }
+POST /api/shop/verify
+Submit shop for verification
+Request (Form Data):
+shopName: "Ram Kirana Store" shopAddress: "Shop 12, Main Market, Ludhiana" gstNumber: "03AAAAA0000A1Z5"  // Optional document: [image file - shop photo/GST cert/trade license]
+Response:
+{   "success": true,   "message": "Verification request submitted successfully",   "status": "pending",   "estimatedTime": "24 hours" }
+
+4. React Native App Structure
+4.1 Project Structure
+bolobill-app/ ├── App.js ├── app.json ├── package.json ├── babel.config.js ├── src/ │   ├── screens/ │   │   ├── SplashScreen.js │   │   ├── LoginScreen.js │   │   ├── RegisterScreen.js │   │   ├── HomeScreen.js │   │   ├── VoiceInvoiceScreen.js │   │   ├── InvoicePreviewScreen.js │   │   ├── InvoiceHistoryScreen.js │   │   ├── InvoiceDetailScreen.js │   │   ├── ProfileScreen.js │   │   ├── UpgradeScreen.js │   │   └── VerificationScreen.js │   ├── components/ │   │   ├── VoiceRecorder.js │   │   ├── InvoiceItemList.js │   │   ├── InvoiceCard.js │   │   ├── VerifiedBadge.js │   │   ├── SubscriptionCard.js │   │   └── LoadingOverlay.js │   ├── navigation/ │   │   ├── AppNavigator.js │   │   └── AuthNavigator.js │   ├── services/ │   │   ├── api.js │   │   ├── auth.js │   │   ├── invoice.js │   │   ├── payment.js │   │   └── storage.js │   ├── context/ │   │   ├── AuthContext.js │   │   └── InvoiceContext.js │   ├── utils/ │   │   ├── constants.js │   │   ├── validation.js │   │   └── helpers.js │   └── assets/ │       ├── images/ │       └── fonts/
+4.2 Key Components Code
+VoiceRecorder Component
+// src/components/VoiceRecorder.js import React, { useState } from 'react'; import { View, TouchableOpacity, Text, StyleSheet } from 'react-native'; import { Audio } from 'expo-av'; import { MaterialIcons } from '@expo/vector-icons';  export default function VoiceRecorder({ onRecordingComplete }) {   const [recording, setRecording] = useState(null);   const [isRecording, setIsRecording] = useState(false);      const startRecording = async () => {     try {       // Request permissions       const permission = await Audio.requestPermissionsAsync();       if (!permission.granted) {         alert('Please grant microphone permission');         return;       }              // Configure audio mode       await Audio.setAudioModeAsync({         allowsRecordingIOS: true,         playsInSilentModeIOS: true,       });              // Start recording       const { recording } = await Audio.Recording.createAsync(         Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY       );              setRecording(recording);       setIsRecording(true);     } catch (error) {       console.error('Failed to start recording:', error);       alert('Failed to start recording');     }   };      const stopRecording = async () => {     setIsRecording(false);     await recording.stopAndUnloadAsync();          const uri = recording.getURI();     onRecordingComplete(uri);     setRecording(null);   };      return (     <View style={styles.container}>       <TouchableOpacity         style={[styles.button, isRecording && styles.buttonRecording]}         onPress={isRecording ? stopRecording : startRecording}       >         <MaterialIcons           name={isRecording ? 'stop' : 'mic'}           size={48}           color="#fff"         />       </TouchableOpacity>       <Text style={styles.text}>         {isRecording ? 'Tap to stop' : 'Tap to record'}       </Text>     </View>   ); }  const styles = StyleSheet.create({   container: {     alignItems: 'center',     padding: 20,   },   button: {     width: 100,     height: 100,     borderRadius: 50,     backgroundColor: '#2E75B6',     justifyContent: 'center',     alignItems: 'center',     elevation: 5,   },   buttonRecording: {     backgroundColor: '#C00000',   },   text: {     marginTop: 12,     fontSize: 16,     color: '#666',   }, });
+Invoice Service
+// src/services/invoice.js import api from './api'; import * as FileSystem from 'expo-file-system';  export const createInvoiceFromVoice = async (audioUri, language = 'hi') => {   try {     // Prepare form data     const formData = new FormData();          formData.append('audio', {       uri: audioUri,       type: 'audio/m4a',       name: 'voice.m4a',     });          formData.append('language', language);          // Upload to backend     const response = await api.post('/invoice/create', formData, {       headers: {         'Content-Type': 'multipart/form-data',       },       timeout: 30000,  // 30 seconds     });          return response.data;   } catch (error) {     if (error.response?.data?.error === 'FREE_TIER_LIMIT_REACHED') {       throw new Error('LIMIT_REACHED');     }     throw error;   } };  export const getInvoiceHistory = async (page = 1, limit = 20) => {   const response = await api.get(`/invoice/history?page=${page}&limit=${limit}`);   return response.data; };  export const getInvoiceById = async (invoiceId) => {   const response = await api.get(`/invoice/${invoiceId}`);   return response.data; };  export const downloadInvoicePDF = async (pdfUrl, invoiceId) => {   const fileUri = `${FileSystem.documentDirectory}${invoiceId}.pdf`;      const downloadResult = await FileSystem.downloadAsync(pdfUrl, fileUri);      return downloadResult.uri; };  export const shareInvoiceWhatsApp = async (pdfUrl, total) => {   const message = `Your bill - Total: ₹${total}. Thank you!`;   const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message + '\n' + pdfUrl)}`;      Linking.openURL(whatsappUrl); };
+
+5. Voice Processing Pipeline
+5.1 Complete Flow
+User speaks → Audio recorded → Uploaded to backend                                       ↓                            OpenAI Whisper API (transcription)                                       ↓                          "teen kilo chawal pachaas, do oil do sau"                                       ↓                               Claude AI API (extraction)                                       ↓                          Structured JSON with items                                       ↓                               PDF Generation                                       ↓                           Upload to Cloudflare R2                                       ↓                          Return PDF URL to app
+5.2 Backend Voice Processing Code
+// routes/invoice.js const express = require('express'); const router = express.Router(); const multer = require('multer'); const OpenAI = require('openai'); const Anthropic = require('@anthropic-ai/sdk'); const { generateInvoicePDF } = require('../utils/pdfGenerator'); const { uploadToR2 } = require('../utils/storage'); const Invoice = require('../models/Invoice'); const User = require('../models/User');  const upload = multer({ dest: 'uploads/' }); const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });  router.post('/create', auth, upload.single('audio'), async (req, res) => {   try {     const user = await User.findById(req.userId);          // Check free tier limit     if (user.subscriptionTier === 'free') {       const now = new Date();       const resetDate = new Date(user.lastResetDate);              // Reset counter if new month       if (now.getMonth() !== resetDate.getMonth()) {         user.monthlyInvoiceCount = 0;         user.lastResetDate = now;         await user.save();       }              if (user.monthlyInvoiceCount >= 10) {         return res.status(403).json({           success: false,           error: 'FREE_TIER_LIMIT_REACHED',           message: 'Monthly limit of 10 invoices reached',           limit: 10,           used: user.monthlyInvoiceCount,           upgradeRequired: true         });       }     }          // Step 1: Transcribe audio with Whisper     const transcription = await openai.audio.transcriptions.create({       file: fs.createReadStream(req.file.path),       model: 'whisper-1',       language: req.body.language || 'hi',       response_format: 'text'     });          const transcript = transcription;     console.log('Transcript:', transcript);          // Step 2: Extract items with Claude     const message = await anthropic.messages.create({       model: 'claude-sonnet-4-20250514',       max_tokens: 1000,       messages: [{         role: 'user',         content: `You are an expert at converting Hindi/Punjabi/English speech to invoice items.  Convert this voice note to structured invoice data: "${transcript}"  Extract: - Item name (in English, capitalize first letter) - Quantity with unit (e.g., "3 kg", "2 bottles", "5 pieces") - Total price for that item  Return ONLY valid JSON with NO markdown, NO explanation: {   "items": [     {"name": "Rice", "quantity": "3 kg", "totalPrice": 150},     {"name": "Oil", "quantity": "2 bottles", "totalPrice": 200}   ] }  Rules: - Common item names: Rice, Wheat, Oil, Sugar, Salt, Tea, etc. - If quantity not specified, use "1 piece" - If price not clear, use 0 - Return empty array if no items understood`       }]     });          // Parse Claude response     let invoiceData;     try {       const responseText = message.content[0].text.trim();       invoiceData = JSON.parse(responseText);     } catch (parseError) {       console.error('Claude parsing error:', parseError);       return res.status(500).json({         success: false,         error: 'AI_PARSING_ERROR',         message: 'Could not understand the voice input. Please try again.'       });     }          // Step 3: Calculate totals     const total = invoiceData.items.reduce((sum, item) => sum + item.totalPrice, 0);          // Step 4: Generate invoice ID     const invoiceId = `KB-${Date.now()}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;          // Step 5: Generate PDF     const pdfBuffer = await generateInvoicePDF({       invoiceId,       shopName: user.shopName || user.name,       shopPhone: user.phone,       shopAddress: user.shopAddress,       gstNumber: user.gstNumber,       items: invoiceData.items,       total,       isVerified: user.isVerified,       accountType: user.accountType,       createdAt: new Date()     });          // Step 6: Upload PDF to Cloudflare R2     const pdfUrl = await uploadToR2(pdfBuffer, `${invoiceId}.pdf`);          // Step 7: Save to database     const invoice = await Invoice.create({       invoiceId,       userId: user._id,       shopName: user.shopName || user.name,       shopPhone: user.phone,       shopAddress: user.shopAddress,       gstNumber: user.gstNumber,       items: invoiceData.items,       subtotal: total,       total,       voiceTranscript: transcript,       voiceLanguage: req.body.language || 'hi',       pdfUrl,       pdfGenerated: true,       isVerified: user.isVerified     });          // Step 8: Update user invoice count (free tier)     if (user.subscriptionTier === 'free') {       user.monthlyInvoiceCount += 1;       await user.save();     }          // Step 9: Clean up temp file     fs.unlinkSync(req.file.path);          // Step 10: Return response     res.json({       success: true,       invoice: {         invoiceId: invoice.invoiceId,         items: invoice.items,         total: invoice.total,         voiceTranscript: invoice.voiceTranscript,         pdfUrl: invoice.pdfUrl,         isVerified: invoice.isVerified,         createdAt: invoice.createdAt       }     });        } catch (error) {     console.error('Invoice creation error:', error);     res.status(500).json({       success: false,       error: 'INTERNAL_ERROR',       message: 'Failed to create invoice. Please try again.'     });   } });  module.exports = router;
+
+6. PDF Generation System
+6.1 PDF Template Code
+// utils/pdfGenerator.js const PDFDocument = require('pdfkit'); const QRCode = require('qrcode');  async function generateInvoicePDF(data) {   return new Promise(async (resolve, reject) => {     try {       const doc = new PDFDocument({         size: 'A4',         margins: { top: 50, bottom: 50, left: 50, right: 50 }       });              const buffers = [];       doc.on('data', buffers.push.bind(buffers));       doc.on('end', () => resolve(Buffer.concat(buffers)));              // Header - Verification Badge       if (data.isVerified && data.accountType !== 'personal') {         doc.fontSize(10)            .fillColor('#00AA00')            .text('✓ VERIFIED SHOP', 50, 50);                  doc.fontSize(18)            .fillColor('#000000')            .text(data.shopName, 50, 70);       } else {         doc.fontSize(10)            .fillColor('#FFA500')            .text('⚠ PERSONAL INVOICE', 50, 50);                  doc.fontSize(12)            .fillColor('#666666')            .text('(Not from a verified shop)', 50, 65);       }              // Shop Details       doc.fontSize(10)          .fillColor('#000000');              let y = data.isVerified ? 95 : 90;              if (data.shopAddress) {         doc.text(`${data.shopAddress}`, 50, y);         y += 15;       }              doc.text(`Phone: ${data.shopPhone}`, 50, y);       y += 15;              if (data.gstNumber) {         doc.text(`GST: ${data.gstNumber}`, 50, y);         y += 15;       }              // Horizontal Line       doc.moveTo(50, y + 10)          .lineTo(545, y + 10)          .stroke('#CCCCCC');              y += 25;              // Invoice Details       doc.fontSize(12)          .font('Helvetica-Bold')          .text(`Invoice #${data.invoiceId}`, 50, y);              const date = new Date(data.createdAt).toLocaleString('en-IN', {         day: '2-digit',         month: 'short',         year: 'numeric',         hour: '2-digit',         minute: '2-digit'       });              doc.fontSize(10)          .font('Helvetica')          .text(date, 400, y);              y += 30;              // Items Table Header       doc.fontSize(10)          .font('Helvetica-Bold');              doc.rect(50, y, 495, 25)          .fillAndStroke('#E8F4F8', '#CCCCCC');              doc.fillColor('#000000')          .text('Item', 60, y + 8)          .text('Quantity', 300, y + 8)          .text('Amount', 450, y + 8, { align: 'right', width: 85 });              y += 35;              // Items       doc.font('Helvetica');              data.items.forEach((item, index) => {         if (index % 2 === 0) {           doc.rect(50, y - 5, 495, 25)              .fillAndStroke('#F9F9F9', '#E0E0E0');         }                  doc.fillColor('#000000')            .text(item.name, 60, y)            .text(item.quantity, 300, y)            .text(`₹${item.totalPrice}`, 450, y, { align: 'right', width: 85 });                  y += 25;       });              y += 10;              // Total       doc.moveTo(50, y)          .lineTo(545, y)          .stroke('#000000');              y += 15;              doc.fontSize(14)          .font('Helvetica-Bold')          .text('TOTAL:', 300, y)          .text(`₹${data.total}`, 450, y, { align: 'right', width: 85 });              y += 40;              // Footer       doc.fontSize(8)          .font('Helvetica')          .fillColor('#666666');              if (data.isVerified) {         doc.text('🔒 Secure Invoice - Generated by verified shop', 50, y);       } else {         doc.text('⚠ This invoice was created from a personal account', 50, y);       }              y += 12;              doc.text(`Verify online: useaifast.com/verify/${data.invoiceId}`, 50, y);              // QR Code       const qrCode = await QRCode.toDataURL(`https://useaifast.com/verify/${data.invoiceId}`);       const qrImage = Buffer.from(qrCode.split(',')[1], 'base64');              doc.image(qrImage, 450, y - 50, { width: 80, height: 80 });              // Watermark (for free tier)       if (!data.isVerified || data.accountType === 'personal') {         doc.fontSize(60)            .fillColor('#E0E0E0', 0.2)            .text('UNVERIFIED', 100, 400, {              width: 400,              align: 'center',              lineBreak: false            });       }              // Footer - Branding       doc.fontSize(8)          .fillColor('#999999')          .text('Made with BoloBill', 50, 770, { align: 'center', width: 495 });              doc.end();            } catch (error) {       reject(error);     }   }); }  module.exports = { generateInvoicePDF };
+
+[Document continues with sections 7-10 covering Security Implementation, Deployment Architecture, Performance Optimization, and Testing Strategy]
+End of Document 2 - Part 1
+(Due to length, remaining sections will be in a separate file)
