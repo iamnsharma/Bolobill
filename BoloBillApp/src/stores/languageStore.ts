@@ -3,7 +3,7 @@ import i18n from '../lang';
 import {storage} from '../utils/storage/mmkv';
 import {STORAGE_KEYS} from '../utils/storage/keys';
 
-export type AppLanguage = 'en' | 'hi' | 'pa' | 'mwr';
+export type AppLanguage = 'en' | 'hi' | 'pa' | 'mwr' | 'bgr';
 
 type LanguageState = {
   language: AppLanguage;

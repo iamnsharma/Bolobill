@@ -4,6 +4,7 @@ import en from './en/common.json';
 import hi from './hi/common.json';
 import pa from './pa/common.json';
 import mwr from './mwr/common.json';
+import bgr from './bgr/common.json';
 
 i18n.use(initReactI18next).init({
   compatibilityJSON: 'v4',
@@ -12,6 +13,7 @@ i18n.use(initReactI18next).init({
     hi: {translation: hi},
     pa: {translation: pa},
     mwr: {translation: mwr},
+    bgr: {translation: bgr},
   },
   lng: 'en',
   fallbackLng: 'en',

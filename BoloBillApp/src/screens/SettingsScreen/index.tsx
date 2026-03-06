@@ -22,9 +22,10 @@ export const SettingsScreen = () => {
   const languageOptions = useMemo(
     () => [
       {code: 'en' as const, label: 'English'},
-      {code: 'hi' as const, label: 'Hindi'},
-      {code: 'pa' as const, label: 'Punjabi'},
-      {code: 'mwr' as const, label: 'Marwari'},
+      {code: 'hi' as const, label: 'हिंदी'},
+      {code: 'pa' as const, label: 'ਪੰਜਾਬੀ'},
+      {code: 'mwr' as const, label: 'मारवाड़ी'},
+      {code: 'bgr' as const, label: 'बागड़ी'},
     ],
     [],
   );

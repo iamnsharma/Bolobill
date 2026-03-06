@@ -1,6 +1,6 @@
 export type CreateInvoiceFromVoicePayload = {
   audioUri: string;
-  language?: 'hi' | 'pa' | 'en' | 'mixed';
+  language?: 'hi' | 'pa' | 'en' | 'bgr' | 'mixed';
 };
 
 export type InvoiceItem = {
