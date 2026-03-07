@@ -89,6 +89,11 @@ export const getStyles = (theme: AppTheme) =>
       color: theme.colors.textSecondary,
       lineHeight: 19,
     },
+    spokenTextInput: {
+      minHeight: 96,
+      paddingTop: 10,
+      lineHeight: 20,
+    },
     manualItemsWrap: {
       borderWidth: 1,
       borderColor: theme.colors.border,

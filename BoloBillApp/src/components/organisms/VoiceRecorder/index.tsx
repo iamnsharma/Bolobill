@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import Sound from 'react-native-nitro-sound';
 import { BaseText } from '../../atoms';
 import { useThemeStore } from '../../../stores';
 import { T } from '../../../lang/constants';
@@ -35,8 +36,8 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
   const styles = useMemo(() => getStyles(theme), [theme]);
   const [status, setStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
   const [elapsedSec, setElapsedSec] = useState(0);
+  const recordingPathRef = useRef<string | undefined>(undefined);
   const pulse = useRef(new Animated.Value(1)).current;
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const askPermission = async () => {
     if (Platform.OS !== 'android') {
@@ -75,25 +76,10 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
   };
 
   useEffect(() => {
-    if (status !== 'recording') {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
-
-    timerRef.current = setInterval(() => {
-      setElapsedSec(prev => prev + 1);
-    }, 1000);
-
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      Sound.removeRecordBackListener();
     };
-  }, [status]);
+  }, []);
 
   useEffect(() => {
     if (status !== 'recording') {
@@ -132,38 +118,56 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
 
     try {
       setElapsedSec(0);
+      const path = await Sound.startRecorder();
+      recordingPathRef.current = path;
+      Sound.addRecordBackListener(meta => {
+        setElapsedSec(Math.floor(meta.currentPosition / 1000));
+      });
       setStatus('recording');
     } catch (_error) {
       Alert.alert('Error', 'Unable to start recording');
     }
   };
 
-  const pauseOrResumeRecording = () => {
+  const pauseOrResumeRecording = async () => {
     if (status === 'recording') {
-      setStatus('paused');
+      try {
+        await Sound.pauseRecorder();
+        setStatus('paused');
+      } catch (_error) {
+        Alert.alert('Error', 'Unable to pause recording');
+      }
       return;
     }
 
     if (status === 'paused') {
-      setStatus('recording');
+      try {
+        await Sound.resumeRecorder();
+        setStatus('recording');
+      } catch (_error) {
+        Alert.alert('Error', 'Unable to resume recording');
+      }
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (status === 'idle') {
       return;
     }
 
     try {
+      const uri = await Sound.stopRecorder();
+      Sound.removeRecordBackListener();
       const timestamp = Date.now();
-      const uri = `file:///mock-audio-${timestamp}.m4a`;
+      const resolvedPath = uri || recordingPathRef.current || '';
+      const fileName = resolvedPath.split('/').pop() || `voice-${timestamp}.m4a`;
       const meta: RecordingMeta = {
         durationSec: elapsedSec,
         recordedAt: new Date().toISOString(),
-        fileName: `voice-${timestamp}.m4a`,
+        fileName,
       };
       setStatus('idle');
-      onRecorded(uri, meta);
+      onRecorded(resolvedPath, meta);
     } catch (_error) {
       setStatus('idle');
       Alert.alert('Error', 'Unable to stop recording');

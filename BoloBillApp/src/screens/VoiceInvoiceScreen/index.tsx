@@ -19,6 +19,7 @@ import {
   CreateInvoiceFromVoiceResponse,
   InvoiceItem,
 } from '../../services/api/types/invoice.types';
+import {parseSpokenInvoiceText} from '../../utils/invoice/spokenInvoice';
 import editIcon from '../../assets/icons/edit.png';
 import deleteIcon from '../../assets/icons/delete.png';
 
@@ -32,7 +33,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const language = useLanguageStore(s => s.language);
-  const apiLanguage = language === 'mwr' ? 'mixed' : language;
+  const apiLanguage = language === 'mwr' || language === 'bgr' ? 'mixed' : language;
   const styles = useMemo(() => getStyles(theme), [theme]);
   const createInvoice = useCreateVoiceInvoice();
   const [audioUri, setAudioUri] = useState<string>();
@@ -48,6 +49,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const [manualPrice, setManualPrice] = useState('');
   const [manualItems, setManualItems] = useState<InvoiceItem[]>([]);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [spokenText, setSpokenText] = useState('');
 
   const formatIstTime = (isoTime: string) =>
     new Date(isoTime).toLocaleTimeString('en-IN', {
@@ -64,6 +66,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   ) => {
     setAudioUri(uri);
     setLastRecording(meta);
+    setGeneratedVoiceInvoice(undefined);
   };
 
   const onCreateInvoice = async () => {
@@ -140,6 +143,27 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
     navigation.navigate('InvoicePreview', { invoice });
   };
 
+  const createFromSpokenText = () => {
+    if (!spokenText.trim()) {
+      Alert.alert(
+        'BoloBill',
+        'Type spoken lines first, e.g. "1kilo chawal 45 rs".',
+      );
+      return;
+    }
+
+    const invoice = parseSpokenInvoiceText(spokenText);
+    if (!invoice) {
+      Alert.alert(
+        'BoloBill',
+        'Could not parse items. Use one item per line like "10kg chaipati 800 rs".',
+      );
+      return;
+    }
+
+    navigation.navigate('InvoicePreview', {invoice});
+  };
+
   const resetManualInvoiceForm = () => {
     if (
       !manualItemName.trim() &&
@@ -171,26 +195,12 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
       return;
     }
 
-    const draftInvoice: CreateInvoiceFromVoiceResponse =
-      generatedVoiceInvoice ?? {
-        invoiceId: `VOICE-${Date.now()}`,
-        items:
-          manualItems.length > 0
-            ? manualItems
-            : [{ name: 'Recorded item', quantity: '1', totalPrice: 0 }],
-        total:
-          manualItems.length > 0
-            ? manualItems.reduce((sum, item) => sum + item.totalPrice, 0)
-            : 0,
-        voiceTranscript: lastRecording
-          ? `Recorded file: ${lastRecording.fileName}`
-          : '',
-        pdfUrl: '',
-        isVerified: false,
-        createdAt: new Date().toISOString(),
-      };
+    if (!generatedVoiceInvoice) {
+      onCreateInvoice();
+      return;
+    }
 
-    navigation.navigate('InvoicePreview', { invoice: draftInvoice });
+    navigation.navigate('InvoicePreview', { invoice: generatedVoiceInvoice });
   };
 
   const deleteSavedRecording = () => {
@@ -271,10 +281,28 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
             </View>
           ) : null}
 
-          {/* <BaseButton title={t(T.VOICE_CREATE)} onPress={onCreateInvoice} /> */}
+          <BaseButton
+            title={t(T.VOICE_CREATE)}
+            onPress={onCreateInvoice}
+            disabled={!audioUri || createInvoice.isPending}
+          />
         </View>
 
         <View style={styles.card}>
+          <BaseText style={styles.sectionTitle}>Spoken Text to Bill</BaseText>
+          <BaseText style={styles.manualHint}>
+            Write exactly what you speak, one item per line.
+          </BaseText>
+          <BaseInput
+            value={spokenText}
+            onChangeText={setSpokenText}
+            placeholder={'1kilo chawal 45 rs\n10kg chaipati 800rs'}
+            multiline
+            textAlignVertical="top"
+            inputStyle={styles.spokenTextInput}
+          />
+          <BaseButton title="Create Invoice From Spoken Text" onPress={createFromSpokenText} />
+
           {!showManualForm ? (
             <>
               <BaseText style={styles.sectionTitle}>

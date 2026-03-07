@@ -3,10 +3,11 @@ import {Alert, ScrollView, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {BaseButton, BaseInput, BaseText} from '../../components/atoms';
-import {useThemeStore} from '../../stores';
+import {useAuthStore, useThemeStore} from '../../stores';
 import {CreateInvoiceFromVoiceResponse, InvoiceItem} from '../../services/api/types/invoice.types';
 import {getStyles} from './style';
 import {T} from '../../lang/constants';
+import {generateInvoicePdf} from '../../utils/invoice/pdf';
 
 type Props = {
   navigation: {
@@ -35,9 +36,11 @@ const fallbackInvoice: CreateInvoiceFromVoiceResponse = {
 export const InvoicePreviewScreen = ({navigation, route}: Props) => {
   const {t} = useTranslation();
   const theme = useThemeStore(s => s.theme);
+  const user = useAuthStore(s => s.user);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const sourceInvoice = route.params?.invoice ?? fallbackInvoice;
   const [items, setItems] = useState<InvoiceItem[]>(sourceInvoice.items);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const total = useMemo(
     () => items.reduce((sum, item) => sum + (Number.isNaN(item.totalPrice) ? 0 : item.totalPrice), 0),
@@ -63,6 +66,23 @@ export const InvoicePreviewScreen = ({navigation, route}: Props) => {
         return {...item, [key]: value};
       }),
     );
+  };
+
+  const onDownloadInvoice = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      const invoiceToExport: CreateInvoiceFromVoiceResponse = {
+        ...sourceInvoice,
+        items,
+        total,
+      };
+      const pdfPath = await generateInvoicePdf(invoiceToExport, user);
+      Alert.alert('BoloBill', `PDF created successfully.\n${pdfPath ?? ''}`);
+    } catch (_error) {
+      Alert.alert('BoloBill', 'Could not create PDF. Please try again.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -126,7 +146,8 @@ export const InvoicePreviewScreen = ({navigation, route}: Props) => {
         />
         <BaseButton
           title={t(T.INVOICE_PREVIEW_DOWNLOAD)}
-          onPress={() => Alert.alert('BoloBill', t(T.INVOICE_PREVIEW_DOWNLOAD_INFO))}
+          onPress={onDownloadInvoice}
+          disabled={isGeneratingPdf}
         />
         <BaseButton
           title={t(T.INVOICE_PREVIEW_SHARE)}

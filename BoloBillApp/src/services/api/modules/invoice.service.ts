@@ -5,19 +5,6 @@ import {
   CreateInvoiceFromVoiceResponse,
 } from '../types/invoice.types';
 
-const mockResponse: CreateInvoiceFromVoiceResponse = {
-  invoiceId: `KB-${Date.now()}-MOCK`,
-  items: [
-    {name: 'Rice', quantity: '3 kg', totalPrice: 150},
-    {name: 'Oil', quantity: '2 bottles', totalPrice: 200},
-  ],
-  total: 350,
-  voiceTranscript: 'teen kilo chawal pachaas, do oil do sau',
-  pdfUrl: 'https://example.com/mock.pdf',
-  isVerified: false,
-  createdAt: new Date().toISOString(),
-};
-
 export const invoiceService = {
   createFromVoice: async (
     payload: CreateInvoiceFromVoicePayload,
@@ -37,9 +24,11 @@ export const invoiceService = {
         {headers: {'Content-Type': 'multipart/form-data'}},
       );
       return response.data.invoice;
-    } catch (_error) {
-      // Fallback while backend endpoint is being wired.
-      return mockResponse;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Invoice creation failed');
     }
   },
 };
