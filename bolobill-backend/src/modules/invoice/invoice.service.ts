@@ -1,15 +1,85 @@
 import fs from 'fs';
-import {v4 as uuidv4} from 'uuid';
 import {ApiError} from '../../common/ApiError';
 import {UserModel} from '../../models/User.model';
 import {InvoiceModel} from '../../models/Invoice.model';
 import {generateInvoicePdf} from '../../services/pdf.service';
 import {parseTranscriptToItems, type InvoiceItemInput} from '../../services/transcriptParser.service';
-import {transcribeAudio} from '../../services/whisper.service';
+import {
+  extractInvoiceItemsFromTranscript,
+  localizeItemNamesByLanguage,
+  transcribeAudio,
+} from '../../services/whisper.service';
 
 const createInvoiceId = () => `KB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+const computeTotal = (items: InvoiceItemInput[]) =>
+  items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+const parseItemsWithFallback = async (transcript: string) => {
+  const parsed = parseTranscriptToItems(transcript);
+  if (parsed.items.length) {
+    return parsed;
+  }
+
+  const aiItems = await extractInvoiceItemsFromTranscript(transcript);
+  if (!aiItems?.length) {
+    return {items: [], total: 0};
+  }
+
+  return {
+    items: aiItems,
+    total: computeTotal(aiItems),
+  };
+};
 
 export const invoiceService = {
+  async incrementUserUsage(
+    userId: string,
+    input: {invoiceRequestSuccessCount?: number; voiceToTextSecondsUsed?: number},
+  ) {
+    const inc: Record<string, number> = {};
+    if (input.invoiceRequestSuccessCount && input.invoiceRequestSuccessCount > 0) {
+      inc['usage.invoiceRequestSuccessCount'] = input.invoiceRequestSuccessCount;
+    }
+    if (input.voiceToTextSecondsUsed && input.voiceToTextSecondsUsed > 0) {
+      inc['usage.voiceToTextSecondsUsed'] = input.voiceToTextSecondsUsed;
+    }
+    if (!Object.keys(inc).length) {
+      return;
+    }
+
+    await UserModel.updateOne({_id: userId}, {$inc: inc});
+  },
+
+  async translateVoiceToInvoice(input: {audioPath: string; language?: string}) {
+    const transcript = await transcribeAudio(input.audioPath, input.language);
+    return this.translateTranscriptToInvoice({
+      transcript,
+      outputLanguage: input.language,
+    });
+  },
+
+  async translateTranscriptToInvoice(input: {
+    transcript: string;
+    outputLanguage?: string;
+  }) {
+    const transcript = input.transcript.trim();
+    const {items, total} = await parseItemsWithFallback(transcript);
+    if (!items.length) {
+      throw new ApiError(422, 'Unable to parse items from transcript');
+    }
+    const localizedItems = await localizeItemNamesByLanguage(items, input.outputLanguage);
+
+    return {
+      invoiceId: createInvoiceId(),
+      items: localizedItems,
+      total,
+      voiceTranscript: transcript,
+      pdfUrl: '',
+      isVerified: false,
+      createdAt: new Date().toISOString(),
+    };
+  },
+
   async createVoiceInvoice(input: {
     userId: string;
     audioPath: string;
@@ -21,17 +91,18 @@ export const invoiceService = {
     }
 
     const transcript = await transcribeAudio(input.audioPath, input.language);
-    const {items, total} = parseTranscriptToItems(transcript);
+    const {items, total} = await parseItemsWithFallback(transcript);
     if (!items.length) {
       throw new ApiError(422, 'Unable to parse items from transcript');
     }
+    const localizedItems = await localizeItemNamesByLanguage(items, input.language);
 
     const invoiceId = createInvoiceId();
     const pdf = await generateInvoicePdf({
       invoiceId,
       customerName: user.name,
       customerPhone: user.phone,
-      items,
+      items: localizedItems,
       total,
       transcript,
     });
@@ -39,7 +110,7 @@ export const invoiceService = {
     const invoice = await InvoiceModel.create({
       userId: user._id,
       invoiceId,
-      items,
+      items: localizedItems,
       total,
       voiceTranscript: transcript,
       pdfPath: pdf.pdfPath,

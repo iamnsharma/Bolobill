@@ -7,14 +7,21 @@ export type VerifyOtpPayload = {
   phone: string;
   otp: string;
   name: string;
-  accountType: 'business' | 'shop';
+  accountType: 'business' | 'personal';
 };
 
 export type AuthUser = {
   id: string;
   phone: string;
   name: string;
-  accountType: 'business' | 'shop';
+  accountType: 'business' | 'personal';
+};
+
+export type RegisterPayload = {
+  name: string;
+  phone: string;
+  pin: string;
+  accountType?: 'business' | 'personal';
 };
 
 export type VerifyOtpResponse = {

@@ -5,7 +5,11 @@ const userSchema = new mongoose.Schema(
     name: {type: String, required: true, trim: true},
     phone: {type: String, required: true, unique: true, index: true},
     pinHash: {type: String, required: true},
-    accountType: {type: String, enum: ['personal', 'shop'], default: 'personal'},
+    accountType: {type: String, enum: ['personal', 'business'], default: 'personal'},
+    usage: {
+      invoiceRequestSuccessCount: {type: Number, default: 0, min: 0},
+      voiceToTextSecondsUsed: {type: Number, default: 0, min: 0},
+    },
   },
   {timestamps: true},
 );

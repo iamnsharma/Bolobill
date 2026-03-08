@@ -1,6 +1,7 @@
 export type CreateInvoiceFromVoicePayload = {
   audioUri: string;
-  language?: 'hi' | 'pa' | 'en' | 'bgr' | 'mixed';
+  language?: 'hi' | 'pa' | 'en' | 'mwr' | 'bgr' | 'mixed';
+  durationSec?: number;
 };
 
 export type InvoiceItem = {
@@ -10,11 +11,32 @@ export type InvoiceItem = {
 };
 
 export type CreateInvoiceFromVoiceResponse = {
+  id?: string;
   invoiceId: string;
   items: InvoiceItem[];
   total: number;
   voiceTranscript: string;
   pdfUrl: string;
-  isVerified: boolean;
+  source?: 'voice' | 'manual';
+  isVerified?: boolean;
   createdAt: string;
+  updatedAt?: string;
+};
+
+export type CreateManualInvoicePayload = {
+  items: InvoiceItem[];
+  note?: string;
+};
+
+export type InvoiceListResponse = {
+  invoices: CreateInvoiceFromVoiceResponse[];
+};
+
+export type LatestPdfsResponse = {
+  invoices: Array<{
+    id: string;
+    invoiceId: string;
+    pdfUrl: string;
+    createdAt: string;
+  }>;
 };

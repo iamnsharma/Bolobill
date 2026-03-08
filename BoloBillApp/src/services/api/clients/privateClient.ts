@@ -1,11 +1,12 @@
-import axios from 'axios';
+import axios, {AxiosError} from 'axios';
 import {Platform} from 'react-native';
 import {STORAGE_KEYS} from '../../../utils/storage/keys';
 import {storage} from '../../../utils/storage/mmkv';
+import {logApiError, logApiRequest, logApiResponse} from '../logger';
 
 const DEV_BASE_URL =
   Platform.OS === 'android'
-    ? 'http://10.0.2.2:3011/api'
+    ? 'http://10.229.79.99:3011/api'
     : 'http://localhost:3011/api';
 
 export const privateClient = axios.create({
@@ -14,9 +15,41 @@ export const privateClient = axios.create({
 });
 
 privateClient.interceptors.request.use(config => {
+  (config as {metadata?: {startTime: number}}).metadata = {startTime: Date.now()};
   const token = storage.getString(STORAGE_KEYS.AUTH_TOKEN);
+  const userRaw = storage.getString(STORAGE_KEYS.AUTH_USER);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (userRaw) {
+    try {
+      const user = JSON.parse(userRaw) as {id?: string};
+      if (user.id) {
+        config.headers['x-user-id'] = user.id;
+      }
+    } catch (_error) {
+      // Ignore malformed stored user payload.
+    }
+  }
+  logApiRequest(config);
   return config;
 });
+
+privateClient.interceptors.response.use(
+  response => {
+    const startedAt = (
+      response.config as {metadata?: {startTime?: number}}
+    ).metadata?.startTime;
+    const elapsedMs = startedAt ? Date.now() - startedAt : undefined;
+    logApiResponse(response, elapsedMs);
+    return response;
+  },
+  (error: AxiosError) => {
+    const startedAt = (
+      error.config as {metadata?: {startTime?: number}} | undefined
+    )?.metadata?.startTime;
+    const elapsedMs = startedAt ? Date.now() - startedAt : undefined;
+    logApiError(error, elapsedMs);
+    return Promise.reject(error);
+  },
+);

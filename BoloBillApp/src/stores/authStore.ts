@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {authService} from '../services/api/modules/auth.service';
-import {AuthUser, VerifyOtpPayload} from '../services/api/types/auth.types';
+import {AuthUser, RegisterPayload, VerifyOtpPayload} from '../services/api/types/auth.types';
 import {STORAGE_KEYS} from '../utils/storage/keys';
 import {storage} from '../utils/storage/mmkv';
 
@@ -12,6 +12,7 @@ type AuthState = {
   isBootstrapped: boolean;
   initializeAuth: () => void;
   sendOtp: (phone: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   loginWithOtp: (payload: VerifyOtpPayload) => Promise<void>;
   logout: () => void;
 };
@@ -45,10 +46,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendOtp: async phone => {
     set({isLoading: true});
     try {
-      await authService.sendOtp();
+      await authService.sendOtp(phone);
       if (!phone) {
         throw new Error('Invalid phone');
       }
+    } finally {
+      set({isLoading: false});
+    }
+  },
+  register: async payload => {
+    set({isLoading: true});
+    try {
+      const response = await authService.register(payload);
+      storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
+      storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));
+      set({
+        token: response.token,
+        user: response.user,
+        isLoggedIn: true,
+      });
     } finally {
       set({isLoading: false});
     }

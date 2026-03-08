@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { AxiosError } from 'axios';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   View,
@@ -12,16 +15,19 @@ import { useTranslation } from 'react-i18next';
 import { BaseButton, BaseInput, BaseText } from '../../components/atoms';
 import { VoiceRecorder } from '../../components/organisms';
 import { T } from '../../lang/constants';
-import { useCreateVoiceInvoice } from '../../hooks/apiHooks';
+import {
+  useCreateManualInvoice,
+  useCreateVoiceInvoice,
+} from '../../hooks/apiHooks';
 import { useLanguageStore, useThemeStore } from '../../stores';
 import { getStyles } from './style';
 import {
   CreateInvoiceFromVoiceResponse,
   InvoiceItem,
 } from '../../services/api/types/invoice.types';
-import {parseSpokenInvoiceText} from '../../utils/invoice/spokenInvoice';
 import editIcon from '../../assets/icons/edit.png';
 import deleteIcon from '../../assets/icons/delete.png';
+import closeIcon from '../../assets/icons/close.png';
 
 type Props = {
   navigation: {
@@ -33,9 +39,9 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const language = useLanguageStore(s => s.language);
-  const apiLanguage = language === 'mwr' || language === 'bgr' ? 'mixed' : language;
   const styles = useMemo(() => getStyles(theme), [theme]);
   const createInvoice = useCreateVoiceInvoice();
+  const createManualInvoiceMutation = useCreateManualInvoice();
   const [audioUri, setAudioUri] = useState<string>();
   const [generatedVoiceInvoice, setGeneratedVoiceInvoice] =
     useState<CreateInvoiceFromVoiceResponse>();
@@ -49,7 +55,6 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const [manualPrice, setManualPrice] = useState('');
   const [manualItems, setManualItems] = useState<InvoiceItem[]>([]);
   const [showManualForm, setShowManualForm] = useState(false);
-  const [spokenText, setSpokenText] = useState('');
 
   const formatIstTime = (isoTime: string) =>
     new Date(isoTime).toLocaleTimeString('en-IN', {
@@ -78,12 +83,17 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
     try {
       const invoice = await createInvoice.mutateAsync({
         audioUri,
-        language: apiLanguage,
+        language: language === 'mwr' || language === 'bgr' ? 'mixed' : language,
+        durationSec: lastRecording?.durationSec ?? 0,
       });
       setGeneratedVoiceInvoice(invoice);
       navigation.navigate('InvoicePreview', { invoice });
-    } catch (_error) {
-      Alert.alert('Error', t(T.VOICE_PROCESSING));
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const apiMessage = axiosError.response?.data?.message;
+      const fallbackMessage =
+        error instanceof Error ? error.message : t(T.VOICE_PROCESSING);
+      Alert.alert('Error', apiMessage || fallbackMessage);
     }
   };
 
@@ -122,71 +132,33 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
     );
   };
 
-  const createManualInvoice = () => {
+  const createManualInvoice = async () => {
     if (manualItems.length === 0) {
       Alert.alert('BoloBill', t(T.VOICE_ADD_ONE_ITEM));
       return;
     }
 
-    const total = manualItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const invoice: CreateInvoiceFromVoiceResponse = {
-      invoiceId: `MANUAL-${Date.now()}`,
-      items: manualItems,
-      total,
-      voiceTranscript: '',
-      pdfUrl: '',
-      isVerified: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    Alert.alert('BoloBill', t(T.VOICE_MANUAL_SAVED));
-    navigation.navigate('InvoicePreview', { invoice });
+    try {
+      const invoice = await createManualInvoiceMutation.mutateAsync({
+        items: manualItems,
+      });
+      Alert.alert('BoloBill', t(T.VOICE_MANUAL_SAVED));
+      navigation.navigate('InvoicePreview', {invoice});
+    } catch (error) {
+      const axiosError = error as AxiosError<{message?: string}>;
+      Alert.alert(
+        'Error',
+        axiosError.response?.data?.message ?? 'Could not save manual invoice',
+      );
+    }
   };
 
-  const createFromSpokenText = () => {
-    if (!spokenText.trim()) {
-      Alert.alert(
-        'BoloBill',
-        'Type spoken lines first, e.g. "1kilo chawal 45 rs".',
-      );
-      return;
-    }
-
-    const invoice = parseSpokenInvoiceText(spokenText);
-    if (!invoice) {
-      Alert.alert(
-        'BoloBill',
-        'Could not parse items. Use one item per line like "10kg chaipati 800 rs".',
-      );
-      return;
-    }
-
-    navigation.navigate('InvoicePreview', {invoice});
-  };
-
-  const resetManualInvoiceForm = () => {
-    if (
-      !manualItemName.trim() &&
-      !manualQuantity.trim() &&
-      !manualPrice.trim() &&
-      manualItems.length === 0
-    ) {
-      return;
-    }
-
-    Alert.alert(t(T.VOICE_RESET_CONFIRM_TITLE), t(T.VOICE_RESET_CONFIRM_DESC), [
-      { text: t(T.COMMON_CANCEL), style: 'cancel' },
-      {
-        text: t(T.COMMON_RESET),
-        style: 'destructive',
-        onPress: () => {
-          setManualItemName('');
-          setManualQuantity('');
-          setManualPrice('');
-          setManualItems([]);
-        },
-      },
-    ]);
+  const closeManualForm = () => {
+    setManualItemName('');
+    setManualQuantity('');
+    setManualPrice('');
+    setManualItems([]);
+    setShowManualForm(false);
   };
 
   const openInvoiceItemDetail = () => {
@@ -226,9 +198,22 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
     );
   };
 
+  const isAnyMutationPending =
+    createInvoice.isPending ||
+    createManualInvoiceMutation.isPending;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <BaseText style={styles.title}>{t(T.VOICE_TITLE)}</BaseText>
           <BaseText style={styles.heroSubtitle}>
@@ -274,7 +259,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
             </View>
           ) : null}
 
-          {createInvoice.isPending ? (
+          {isAnyMutationPending ? (
             <View style={styles.processing}>
               <ActivityIndicator color={theme.colors.primary} />
               <BaseText>{t(T.VOICE_PROCESSING)}</BaseText>
@@ -284,25 +269,11 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
           <BaseButton
             title={t(T.VOICE_CREATE)}
             onPress={onCreateInvoice}
-            disabled={!audioUri || createInvoice.isPending}
+            disabled={!audioUri || isAnyMutationPending}
           />
         </View>
 
         <View style={styles.card}>
-          <BaseText style={styles.sectionTitle}>Spoken Text to Bill</BaseText>
-          <BaseText style={styles.manualHint}>
-            Write exactly what you speak, one item per line.
-          </BaseText>
-          <BaseInput
-            value={spokenText}
-            onChangeText={setSpokenText}
-            placeholder={'1kilo chawal 45 rs\n10kg chaipati 800rs'}
-            multiline
-            textAlignVertical="top"
-            inputStyle={styles.spokenTextInput}
-          />
-          <BaseButton title="Create Invoice From Spoken Text" onPress={createFromSpokenText} />
-
           {!showManualForm ? (
             <>
               <BaseText style={styles.sectionTitle}>
@@ -314,36 +285,55 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
               <BaseButton
                 title={t(T.VOICE_CREATE_MANUALLY)}
                 onPress={() => setShowManualForm(true)}
+                disabled={isAnyMutationPending}
               />
             </>
           ) : (
             <>
-              <BaseText style={styles.sectionTitle}>
-                {t(T.VOICE_MANUAL_FORM_TITLE)}
-              </BaseText>
+              <View style={styles.manualTitleRow}>
+                <BaseText style={styles.sectionTitle}>
+                  {t(T.VOICE_MANUAL_FORM_TITLE)}
+                </BaseText>
+                <Pressable onPress={closeManualForm} style={styles.savedDeleteBtn}>
+                  <Image source={closeIcon} style={styles.closeIcon} />
+                </Pressable>
+              </View>
               <BaseInput
                 label={t(T.VOICE_ITEM_NAME)}
                 value={manualItemName}
                 onChangeText={setManualItemName}
                 placeholder={t(T.VOICE_PLACEHOLDER_ITEM)}
               />
-              <BaseInput
-                label={t(T.VOICE_QUANTITY)}
-                value={manualQuantity}
-                onChangeText={setManualQuantity}
-                placeholder={t(T.VOICE_PLACEHOLDER_QTY)}
-              />
-              <BaseInput
-                label={t(T.VOICE_PRICE_INR)}
-                value={manualPrice}
-                onChangeText={setManualPrice}
-                keyboardType="number-pad"
-                placeholder={t(T.VOICE_PLACEHOLDER_PRICE)}
-              />
-              <BaseButton title={t(T.VOICE_ADD_ITEM)} onPress={addManualItem} />
+              <View style={styles.manualInputRow}>
+                <BaseInput
+                  containerStyle={styles.manualField}
+                  label={t(T.VOICE_QUANTITY)}
+                  value={manualQuantity}
+                  onChangeText={setManualQuantity}
+                  placeholder={t(T.VOICE_PLACEHOLDER_QTY)}
+                />
+                <BaseInput
+                  containerStyle={styles.manualField}
+                  label={t(T.VOICE_PRICE_INR)}
+                  value={manualPrice}
+                  onChangeText={setManualPrice}
+                  keyboardType="number-pad"
+                  placeholder={t(T.VOICE_PLACEHOLDER_PRICE)}
+                />
+                <Pressable
+                  onPress={addManualItem}
+                  style={styles.addItemInlineBtn}
+                  disabled={isAnyMutationPending}>
+                  <BaseText style={styles.addPlusText}>+</BaseText>
+                </Pressable>
+              </View>
 
               {manualItems.length ? (
-                <View style={styles.manualItemsWrap}>
+                <ScrollView
+                  style={styles.manualItemsWrap}
+                  contentContainerStyle={styles.manualItemsContent}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled">
                   {manualItems.map((item, index) => (
                     <View
                       key={`${item.name}-${index}`}
@@ -371,26 +361,19 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
                       </Pressable>
                     </View>
                   ))}
-                </View>
+                </ScrollView>
               ) : null}
 
               <BaseButton
                 title={t(T.VOICE_CREATE_SAVE_MANUAL)}
                 onPress={createManualInvoice}
-                disabled={!manualItems.length}
-              />
-              <BaseButton
-                title={t(T.VOICE_RESET_MANUAL_FORM)}
-                onPress={resetManualInvoiceForm}
-              />
-              <BaseButton
-                title={t(T.VOICE_CLOSE_MANUAL_FORM)}
-                onPress={() => setShowManualForm(false)}
+                disabled={!manualItems.length || isAnyMutationPending}
               />
             </>
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

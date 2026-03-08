@@ -4,7 +4,7 @@ export const registerSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
   pin: z.string().min(4).max(8),
-  accountType: z.enum(['personal', 'shop']).optional(),
+  accountType: z.enum(['personal', 'business']).optional(),
 });
 
 export const loginSchema = z.object({

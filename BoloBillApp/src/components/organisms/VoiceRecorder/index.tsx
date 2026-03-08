@@ -11,7 +11,8 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Sound from 'react-native-nitro-sound';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import type { RecordBackType } from 'react-native-audio-recorder-player';
 import { BaseText } from '../../atoms';
 import { useThemeStore } from '../../../stores';
 import { T } from '../../../lang/constants';
@@ -19,6 +20,8 @@ import { getStyles } from './style';
 import pauseButtonIcon from '../../../assets/icons/pause-button.png';
 import recordingGif from '../../../assets/gifs/recording.gif';
 import aiMicrophoneIcon from '../../../assets/icons/ai-microphone.png';
+
+const audioRecorderPlayer = new AudioRecorderPlayer();
 
 type RecordingMeta = {
   durationSec: number;
@@ -37,6 +40,7 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
   const [status, setStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
   const [elapsedSec, setElapsedSec] = useState(0);
   const recordingPathRef = useRef<string | undefined>(undefined);
+  const hasRecordListenerRef = useRef(false);
   const pulse = useRef(new Animated.Value(1)).current;
 
   const askPermission = async () => {
@@ -76,12 +80,6 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
   };
 
   useEffect(() => {
-    return () => {
-      Sound.removeRecordBackListener();
-    };
-  }, []);
-
-  useEffect(() => {
     if (status !== 'recording') {
       pulse.stopAnimation();
       pulse.setValue(1);
@@ -106,6 +104,34 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
     ).start();
   }, [pulse, status]);
 
+  const normalizeAudioUri = (uri: string) =>
+    uri.startsWith('file://') ? uri : `file://${uri}`;
+
+  const attachRecordBackListener = () => {
+    if (hasRecordListenerRef.current) {
+      return;
+    }
+    audioRecorderPlayer.addRecordBackListener((event: RecordBackType) => {
+      setElapsedSec(Math.max(0, Math.floor(event.currentPosition / 1000)));
+    });
+    hasRecordListenerRef.current = true;
+  };
+
+  const detachRecordBackListener = () => {
+    if (!hasRecordListenerRef.current) {
+      return;
+    }
+    audioRecorderPlayer.removeRecordBackListener();
+    hasRecordListenerRef.current = false;
+  };
+
+  useEffect(
+    () => () => {
+      detachRecordBackListener();
+    },
+    [],
+  );
+
   const startRecording = async () => {
     if (status !== 'idle') {
       return;
@@ -118,13 +144,12 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
 
     try {
       setElapsedSec(0);
-      const path = await Sound.startRecorder();
-      recordingPathRef.current = path;
-      Sound.addRecordBackListener(meta => {
-        setElapsedSec(Math.floor(meta.currentPosition / 1000));
-      });
+      attachRecordBackListener();
+      const path = await audioRecorderPlayer.startRecorder();
+      recordingPathRef.current = normalizeAudioUri(path);
       setStatus('recording');
     } catch (_error) {
+      detachRecordBackListener();
       Alert.alert('Error', 'Unable to start recording');
     }
   };
@@ -132,7 +157,7 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
   const pauseOrResumeRecording = async () => {
     if (status === 'recording') {
       try {
-        await Sound.pauseRecorder();
+        await audioRecorderPlayer.pauseRecorder();
         setStatus('paused');
       } catch (_error) {
         Alert.alert('Error', 'Unable to pause recording');
@@ -142,7 +167,7 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
 
     if (status === 'paused') {
       try {
-        await Sound.resumeRecorder();
+        await audioRecorderPlayer.resumeRecorder();
         setStatus('recording');
       } catch (_error) {
         Alert.alert('Error', 'Unable to resume recording');
@@ -156,11 +181,14 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
     }
 
     try {
-      const uri = await Sound.stopRecorder();
-      Sound.removeRecordBackListener();
+      const uri = await audioRecorderPlayer.stopRecorder();
+      detachRecordBackListener();
+      const normalizedUri = normalizeAudioUri(uri);
+      recordingPathRef.current = normalizedUri;
       const timestamp = Date.now();
-      const resolvedPath = uri || recordingPathRef.current || '';
-      const fileName = resolvedPath.split('/').pop() || `voice-${timestamp}.m4a`;
+      const resolvedPath = normalizedUri || recordingPathRef.current || '';
+      const fileName =
+        resolvedPath.split('/').pop() || `voice-${timestamp}.m4a`;
       const meta: RecordingMeta = {
         durationSec: elapsedSec,
         recordedAt: new Date().toISOString(),
@@ -169,6 +197,7 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
       setStatus('idle');
       onRecorded(resolvedPath, meta);
     } catch (_error) {
+      detachRecordBackListener();
       setStatus('idle');
       Alert.alert('Error', 'Unable to stop recording');
     }
@@ -180,7 +209,7 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
     }
 
     if (status === 'paused') {
-      return t(T.VOICE_PAUSED_AT, {seconds: elapsedSec});
+      return t(T.VOICE_PAUSED_AT, { seconds: elapsedSec });
     }
 
     return t(T.VOICE_TAP_TO_RECORD);
@@ -236,7 +265,9 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
             status !== 'idle' && styles.controlButtonDisabled,
           ]}
         >
-          <BaseText style={styles.controlButtonText}>{t(T.COMMON_RECORD)}</BaseText>
+          <BaseText style={styles.controlButtonText}>
+            {t(T.COMMON_RECORD)}
+          </BaseText>
         </Pressable>
         <Pressable
           onPress={pauseOrResumeRecording}
@@ -258,7 +289,9 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
             status === 'idle' && styles.controlButtonDisabled,
           ]}
         >
-          <BaseText style={styles.controlButtonText}>{t(T.COMMON_STOP)}</BaseText>
+          <BaseText style={styles.controlButtonText}>
+            {t(T.COMMON_STOP)}
+          </BaseText>
         </Pressable>
       </View>
     </View>

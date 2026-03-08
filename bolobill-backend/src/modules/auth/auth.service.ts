@@ -18,7 +18,7 @@ export const authService = {
     name: string;
     phone: string;
     pin: string;
-    accountType?: 'personal' | 'shop';
+    accountType?: 'personal' | 'business';
   }) {
     const existing = await UserModel.findOne({phone: input.phone});
     if (existing) {

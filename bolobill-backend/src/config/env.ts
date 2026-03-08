@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(8, 'JWT_SECRET must be at least 8 chars'),
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
   BASE_URL: z.string().url().default('http://localhost:3011'),
+  ALLOW_X_USER_ID_AUTH: z.coerce.boolean().default(true),
 });
 
 export const env = envSchema.parse(process.env);

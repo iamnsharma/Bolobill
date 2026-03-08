@@ -1,26 +1,28 @@
-import {VerifyOtpPayload, VerifyOtpResponse} from '../types/auth.types';
-
-const wait = (ms: number) =>
-  new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
+import {privateClient} from '../clients/privateClient';
+import {ENDPOINTS} from '../endpoints';
+import {RegisterPayload, VerifyOtpPayload, VerifyOtpResponse} from '../types/auth.types';
 
 export const authService = {
-  sendOtp: async () => {
-    await wait(500);
-    return {success: true};
+  sendOtp: async (phone: string) => {
+    const response = await privateClient.post<{message: string}>(ENDPOINTS.AUTH_SEND_OTP, {
+      phone,
+    });
+    return response.data;
   },
-  verifyOtp: async (payload: VerifyOtpPayload): Promise<VerifyOtpResponse> => {
-    await wait(700);
 
-    return {
-      token: `demo-token-${payload.phone}`,
-      user: {
-        id: `${Date.now()}`,
-        phone: payload.phone,
-        name: payload.name,
-        accountType: payload.accountType,
-      },
-    };
+  register: async (payload: RegisterPayload): Promise<VerifyOtpResponse> => {
+    const response = await privateClient.post<VerifyOtpResponse>(
+      ENDPOINTS.AUTH_REGISTER,
+      payload,
+    );
+    return response.data;
+  },
+
+  verifyOtp: async (payload: VerifyOtpPayload): Promise<VerifyOtpResponse> => {
+    const response = await privateClient.post<VerifyOtpResponse>(ENDPOINTS.AUTH_VERIFY_OTP, {
+      phone: payload.phone,
+      otp: payload.otp,
+    });
+    return response.data;
   },
 };

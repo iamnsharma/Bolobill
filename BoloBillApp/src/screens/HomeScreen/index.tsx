@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {Alert, Image, Pressable, ScrollView, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Share, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {BaseButton, BaseText} from '../../components/atoms';
@@ -9,11 +9,11 @@ import {T} from '../../lang/constants';
 import downloadIcon from '../../assets/icons/download.png';
 import previewIcon from '../../assets/icons/preview.png';
 import shareIcon from '../../assets/icons/share.png';
-import {mockInvoices} from '../../utils/mockInvoices';
+import {useInvoices} from '../../hooks/apiHooks';
 
 type Props = {
   navigation: {
-    navigate: (route: string) => void;
+    navigate: (route: string, params?: Record<string, unknown>) => void;
   };
 };
 
@@ -21,7 +21,31 @@ export const HomeScreen = ({navigation}: Props) => {
   const {t} = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
-  const recentInvoices = useMemo(() => mockInvoices.slice(0, 5), []);
+  const invoicesQuery = useInvoices();
+  const recentInvoices = useMemo(
+    () => (invoicesQuery.data?.invoices ?? []).slice(0, 5),
+    [invoicesQuery.data?.invoices],
+  );
+  const thisMonthCount = useMemo(() => {
+    const now = new Date();
+    return (invoicesQuery.data?.invoices ?? []).filter(invoice => {
+      const created = new Date(invoice.createdAt);
+      return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+    }).length;
+  }, [invoicesQuery.data?.invoices]);
+
+  const openPdf = async (pdfUrl?: string) => {
+    if (!pdfUrl) {
+      Alert.alert('BoloBill', 'PDF is not available yet.');
+      return;
+    }
+    const canOpen = await Linking.canOpenURL(pdfUrl);
+    if (!canOpen) {
+      Alert.alert('BoloBill', 'Unable to open PDF URL.');
+      return;
+    }
+    await Linking.openURL(pdfUrl);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -48,7 +72,7 @@ export const HomeScreen = ({navigation}: Props) => {
             <BaseText style={styles.statLabel}>
               {t(T.HOME_STAT_INVOICES_THIS_MONTH)}
             </BaseText>
-            <BaseText style={styles.statValue}>7 / 50</BaseText>
+            <BaseText style={styles.statValue}>{thisMonthCount}</BaseText>
           </View>
           <View style={styles.statCard}>
             <BaseText style={styles.statLabel}>{t(T.HOME_STAT_ACCOUNT)}</BaseText>
@@ -67,22 +91,23 @@ export const HomeScreen = ({navigation}: Props) => {
           </Pressable>
         </View>
 
+        {invoicesQuery.isLoading ? (
+          <View style={styles.statCard}>
+            <ActivityIndicator color={theme.colors.primary} />
+          </View>
+        ) : null}
+
         {recentInvoices.map(invoice => (
-          <View key={invoice.id} style={styles.invoiceCard}>
+          <View key={invoice.id ?? invoice.invoiceId} style={styles.invoiceCard}>
             <View style={styles.invoiceLeft}>
-              <BaseText style={styles.invoiceName}>{invoice.pdfName}</BaseText>
+              <BaseText style={styles.invoiceName}>{`invoice_${invoice.invoiceId}.pdf`}</BaseText>
               <BaseText style={styles.invoiceMeta}>
-                {invoice.id} | Rs {invoice.amount}
+                {invoice.invoiceId} | Rs {invoice.total}
               </BaseText>
             </View>
             <View style={styles.invoiceActions}>
               <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    t(T.COMMON_DOWNLOAD),
-                    `${t(T.COMMON_DOWNLOAD)} ${invoice.pdfName}`,
-                  )
-                }
+                onPress={() => openPdf(invoice.pdfUrl)}
                 style={styles.iconBtn}
               >
                 <Image
@@ -92,9 +117,7 @@ export const HomeScreen = ({navigation}: Props) => {
                 />
               </Pressable>
               <Pressable
-                onPress={() =>
-                  Alert.alert(t(T.COMMON_PREVIEW), `${t(T.COMMON_PREVIEW)} ${invoice.id}`)
-                }
+                onPress={() => navigation.navigate('InvoicePreview', {invoice})}
                 style={styles.iconBtn}
               >
                 <Image
@@ -104,9 +127,7 @@ export const HomeScreen = ({navigation}: Props) => {
                 />
               </Pressable>
               <Pressable
-                onPress={() =>
-                  Alert.alert(t(T.COMMON_SHARE), `${t(T.COMMON_SHARE)} ${invoice.pdfName}`)
-                }
+                onPress={() => Share.share({message: invoice.pdfUrl || invoice.invoiceId})}
                 style={styles.iconBtn}
               >
                 <Image

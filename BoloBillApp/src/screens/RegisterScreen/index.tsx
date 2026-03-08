@@ -20,19 +20,19 @@ type Props = {
 
 export const RegisterScreen = ({ navigation, route }: Props) => {
   const theme = useThemeStore(s => s.theme);
-  const loginWithOtp = useAuthStore(s => s.loginWithOtp);
+  const register = useAuthStore(s => s.register);
   const isLoading = useAuthStore(s => s.isLoading);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const [phone, setPhone] = useState(route?.params?.phone ?? '');
   const [name, setName] = useState('');
-  const [otp, setOtp] = useState('');
+  const [pin, setPin] = useState('');
 
   const onVerifyAndContinue = async () => {
-    await loginWithOtp({
+    await register({
       phone,
       name,
-      otp,
+      pin,
       accountType: 'business',
     });
   };
@@ -56,8 +56,8 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
         />
         <BaseInput
           label={t(T.AUTH_OTP)}
-          value={otp}
-          onChangeText={setOtp}
+          value={pin}
+          onChangeText={setPin}
           keyboardType="number-pad"
           maxLength={6}
         />
@@ -67,7 +67,7 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
           onPress={onVerifyAndContinue}
           loading={isLoading}
           disabled={
-            phone.length < 10 || name.trim().length < 2 || otp.length < 4
+            phone.length < 10 || name.trim().length < 2 || pin.length < 4
           }
         />
 

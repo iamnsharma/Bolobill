@@ -1,20 +1,36 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BaseInput, BaseText } from '../../components/atoms';
 import downloadIcon from '../../assets/icons/download.png';
 import previewIcon from '../../assets/icons/preview.png';
-import shareIcon from '../../assets/icons/share.png';
+import deleteIcon from '../../assets/icons/delete.png';
 import { useThemeStore } from '../../stores';
-import { mockInvoices } from '../../utils/mockInvoices';
+import { useDeleteInvoiceById, useInvoices } from '../../hooks/apiHooks';
 import { getStyles } from './style';
 import { T } from '../../lang/constants';
 
-export const InvoiceHistoryScreen = () => {
+type Props = {
+  navigation: {
+    navigate: (route: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export const InvoiceHistoryScreen = ({navigation}: Props) => {
   const { t } = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const invoicesQuery = useInvoices();
+  const deleteInvoiceMutation = useDeleteInvoiceById();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<
     'all' | 'today' | 'yesterday' | 'older'
@@ -22,10 +38,20 @@ export const InvoiceHistoryScreen = () => {
 
   const filteredInvoices = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const invoices = invoicesQuery.data?.invoices ?? [];
+    const now = new Date();
+    const startToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const startYesterday = new Date(startToday);
+    startYesterday.setDate(startYesterday.getDate() - 1);
 
-    return mockInvoices.filter(invoice => {
-      const isToday = invoice.createdAt.toLowerCase().includes('today');
-      const isYesterday = invoice.createdAt.toLowerCase().includes('yesterday');
+    return invoices.filter(invoice => {
+      const created = new Date(invoice.createdAt);
+      const isToday = created >= startToday;
+      const isYesterday = created >= startYesterday && created < startToday;
       const isOlder = !isToday && !isYesterday;
 
       const matchesDate =
@@ -38,11 +64,47 @@ export const InvoiceHistoryScreen = () => {
         return matchesDate;
       }
 
-      const searchable =
-        `${invoice.id} ${invoice.pdfName} ${invoice.customerName}`.toLowerCase();
+      const searchable = `${invoice.id ?? ''} ${invoice.invoiceId} ${
+        invoice.voiceTranscript
+      }`.toLowerCase();
       return matchesDate && searchable.includes(normalizedQuery);
     });
-  }, [dateFilter, searchQuery]);
+  }, [dateFilter, invoicesQuery.data?.invoices, searchQuery]);
+
+  const openPdf = async (pdfUrl?: string) => {
+    if (!pdfUrl) {
+      Alert.alert('BoloBill', 'PDF is not available yet.');
+      return;
+    }
+    const canOpen = await Linking.canOpenURL(pdfUrl);
+    if (!canOpen) {
+      Alert.alert('BoloBill', 'Unable to open PDF URL.');
+      return;
+    }
+    await Linking.openURL(pdfUrl);
+  };
+
+  const onDeleteInvoice = (id?: string) => {
+    if (!id) {
+      Alert.alert('BoloBill', 'Invoice id not found');
+      return;
+    }
+    Alert.alert('BoloBill', 'Delete this invoice?', [
+      {text: t(T.COMMON_CANCEL), style: 'cancel'},
+      {
+        text: t(T.COMMON_DELETE),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteInvoiceMutation.mutateAsync(id);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to delete invoice';
+            Alert.alert('BoloBill', message);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
@@ -88,25 +150,31 @@ export const InvoiceHistoryScreen = () => {
           </View>
         </View>
 
+        {invoicesQuery.isLoading ? (
+          <View style={styles.emptyCard}>
+            <ActivityIndicator color={theme.colors.primary} />
+          </View>
+        ) : null}
+
         {filteredInvoices.map(invoice => (
-          <View key={invoice.id} style={styles.invoiceCard}>
+          <View
+            key={invoice.id ?? invoice.invoiceId}
+            style={styles.invoiceCard}
+          >
             <View style={styles.invoiceLeft}>
-              <BaseText style={styles.invoiceName}>{invoice.pdfName}</BaseText>
+              <BaseText
+                style={styles.invoiceName}
+              >{`invoice_${invoice.invoiceId}.pdf`}</BaseText>
               <BaseText style={styles.invoiceMeta}>
-                {invoice.customerName} | {invoice.createdAt}
+                {new Date(invoice.createdAt).toLocaleString('en-IN')}
               </BaseText>
               <BaseText style={styles.invoiceMeta}>
-                {invoice.id} | Rs {invoice.amount}
+                {invoice.invoiceId} | Rs {invoice.total}
               </BaseText>
             </View>
             <View style={styles.invoiceActions}>
               <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    t(T.COMMON_DOWNLOAD),
-                    `${t(T.COMMON_DOWNLOAD)} ${invoice.pdfName}`,
-                  )
-                }
+                onPress={() => openPdf(invoice.pdfUrl)}
                 style={styles.iconBtn}
               >
                 <Image
@@ -116,12 +184,7 @@ export const InvoiceHistoryScreen = () => {
                 />
               </Pressable>
               <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    t(T.COMMON_PREVIEW),
-                    `${t(T.COMMON_PREVIEW)} ${invoice.id}`,
-                  )
-                }
+                onPress={() => navigation.navigate('InvoicePreview', {invoice})}
                 style={styles.iconBtn}
               >
                 <Image
@@ -131,16 +194,11 @@ export const InvoiceHistoryScreen = () => {
                 />
               </Pressable>
               <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    t(T.COMMON_SHARE),
-                    `${t(T.COMMON_SHARE)} ${invoice.pdfName}`,
-                  )
-                }
+                onPress={() => onDeleteInvoice(invoice.id)}
                 style={styles.iconBtn}
               >
                 <Image
-                  source={shareIcon}
+                  source={deleteIcon}
                   style={styles.actionIcon}
                   resizeMode="contain"
                 />
