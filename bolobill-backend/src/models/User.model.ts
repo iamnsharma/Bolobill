@@ -3,6 +3,7 @@ import mongoose, {InferSchemaType} from 'mongoose';
 const userSchema = new mongoose.Schema(
   {
     name: {type: String, required: true, trim: true},
+    businessName: {type: String, trim: true, default: ''},
     phone: {type: String, required: true, unique: true, index: true},
     pinHash: {type: String, required: true},
     accountType: {type: String, enum: ['personal', 'business'], default: 'personal'},

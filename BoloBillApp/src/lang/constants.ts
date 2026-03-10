@@ -49,6 +49,7 @@ export const T = {
   AUTH_ACCOUNT_TYPE: 't.auth.accountType',
   AUTH_PERSONAL: 't.auth.personal',
   AUTH_BUSINESS: 't.auth.business',
+  AUTH_BUSINESS_BRANCH_NAME: 't.auth.businessBranchName',
   AUTH_SHOP: 't.auth.shop',
   AUTH_OTP: 't.auth.otp',
   AUTH_SEND_OTP: 't.auth.sendOtp',

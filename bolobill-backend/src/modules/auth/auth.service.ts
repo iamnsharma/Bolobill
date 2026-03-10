@@ -16,6 +16,7 @@ export const authService = {
 
   async register(input: {
     name: string;
+    businessName?: string;
     phone: string;
     pin: string;
     accountType?: 'personal' | 'business';
@@ -28,6 +29,7 @@ export const authService = {
     const pinHash = await bcrypt.hash(input.pin, 10);
     const user = await UserModel.create({
       name: input.name,
+      businessName: input.businessName?.trim() ?? '',
       phone: input.phone,
       pinHash,
       accountType: input.accountType ?? 'personal',

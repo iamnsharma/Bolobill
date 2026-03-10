@@ -7,11 +7,13 @@ const itemSchema = z.object({
 });
 
 export const manualInvoiceSchema = z.object({
+  customerName: z.string().trim().min(1).optional(),
   items: z.array(itemSchema).min(1),
   note: z.string().optional(),
 });
 
 export const updateInvoiceSchema = z.object({
+  customerName: z.string().trim().min(1).optional(),
   items: z.array(itemSchema).min(1).optional(),
   voiceTranscript: z.string().optional(),
 });

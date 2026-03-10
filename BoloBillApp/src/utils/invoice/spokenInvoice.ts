@@ -67,6 +67,7 @@ export const parseSpokenInvoiceText = (
 
   return {
     invoiceId: `VOICE-${Date.now()}`,
+    customerName: 'Customer',
     items,
     total,
     voiceTranscript: spokenText.trim(),

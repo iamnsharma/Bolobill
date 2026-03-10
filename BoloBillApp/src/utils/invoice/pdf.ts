@@ -12,7 +12,7 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-export const generateInvoicePdf = async (
+const buildInvoiceHtml = (
   invoice: CreateInvoiceFromVoiceResponse,
   user?: AuthUser,
 ) => {
@@ -40,7 +40,7 @@ export const generateInvoicePdf = async (
     ? escapeHtml(invoice.voiceTranscript).replace(/\n/g, '<br />')
     : 'No transcript available';
 
-  const html = `
+  return `
     <html>
       <head>
         <meta charset="utf-8" />
@@ -108,16 +108,32 @@ export const generateInvoicePdf = async (
       </body>
     </html>
   `;
+};
 
+const generateInvoicePdfFile = async (invoice: CreateInvoiceFromVoiceResponse, user?: AuthUser) => {
   const fileName = `bolobill-${invoice.invoiceId}`;
+  const html = buildInvoiceHtml(invoice, user);
   const result = await generatePDF({
     html,
     fileName,
     directory: 'Documents',
   });
 
-  if (Platform.OS !== 'android' || !result.filePath) {
-    return result.filePath;
+  return {fileName, filePath: result.filePath};
+};
+
+export const createInvoicePdfForDownload = async (
+  invoice: CreateInvoiceFromVoiceResponse,
+  user?: AuthUser,
+) => {
+  const {fileName, filePath} = await generateInvoicePdfFile(invoice, user);
+
+  if (!filePath) {
+    return null;
+  }
+
+  if (Platform.OS !== 'android') {
+    return filePath;
   }
 
   try {
@@ -127,10 +143,18 @@ export const generateInvoicePdf = async (
         mimeType: 'application/pdf',
       } as never,
       'Download',
-      result.filePath,
+      filePath,
     );
     return mediaUri;
   } catch (_error) {
-    return result.filePath;
+    return filePath;
   }
+};
+
+export const createInvoicePdfForShare = async (
+  invoice: CreateInvoiceFromVoiceResponse,
+  user?: AuthUser,
+) => {
+  const {filePath} = await generateInvoicePdfFile(invoice, user);
+  return filePath;
 };

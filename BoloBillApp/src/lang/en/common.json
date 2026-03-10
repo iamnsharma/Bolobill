@@ -58,6 +58,7 @@
       "accountType": "Account Type",
       "personal": "Personal",
       "business": "Business",
+      "businessBranchName": "Business / Branch Name",
       "shop": "Shop",
       "otp": "OTP",
       "sendOtp": "Send OTP",

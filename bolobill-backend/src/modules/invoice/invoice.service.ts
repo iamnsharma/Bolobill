@@ -84,6 +84,7 @@ export const invoiceService = {
     userId: string;
     audioPath: string;
     language?: string;
+    customerName?: string;
   }) {
     const user = await UserModel.findById(input.userId);
     if (!user) {
@@ -96,12 +97,14 @@ export const invoiceService = {
       throw new ApiError(422, 'Unable to parse items from transcript');
     }
     const localizedItems = await localizeItemNamesByLanguage(items, input.language);
+    const billToName = input.customerName?.trim() || 'Customer';
 
     const invoiceId = createInvoiceId();
     const pdf = await generateInvoicePdf({
       invoiceId,
       customerName: user.name,
       customerPhone: user.phone,
+      billToName,
       items: localizedItems,
       total,
       transcript,
@@ -110,6 +113,7 @@ export const invoiceService = {
     const invoice = await InvoiceModel.create({
       userId: user._id,
       invoiceId,
+      customerName: billToName,
       items: localizedItems,
       total,
       voiceTranscript: transcript,
@@ -122,6 +126,7 @@ export const invoiceService = {
 
   async createManualInvoice(input: {
     userId: string;
+    customerName?: string;
     items: InvoiceItemInput[];
     note?: string;
   }) {
@@ -133,11 +138,13 @@ export const invoiceService = {
     const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
     const invoiceId = createInvoiceId();
     const transcript = input.note ?? '';
+    const billToName = input.customerName?.trim() || 'Customer';
 
     const pdf = await generateInvoicePdf({
       invoiceId,
       customerName: user.name,
       customerPhone: user.phone,
+      billToName,
       items: input.items,
       total,
       transcript,
@@ -146,6 +153,7 @@ export const invoiceService = {
     const invoice = await InvoiceModel.create({
       userId: user._id,
       invoiceId,
+      customerName: billToName,
       items: input.items,
       total,
       voiceTranscript: transcript,
@@ -177,7 +185,7 @@ export const invoiceService = {
   async updateInvoice(
     userId: string,
     id: string,
-    payload: {items?: InvoiceItemInput[]; voiceTranscript?: string},
+    payload: {customerName?: string; items?: InvoiceItemInput[]; voiceTranscript?: string},
   ) {
     const invoice = await InvoiceModel.findOne({_id: id, userId});
     if (!invoice) {
@@ -191,6 +199,9 @@ export const invoiceService = {
     if (payload.voiceTranscript !== undefined) {
       invoice.voiceTranscript = payload.voiceTranscript;
     }
+    if (payload.customerName?.trim()) {
+      invoice.customerName = payload.customerName.trim();
+    }
 
     const user = await UserModel.findById(userId);
     if (!user) {
@@ -201,6 +212,7 @@ export const invoiceService = {
       invoiceId: invoice.invoiceId,
       customerName: user.name,
       customerPhone: user.phone,
+      billToName: invoice.customerName || 'Customer',
       items: invoice.items as unknown as InvoiceItemInput[],
       total: invoice.total,
       transcript: invoice.voiceTranscript,
@@ -227,6 +239,7 @@ export const invoiceService = {
     const invoice = await this.getInvoiceById(userId, id);
     return {
       invoiceId: invoice.invoiceId,
+      customerName: invoice.customerName,
       items: invoice.items,
       total: invoice.total,
       voiceTranscript: invoice.voiceTranscript,

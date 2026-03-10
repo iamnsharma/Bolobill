@@ -19,6 +19,7 @@ export const invoiceService = {
       name: 'voice.m4a',
     } as never);
     formData.append('language', payload.language ?? 'hi');
+    formData.append('customerName', payload.customerName);
     if (payload.durationSec && payload.durationSec > 0) {
       formData.append('durationSec', String(payload.durationSec));
     }

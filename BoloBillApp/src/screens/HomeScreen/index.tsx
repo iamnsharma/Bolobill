@@ -1,15 +1,16 @@
 import React, {useMemo} from 'react';
-import {ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Share, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {BaseButton, BaseText} from '../../components/atoms';
-import {useThemeStore} from '../../stores';
+import {useAuthStore, useThemeStore} from '../../stores';
 import {getStyles} from './style';
 import {T} from '../../lang/constants';
 import downloadIcon from '../../assets/icons/download.png';
 import previewIcon from '../../assets/icons/preview.png';
 import shareIcon from '../../assets/icons/share.png';
 import {useInvoices} from '../../hooks/apiHooks';
+import {createInvoicePdfForDownload, createInvoicePdfForShare} from '../../utils/invoice/pdf';
 
 type Props = {
   navigation: {
@@ -21,6 +22,7 @@ export const HomeScreen = ({navigation}: Props) => {
   const {t} = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const user = useAuthStore(s => s.user);
   const invoicesQuery = useInvoices();
   const recentInvoices = useMemo(
     () => (invoicesQuery.data?.invoices ?? []).slice(0, 5),
@@ -34,17 +36,43 @@ export const HomeScreen = ({navigation}: Props) => {
     }).length;
   }, [invoicesQuery.data?.invoices]);
 
-  const openPdf = async (pdfUrl?: string) => {
-    if (!pdfUrl) {
-      Alert.alert('BoloBill', 'PDF is not available yet.');
+  const onDownloadInvoice = async (invoice: (typeof recentInvoices)[number]) => {
+    try {
+      const downloadUri = await createInvoicePdfForDownload(invoice, user);
+      if (!downloadUri) {
+        Alert.alert('BoloBill', 'Failed to create PDF.');
+        return;
+      }
+      Alert.alert('BoloBill', 'PDF saved to your Downloads folder.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to download PDF';
+      Alert.alert('BoloBill', message);
+    }
+  };
+
+  const onShareInvoice = async (invoice: (typeof recentInvoices)[number]) => {
+    try {
+      const filePath = await createInvoicePdfForShare(invoice, user);
+      if (!filePath) {
+        Alert.alert('BoloBill', 'Failed to create PDF.');
+        return;
+      }
+      await Share.share({
+        title: `Invoice ${invoice.invoiceId}`,
+        url: `file://${filePath}`,
+        message: `Invoice ${invoice.invoiceId}`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to share PDF';
+      Alert.alert('BoloBill', message);
+    }
+  };
+
+  const onPreviewInvoice = (invoice: (typeof recentInvoices)[number]) => {
+    if (!invoice) {
       return;
     }
-    const canOpen = await Linking.canOpenURL(pdfUrl);
-    if (!canOpen) {
-      Alert.alert('BoloBill', 'Unable to open PDF URL.');
-      return;
-    }
-    await Linking.openURL(pdfUrl);
+    navigation.navigate('InvoicePreview', {invoice});
   };
 
   return (
@@ -107,7 +135,7 @@ export const HomeScreen = ({navigation}: Props) => {
             </View>
             <View style={styles.invoiceActions}>
               <Pressable
-                onPress={() => openPdf(invoice.pdfUrl)}
+                onPress={() => onDownloadInvoice(invoice)}
                 style={styles.iconBtn}
               >
                 <Image
@@ -117,7 +145,7 @@ export const HomeScreen = ({navigation}: Props) => {
                 />
               </Pressable>
               <Pressable
-                onPress={() => navigation.navigate('InvoicePreview', {invoice})}
+                onPress={() => onPreviewInvoice(invoice)}
                 style={styles.iconBtn}
               >
                 <Image
@@ -127,7 +155,7 @@ export const HomeScreen = ({navigation}: Props) => {
                 />
               </Pressable>
               <Pressable
-                onPress={() => Share.share({message: invoice.pdfUrl || invoice.invoiceId})}
+                onPress={() => onShareInvoice(invoice)}
                 style={styles.iconBtn}
               >
                 <Image
@@ -139,6 +167,17 @@ export const HomeScreen = ({navigation}: Props) => {
             </View>
           </View>
         ))}
+
+        {!invoicesQuery.isLoading && recentInvoices.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <BaseText style={styles.emptyTitle}>
+              {t(T.INVOICE_HISTORY_EMPTY_TITLE)}
+            </BaseText>
+            <BaseText style={styles.emptySubtitle}>
+              {t(T.INVOICE_HISTORY_EMPTY_DESC)}
+            </BaseText>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

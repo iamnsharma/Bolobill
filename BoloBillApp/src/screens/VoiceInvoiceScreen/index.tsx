@@ -27,7 +27,7 @@ import {
 } from '../../services/api/types/invoice.types';
 import editIcon from '../../assets/icons/edit.png';
 import deleteIcon from '../../assets/icons/delete.png';
-import closeIcon from '../../assets/icons/close.png';
+import menuIcon from '../../assets/icons/menu.png';
 
 type Props = {
   navigation: {
@@ -55,6 +55,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const [manualPrice, setManualPrice] = useState('');
   const [manualItems, setManualItems] = useState<InvoiceItem[]>([]);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [customerName, setCustomerName] = useState('');
 
   const formatIstTime = (isoTime: string) =>
     new Date(isoTime).toLocaleTimeString('en-IN', {
@@ -75,6 +76,10 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   };
 
   const onCreateInvoice = async () => {
+    if (!customerName.trim()) {
+      Alert.alert('BoloBill', 'Please enter customer name first.');
+      return;
+    }
     if (!audioUri) {
       Alert.alert('BoloBill', t(T.VOICE_TAP_TO_RECORD));
       return;
@@ -83,10 +88,19 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
     try {
       const invoice = await createInvoice.mutateAsync({
         audioUri,
+        customerName: customerName.trim(),
         language: language === 'mwr' || language === 'bgr' ? 'mixed' : language,
         durationSec: lastRecording?.durationSec ?? 0,
       });
-      setGeneratedVoiceInvoice(invoice);
+      setAudioUri(undefined);
+      setLastRecording(undefined);
+      setGeneratedVoiceInvoice(undefined);
+      setManualItemName('');
+      setManualQuantity('');
+      setManualPrice('');
+      setManualItems([]);
+      setShowManualForm(false);
+      setCustomerName('');
       navigation.navigate('InvoicePreview', { invoice });
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -133,6 +147,10 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   };
 
   const createManualInvoice = async () => {
+    if (!customerName.trim()) {
+      Alert.alert('BoloBill', 'Please enter customer name first.');
+      return;
+    }
     if (manualItems.length === 0) {
       Alert.alert('BoloBill', t(T.VOICE_ADD_ONE_ITEM));
       return;
@@ -140,9 +158,19 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
 
     try {
       const invoice = await createManualInvoiceMutation.mutateAsync({
+        customerName: customerName.trim(),
         items: manualItems,
       });
       Alert.alert('BoloBill', t(T.VOICE_MANUAL_SAVED));
+      setAudioUri(undefined);
+      setLastRecording(undefined);
+      setGeneratedVoiceInvoice(undefined);
+      setManualItemName('');
+      setManualQuantity('');
+      setManualPrice('');
+      setManualItems([]);
+      setShowManualForm(false);
+      setCustomerName('');
       navigation.navigate('InvoicePreview', {invoice});
     } catch (error) {
       const axiosError = error as AxiosError<{message?: string}>;
@@ -222,6 +250,12 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
         </View>
 
         <View style={styles.card}>
+          <BaseInput
+            label="Customer Name"
+            value={customerName}
+            onChangeText={setCustomerName}
+            placeholder="Enter customer name"
+          />
           <VoiceRecorder onRecorded={onRecorded} />
 
           {lastRecording ? (
@@ -295,7 +329,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
                   {t(T.VOICE_MANUAL_FORM_TITLE)}
                 </BaseText>
                 <Pressable onPress={closeManualForm} style={styles.savedDeleteBtn}>
-                  <Image source={closeIcon} style={styles.closeIcon} />
+                  <Image source={menuIcon} style={styles.closeIcon} />
                 </Pressable>
               </View>
               <BaseInput

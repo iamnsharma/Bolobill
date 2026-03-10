@@ -14,11 +14,13 @@ export type AuthUser = {
   id: string;
   phone: string;
   name: string;
+  businessName?: string;
   accountType: 'business' | 'personal';
 };
 
 export type RegisterPayload = {
   name: string;
+  businessName?: string;
   phone: string;
   pin: string;
   accountType?: 'business' | 'personal';

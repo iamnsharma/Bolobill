@@ -47,6 +47,7 @@ export const invoiceController = {
         userId,
         audioPath: req.file.path,
         language: req.body.language,
+        customerName: req.body.customerName,
       });
       await invoiceService.incrementUserUsage(userId, {
         invoiceRequestSuccessCount: 1,
@@ -67,6 +68,7 @@ export const invoiceController = {
 
     const invoice = await invoiceService.createManualInvoice({
       userId,
+      customerName: parsed.data.customerName,
       items: parsed.data.items,
       note: parsed.data.note,
     });

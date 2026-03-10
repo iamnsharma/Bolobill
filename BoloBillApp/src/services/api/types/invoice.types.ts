@@ -1,5 +1,6 @@
 export type CreateInvoiceFromVoicePayload = {
   audioUri: string;
+  customerName: string;
   language?: 'hi' | 'pa' | 'en' | 'mwr' | 'bgr' | 'mixed';
   durationSec?: number;
 };
@@ -13,6 +14,7 @@ export type InvoiceItem = {
 export type CreateInvoiceFromVoiceResponse = {
   id?: string;
   invoiceId: string;
+  customerName: string;
   items: InvoiceItem[];
   total: number;
   voiceTranscript: string;
@@ -24,6 +26,7 @@ export type CreateInvoiceFromVoiceResponse = {
 };
 
 export type CreateManualInvoicePayload = {
+  customerName: string;
   items: InvoiceItem[];
   note?: string;
 };

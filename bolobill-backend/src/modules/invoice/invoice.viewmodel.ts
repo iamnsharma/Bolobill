@@ -12,6 +12,7 @@ const toPdfUrl = (pdfPath: string) => {
 type InvoiceVmInput = {
   _id: {toString(): string};
   invoiceId: string;
+  customerName: string;
   items: unknown[];
   total: number;
   voiceTranscript: string;
@@ -24,6 +25,7 @@ type InvoiceVmInput = {
 export const toInvoiceVm = (invoice: InvoiceVmInput) => ({
   id: invoice._id.toString(),
   invoiceId: invoice.invoiceId,
+  customerName: invoice.customerName,
   items: invoice.items,
   total: invoice.total,
   voiceTranscript: invoice.voiceTranscript,

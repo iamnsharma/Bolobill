@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   Pressable,
   ScrollView,
   View,
@@ -14,10 +13,11 @@ import { BaseInput, BaseText } from '../../components/atoms';
 import downloadIcon from '../../assets/icons/download.png';
 import previewIcon from '../../assets/icons/preview.png';
 import deleteIcon from '../../assets/icons/delete.png';
-import { useThemeStore } from '../../stores';
+import { useAuthStore, useThemeStore } from '../../stores';
 import { useDeleteInvoiceById, useInvoices } from '../../hooks/apiHooks';
 import { getStyles } from './style';
 import { T } from '../../lang/constants';
+import {createInvoicePdfForDownload} from '../../utils/invoice/pdf';
 
 type Props = {
   navigation: {
@@ -28,6 +28,7 @@ type Props = {
 export const InvoiceHistoryScreen = ({navigation}: Props) => {
   const { t } = useTranslation();
   const theme = useThemeStore(s => s.theme);
+  const user = useAuthStore(s => s.user);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const invoicesQuery = useInvoices();
   const deleteInvoiceMutation = useDeleteInvoiceById();
@@ -71,17 +72,18 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
     });
   }, [dateFilter, invoicesQuery.data?.invoices, searchQuery]);
 
-  const openPdf = async (pdfUrl?: string) => {
-    if (!pdfUrl) {
-      Alert.alert('BoloBill', 'PDF is not available yet.');
-      return;
+  const onDownloadInvoice = async (invoice: (typeof filteredInvoices)[number]) => {
+    try {
+      const downloadUri = await createInvoicePdfForDownload(invoice, user);
+      if (!downloadUri) {
+        Alert.alert('BoloBill', 'Failed to create PDF.');
+        return;
+      }
+      Alert.alert('BoloBill', 'PDF saved to your Downloads folder.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to download PDF';
+      Alert.alert('BoloBill', message);
     }
-    const canOpen = await Linking.canOpenURL(pdfUrl);
-    if (!canOpen) {
-      Alert.alert('BoloBill', 'Unable to open PDF URL.');
-      return;
-    }
-    await Linking.openURL(pdfUrl);
   };
 
   const onDeleteInvoice = (id?: string) => {
@@ -174,7 +176,7 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
             </View>
             <View style={styles.invoiceActions}>
               <Pressable
-                onPress={() => openPdf(invoice.pdfUrl)}
+                onPress={() => onDownloadInvoice(invoice)}
                 style={styles.iconBtn}
               >
                 <Image

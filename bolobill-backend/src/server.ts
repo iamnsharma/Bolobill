@@ -4,9 +4,9 @@ import {env} from './config/env';
 
 const bootstrap = async () => {
   await connectDatabase();
-  app.listen(env.PORT, () => {
+  app.listen(env.PORT, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
-    console.log(`BoloBill backend running on http://localhost:${env.PORT}`);
+    console.log(`BoloBill backend running on http://0.0.0.0:${env.PORT}`);
   });
 };
 

@@ -58,6 +58,7 @@
       "accountType": "अकाउंट टाइप",
       "personal": "पर्सनल",
       "business": "बिज़नेस",
+      "businessBranchName": "व्यवसाय / शाखा नाम",
       "shop": "दुकान",
       "otp": "ओटीपी",
       "sendOtp": "ओटीपी भेजें",

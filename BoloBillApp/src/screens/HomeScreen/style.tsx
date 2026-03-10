@@ -125,4 +125,22 @@ export const getStyles = (theme: AppTheme) =>
       height: 17,
       tintColor: theme.colors.primary,
     },
+    emptyCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 16,
+      gap: 6,
+      alignItems: 'center',
+    },
+    emptyTitle: {
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+    },
+    emptySubtitle: {
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
   });

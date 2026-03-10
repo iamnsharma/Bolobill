@@ -13,6 +13,7 @@ const invoiceSchema = new mongoose.Schema(
   {
     userId: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true},
     invoiceId: {type: String, required: true, unique: true, index: true},
+    customerName: {type: String, required: true, trim: true, default: 'Customer'},
     items: {type: [itemSchema], required: true},
     total: {type: Number, required: true, min: 0},
     voiceTranscript: {type: String, default: ''},
