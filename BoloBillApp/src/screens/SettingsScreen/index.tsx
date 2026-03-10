@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {Alert, Pressable, ScrollView, Switch, View} from 'react-native';
+import {Alert, Image, Pressable, ScrollView, Switch, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BaseButton, BaseInput, BaseText} from '../../components/atoms';
@@ -7,8 +7,18 @@ import {useAuthStore, useLanguageStore, useThemeStore} from '../../stores';
 import {getStyles} from './style';
 import {T} from '../../lang/constants';
 import {useCreateFeedback} from '../../hooks/apiHooks';
+import crownIcon from '../../assets/icons/crown.png';
+import starterIcon from '../../assets/icons/starter.png';
+import growthIcon from '../../assets/icons/growth.png';
+import proIcon from '../../assets/icons/pro.png';
 
-export const SettingsScreen = () => {
+type Props = {
+  navigation: {
+    navigate: (route: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export const SettingsScreen = ({navigation}: Props) => {
   const {t} = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const isDark = useThemeStore(s => s.isDark);
@@ -16,6 +26,7 @@ export const SettingsScreen = () => {
   const language = useLanguageStore(s => s.language);
   const setLanguage = useLanguageStore(s => s.setLanguage);
   const user = useAuthStore(s => s.user);
+  const isGuest = useAuthStore(s => s.isGuest);
   const logout = useAuthStore(s => s.logout);
   const feedbackMutation = useCreateFeedback();
   const [profileType, setProfileType] = useState<'personal' | 'business'>(
@@ -32,6 +43,19 @@ export const SettingsScreen = () => {
     () => businessDisplayName.charAt(0).toUpperCase(),
     [businessDisplayName],
   );
+  const hasActiveSubscription = Boolean(user?.membershipPlan);
+  const planIcon = useMemo(() => {
+    if (user?.membershipPlan === 'Starter') {
+      return starterIcon;
+    }
+    if (user?.membershipPlan === 'Growth') {
+      return growthIcon;
+    }
+    if (user?.membershipPlan === 'Pro') {
+      return proIcon;
+    }
+    return undefined;
+  }, [user?.membershipPlan]);
   const languageOptions = useMemo(
     () => [
       {code: 'en' as const, label: 'English'},
@@ -42,23 +66,9 @@ export const SettingsScreen = () => {
     ],
     [],
   );
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.walletHero}>
-          <View style={styles.walletHeaderRow}>
-            <BaseText style={styles.walletTitle}>Business Wallet</BaseText>
-            <View style={styles.walletBadge}>
-              <BaseText style={styles.walletBadgeText}>LIVE</BaseText>
-            </View>
-          </View>
-          <BaseText style={styles.walletAmount}>Rs 0.00</BaseText>
-          <BaseText style={styles.walletSubtitle}>
-            Highlight area for credits, usage and billing controls.
-          </BaseText>
-        </View>
-
         <View style={styles.section}>
           <View style={styles.profileHeader}>
             <View style={styles.profileAvatar}>
@@ -117,18 +127,54 @@ export const SettingsScreen = () => {
                 ? t(T.SETTINGS_PERSONAL_PROFILE)
                 : t(T.SETTINGS_BUSINESS_PROFILE)}
             </BaseText>
+            <View style={styles.businessWalletHeaderRow}>
+              <View style={styles.businessWalletTitleWrap}>
+                <BaseText style={styles.businessWalletName}>{businessDisplayName}</BaseText>
+                <BaseText style={styles.businessWalletPlanLabel}>
+                  {hasActiveSubscription
+                    ? `Plan: ${user?.membershipPlan}`
+                    : 'No active membership'}
+                </BaseText>
+              </View>
+              {hasActiveSubscription && planIcon ? (
+                <View style={styles.businessWalletIconWrap}>
+                  <Image source={planIcon} style={styles.businessWalletIcon} resizeMode="contain" />
+                </View>
+              ) : null}
+            </View>
+            {hasActiveSubscription ? (
+              <View style={styles.businessWalletMetaRow}>
+                <BaseText style={styles.businessWalletMetaText}>
+                  {`Invoice credits left: ${user?.invoiceCreditsLeft ?? 0}`}
+                </BaseText>
+                <BaseText style={styles.businessWalletMetaText}>
+                  {`Voice minutes left: ${user?.voiceMinutesLeft ?? 0}`}
+                </BaseText>
+              </View>
+            ) : null}
             <BaseText style={styles.profileInfoText}>
               {profileType === 'personal'
                 ? t(T.SETTINGS_PERSONAL_PROFILE_DESC)
                 : t(T.SETTINGS_BUSINESS_PROFILE_DESC)}
             </BaseText>
-            <View style={styles.profileFieldRow}>
-              <BaseText style={styles.profileFieldLabel}>Business / Shop Name:</BaseText>
-              <BaseText style={styles.profileFieldValue}>
-                {businessDisplayName || '-'}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Pressable
+            onPress={() => navigation.navigate('Membership')}
+            style={styles.membershipEntryCard}>
+            <View style={styles.membershipEntryIconWrap}>
+              <Image source={crownIcon} style={styles.membershipEntryIcon} resizeMode="contain" />
+            </View>
+            <View style={styles.membershipEntryTextWrap}>
+              <BaseText style={styles.membershipEntryTitle}>Membership Plans</BaseText>
+              <BaseText style={styles.membershipEntrySubtitle}>
+                Starter, Growth and Pro plans
               </BaseText>
             </View>
-          </View>
+            <BaseText style={styles.membershipEntryAction}>Open</BaseText>
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -228,6 +274,10 @@ export const SettingsScreen = () => {
               <BaseButton
                 title={feedbackMutation.isPending ? 'Sending...' : 'Send Feedback'}
                 onPress={async () => {
+                  if (isGuest) {
+                    Alert.alert('BoloBill', 'Please login to send feedback.');
+                    return;
+                  }
                   const message = feedbackMessage.trim();
                   if (message.length < 5) {
                     Alert.alert('BoloBill', 'Please enter at least 5 characters.');
@@ -251,7 +301,19 @@ export const SettingsScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <BaseButton title={t(T.AUTH_LOGOUT)} onPress={logout} />
+          <BaseButton
+            title={isGuest ? 'Exit Guest Mode' : t(T.AUTH_LOGOUT)}
+            onPress={() =>
+              Alert.alert(
+                'BoloBill',
+                isGuest ? 'Exit guest mode and go to login?' : 'Are you sure you want to logout?',
+                [
+                  {text: t(T.COMMON_CANCEL), style: 'cancel'},
+                  {text: t(T.AUTH_LOGOUT), style: 'destructive', onPress: logout},
+                ],
+              )
+            }
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

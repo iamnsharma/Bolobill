@@ -19,7 +19,7 @@ import {
   useCreateManualInvoice,
   useCreateVoiceInvoice,
 } from '../../hooks/apiHooks';
-import { useLanguageStore, useThemeStore } from '../../stores';
+import { useAuthStore, useLanguageStore, useThemeStore } from '../../stores';
 import { getStyles } from './style';
 import {
   CreateInvoiceFromVoiceResponse,
@@ -39,6 +39,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   const theme = useThemeStore(s => s.theme);
   const language = useLanguageStore(s => s.language);
+  const isGuest = useAuthStore(s => s.isGuest);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const createInvoice = useCreateVoiceInvoice();
   const createManualInvoiceMutation = useCreateManualInvoice();
@@ -76,6 +77,10 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   };
 
   const onCreateInvoice = async () => {
+    if (isGuest) {
+      Alert.alert('BoloBill', 'Guest mode is explore-only. Please login to create invoices.');
+      return;
+    }
     if (!customerName.trim()) {
       Alert.alert('BoloBill', 'Please enter customer name first.');
       return;
@@ -147,6 +152,10 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   };
 
   const createManualInvoice = async () => {
+    if (isGuest) {
+      Alert.alert('BoloBill', 'Guest mode is explore-only. Please login to create invoices.');
+      return;
+    }
     if (!customerName.trim()) {
       Alert.alert('BoloBill', 'Please enter customer name first.');
       return;
@@ -190,6 +199,10 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
   };
 
   const openInvoiceItemDetail = () => {
+    if (isGuest) {
+      Alert.alert('BoloBill', 'Guest mode is explore-only. Please login to continue.');
+      return;
+    }
     if (!audioUri) {
       Alert.alert('BoloBill', t(T.VOICE_TAP_TO_RECORD));
       return;

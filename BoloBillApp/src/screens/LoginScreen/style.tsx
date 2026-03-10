@@ -117,4 +117,13 @@ export const getStyles = (theme: AppTheme) =>
       color: theme.colors.primary,
       fontWeight: '600',
     },
+    guestWrap: {
+      alignSelf: 'center',
+      marginTop: 4,
+    },
+    guestLink: {
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
   });

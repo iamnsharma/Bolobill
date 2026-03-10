@@ -8,6 +8,7 @@ import {useAuthStore, useThemeStore} from '../stores';
 import {SplashScreen} from '../screens/SplashScreen';
 import {InvoicePreviewScreen} from '../screens/InvoicePreviewScreen';
 import {InvoiceHistoryScreen} from '../screens/InvoiceHistoryScreen';
+import {MembershipScreen} from '../screens/MembershipScreen';
 import {T} from '../lang/constants';
 import backIcon from '../assets/icons/back.png';
 
@@ -65,6 +66,33 @@ export const AppStack = () => {
             options={({navigation}) => ({
               headerShown: true,
               title: t(T.INVOICE_HISTORY_TITLE),
+              headerStyle: {backgroundColor: theme.colors.surface},
+              headerTintColor: theme.colors.textPrimary,
+              headerShadowVisible: false,
+              headerBackTitleVisible: false,
+              // eslint-disable-next-line react/no-unstable-nested-components
+              headerLeft: () => (
+                <Pressable
+                  onPress={() => navigation.goBack()}
+                  style={styles.backBtn}>
+                  <Image
+                    source={backIcon}
+                    resizeMode="contain"
+                    style={[
+                      styles.backIcon,
+                      {tintColor: theme.colors.textPrimary},
+                    ]}
+                  />
+                </Pressable>
+              ),
+            })}
+          />
+          <Stack.Screen
+            name="Membership"
+            component={MembershipScreen}
+            options={({navigation}) => ({
+              headerShown: true,
+              title: 'Membership Plans',
               headerStyle: {backgroundColor: theme.colors.surface},
               headerTintColor: theme.colors.textPrimary,
               headerShadowVisible: false,

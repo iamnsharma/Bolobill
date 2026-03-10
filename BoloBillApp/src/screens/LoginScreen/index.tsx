@@ -18,6 +18,7 @@ export const LoginScreen = ({ navigation }: Props) => {
   const theme = useThemeStore(s => s.theme);
   const sendOtp = useAuthStore(s => s.sendOtp);
   const loginWithOtp = useAuthStore(s => s.loginWithOtp);
+  const loginAsGuest = useAuthStore(s => s.loginAsGuest);
   const isLoading = useAuthStore(s => s.isLoading);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const [phone, setPhone] = useState('');
@@ -166,6 +167,11 @@ export const LoginScreen = ({ navigation }: Props) => {
 
             <Pressable style={styles.singleLinkWrap} onPress={() => navigation.navigate('Register')}>
               <BaseText style={styles.linkRight}>New here? Register</BaseText>
+            </Pressable>
+            <Pressable
+              style={styles.guestWrap}
+              onPress={loginAsGuest}>
+              <BaseText style={styles.guestLink}>Continue as Guest (Explore Only)</BaseText>
             </Pressable>
           </View>
         </ScrollView>

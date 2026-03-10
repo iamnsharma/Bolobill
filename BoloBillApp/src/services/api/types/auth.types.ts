@@ -15,6 +15,9 @@ export type AuthUser = {
   phone: string;
   name: string;
   businessName?: string;
+  membershipPlan?: 'Starter' | 'Growth' | 'Pro';
+  invoiceCreditsLeft?: number;
+  voiceMinutesLeft?: number;
   accountType: 'business' | 'personal';
 };
 

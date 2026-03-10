@@ -8,12 +8,14 @@ type AuthState = {
   token?: string;
   user?: AuthUser;
   isLoggedIn: boolean;
+  isGuest: boolean;
   isLoading: boolean;
   isBootstrapped: boolean;
   initializeAuth: () => void;
   sendOtp: (phone: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   loginWithOtp: (payload: VerifyOtpPayload) => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => void;
 };
 
@@ -21,11 +23,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: undefined,
   user: undefined,
   isLoggedIn: false,
+  isGuest: false,
   isLoading: false,
   isBootstrapped: false,
   initializeAuth: () => {
     const token = storage.getString(STORAGE_KEYS.AUTH_TOKEN);
     const userRaw = storage.getString(STORAGE_KEYS.AUTH_USER);
+    const isGuestMode = storage.getString(STORAGE_KEYS.GUEST_MODE) === 'true';
 
     let user: AuthUser | undefined;
     if (userRaw) {
@@ -39,7 +43,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       token: token ?? undefined,
       user,
-      isLoggedIn: Boolean(token),
+      isLoggedIn: Boolean(token) || isGuestMode,
+      isGuest: isGuestMode,
       isBootstrapped: true,
     });
   },
@@ -58,12 +63,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({isLoading: true});
     try {
       const response = await authService.register(payload);
+      storage.delete(STORAGE_KEYS.GUEST_MODE);
       storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
       storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));
       set({
         token: response.token,
         user: response.user,
         isLoggedIn: true,
+        isGuest: false,
       });
     } finally {
       set({isLoading: false});
@@ -73,6 +80,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({isLoading: true});
     try {
       const response = await authService.verifyOtp(payload);
+      storage.delete(STORAGE_KEYS.GUEST_MODE);
       storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
       storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));
 
@@ -80,15 +88,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         token: response.token,
         user: response.user,
         isLoggedIn: true,
+        isGuest: false,
       });
     } finally {
       set({isLoading: false});
     }
   },
+  loginAsGuest: () => {
+    storage.delete(STORAGE_KEYS.AUTH_TOKEN);
+    storage.delete(STORAGE_KEYS.AUTH_USER);
+    storage.set(STORAGE_KEYS.GUEST_MODE, 'true');
+    set({
+      token: undefined,
+      user: undefined,
+      isLoggedIn: true,
+      isGuest: true,
+    });
+  },
   logout: () => {
     storage.delete(STORAGE_KEYS.AUTH_TOKEN);
     storage.delete(STORAGE_KEYS.AUTH_USER);
-    set({token: undefined, user: undefined, isLoggedIn: false});
+    storage.delete(STORAGE_KEYS.GUEST_MODE);
+    set({token: undefined, user: undefined, isLoggedIn: false, isGuest: false});
     get().initializeAuth();
   },
 }));

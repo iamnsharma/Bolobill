@@ -12,6 +12,8 @@ import shareIcon from '../../assets/icons/share.png';
 import {useInvoices} from '../../hooks/apiHooks';
 import {createInvoicePdfForDownload, createInvoicePdfForShare} from '../../utils/invoice/pdf';
 import {buildInvoiceFileName} from '../../utils/invoice/fileName';
+import {mockInvoices} from '../../utils/mockInvoices';
+import {CreateInvoiceFromVoiceResponse} from '../../services/api/types/invoice.types';
 
 type Props = {
   navigation: {
@@ -24,20 +26,47 @@ export const HomeScreen = ({navigation}: Props) => {
   const theme = useThemeStore(s => s.theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const user = useAuthStore(s => s.user);
-  const invoicesQuery = useInvoices();
+  const isGuest = useAuthStore(s => s.isGuest);
+  const invoicesQuery = useInvoices(!isGuest);
+  const guestInvoices = useMemo<CreateInvoiceFromVoiceResponse[]>(
+    () =>
+      mockInvoices.slice(0, 5).map((item, index) => ({
+        id: item.id,
+        invoiceId: item.id,
+        customerName: item.customerName,
+        items: [{name: 'Sample Item', quantity: '1', totalPrice: item.amount}],
+        total: item.amount,
+        voiceTranscript: '',
+        pdfUrl: '',
+        source: 'manual',
+        createdAt: new Date(Date.now() - index * 3600000).toISOString(),
+      })),
+    [],
+  );
   const recentInvoices = useMemo(
-    () => (invoicesQuery.data?.invoices ?? []).slice(0, 5),
-    [invoicesQuery.data?.invoices],
+    () => (isGuest ? guestInvoices : (invoicesQuery.data?.invoices ?? []).slice(0, 5)),
+    [guestInvoices, invoicesQuery.data?.invoices, isGuest],
   );
   const thisMonthCount = useMemo(() => {
+    if (isGuest) {
+      return guestInvoices.length;
+    }
     const now = new Date();
     return (invoicesQuery.data?.invoices ?? []).filter(invoice => {
       const created = new Date(invoice.createdAt);
       return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
     }).length;
-  }, [invoicesQuery.data?.invoices]);
+  }, [guestInvoices.length, invoicesQuery.data?.invoices, isGuest]);
+
+  const showGuestAlert = () => {
+    Alert.alert('BoloBill', 'Guest mode is explore-only. Please login to use invoice actions.');
+  };
 
   const onDownloadInvoice = async (invoice: (typeof recentInvoices)[number]) => {
+    if (isGuest) {
+      showGuestAlert();
+      return;
+    }
     try {
       const downloadUri = await createInvoicePdfForDownload(invoice, user);
       if (!downloadUri) {
@@ -52,6 +81,10 @@ export const HomeScreen = ({navigation}: Props) => {
   };
 
   const onShareInvoice = async (invoice: (typeof recentInvoices)[number]) => {
+    if (isGuest) {
+      showGuestAlert();
+      return;
+    }
     try {
       const filePath = await createInvoicePdfForShare(invoice, user);
       if (!filePath) {
@@ -70,6 +103,10 @@ export const HomeScreen = ({navigation}: Props) => {
   };
 
   const onPreviewInvoice = (invoice: (typeof recentInvoices)[number]) => {
+    if (isGuest) {
+      showGuestAlert();
+      return;
+    }
     if (!invoice) {
       return;
     }
@@ -111,16 +148,16 @@ export const HomeScreen = ({navigation}: Props) => {
 
         <BaseButton
           title={t(T.HOME_CREATE_INVOICE)}
-          onPress={() => navigation.navigate('Voice')}
+          onPress={() => (isGuest ? showGuestAlert() : navigation.navigate('Voice'))}
         />
         <View style={styles.recentHeaderRow}>
           <BaseText style={styles.sectionTitle}>{t(T.HOME_RECENT_INVOICES)}</BaseText>
-          <Pressable onPress={() => navigation.navigate('InvoiceHistory')}>
+          <Pressable onPress={() => (isGuest ? showGuestAlert() : navigation.navigate('InvoiceHistory'))}>
             <BaseText style={styles.viewAllText}>{t(T.COMMON_VIEW_ALL)}</BaseText>
           </Pressable>
         </View>
 
-        {invoicesQuery.isLoading ? (
+        {invoicesQuery.isLoading && !isGuest ? (
           <View style={styles.statCard}>
             <ActivityIndicator color={theme.colors.primary} />
           </View>
