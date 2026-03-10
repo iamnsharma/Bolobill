@@ -11,6 +11,7 @@ import previewIcon from '../../assets/icons/preview.png';
 import shareIcon from '../../assets/icons/share.png';
 import {useInvoices} from '../../hooks/apiHooks';
 import {createInvoicePdfForDownload, createInvoicePdfForShare} from '../../utils/invoice/pdf';
+import {buildInvoiceFileName} from '../../utils/invoice/fileName';
 
 type Props = {
   navigation: {
@@ -128,9 +129,9 @@ export const HomeScreen = ({navigation}: Props) => {
         {recentInvoices.map(invoice => (
           <View key={invoice.id ?? invoice.invoiceId} style={styles.invoiceCard}>
             <View style={styles.invoiceLeft}>
-              <BaseText style={styles.invoiceName}>{`invoice_${invoice.invoiceId}.pdf`}</BaseText>
+              <BaseText style={styles.invoiceName}>{buildInvoiceFileName(invoice)}</BaseText>
               <BaseText style={styles.invoiceMeta}>
-                {invoice.invoiceId} | Rs {invoice.total}
+                {invoice.customerName} | Rs {invoice.total}
               </BaseText>
             </View>
             <View style={styles.invoiceActions}>

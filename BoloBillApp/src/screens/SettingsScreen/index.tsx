@@ -2,10 +2,11 @@ import React, {useMemo, useState} from 'react';
 import {Alert, Pressable, ScrollView, Switch, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {BaseButton, BaseText} from '../../components/atoms';
+import {BaseButton, BaseInput, BaseText} from '../../components/atoms';
 import {useAuthStore, useLanguageStore, useThemeStore} from '../../stores';
 import {getStyles} from './style';
 import {T} from '../../lang/constants';
+import {useCreateFeedback} from '../../hooks/apiHooks';
 
 export const SettingsScreen = () => {
   const {t} = useTranslation();
@@ -14,11 +15,23 @@ export const SettingsScreen = () => {
   const setTheme = useThemeStore(s => s.setTheme);
   const language = useLanguageStore(s => s.language);
   const setLanguage = useLanguageStore(s => s.setLanguage);
+  const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
+  const feedbackMutation = useCreateFeedback();
   const [profileType, setProfileType] = useState<'personal' | 'business'>(
     'business',
   );
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const businessDisplayName = useMemo(
+    () => user?.businessName?.trim() || user?.name?.trim() || 'Business',
+    [user?.businessName, user?.name],
+  );
+  const businessInitial = useMemo(
+    () => businessDisplayName.charAt(0).toUpperCase(),
+    [businessDisplayName],
+  );
   const languageOptions = useMemo(
     () => [
       {code: 'en' as const, label: 'English'},
@@ -33,11 +46,24 @@ export const SettingsScreen = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.walletHero}>
+          <View style={styles.walletHeaderRow}>
+            <BaseText style={styles.walletTitle}>Business Wallet</BaseText>
+            <View style={styles.walletBadge}>
+              <BaseText style={styles.walletBadgeText}>LIVE</BaseText>
+            </View>
+          </View>
+          <BaseText style={styles.walletAmount}>Rs 0.00</BaseText>
+          <BaseText style={styles.walletSubtitle}>
+            Highlight area for credits, usage and billing controls.
+          </BaseText>
+        </View>
+
         <View style={styles.section}>
           <View style={styles.profileHeader}>
             <View style={styles.profileAvatar}>
               <BaseText style={styles.profileAvatarText}>
-                {profileType === 'personal' ? 'P' : 'B'}
+                {businessInitial}
               </BaseText>
             </View>
             <View style={styles.profileHeaderTextWrap}>
@@ -96,6 +122,12 @@ export const SettingsScreen = () => {
                 ? t(T.SETTINGS_PERSONAL_PROFILE_DESC)
                 : t(T.SETTINGS_BUSINESS_PROFILE_DESC)}
             </BaseText>
+            <View style={styles.profileFieldRow}>
+              <BaseText style={styles.profileFieldLabel}>Business / Shop Name:</BaseText>
+              <BaseText style={styles.profileFieldValue}>
+                {businessDisplayName || '-'}
+              </BaseText>
+            </View>
           </View>
         </View>
 
@@ -165,6 +197,57 @@ export const SettingsScreen = () => {
               </Pressable>
             ))}
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Pressable
+            onPress={() => setIsFeedbackOpen(value => !value)}
+            style={styles.feedbackHeader}>
+            <View style={styles.feedbackHeaderTextWrap}>
+              <BaseText style={styles.sectionTitle}>Feedback & Feature Request</BaseText>
+              <BaseText style={styles.helperText}>
+                Send what you want to improve in BoloBill.
+              </BaseText>
+            </View>
+            <BaseText style={styles.feedbackToggleText}>
+              {isFeedbackOpen ? 'Close' : 'Open'}
+            </BaseText>
+          </Pressable>
+          {isFeedbackOpen ? (
+            <>
+              <BaseInput
+                value={feedbackMessage}
+                onChangeText={setFeedbackMessage}
+                placeholder="Write your message..."
+                multiline
+                numberOfLines={4}
+                inputStyle={styles.feedbackInput}
+                textAlignVertical="top"
+                maxLength={2000}
+              />
+              <BaseButton
+                title={feedbackMutation.isPending ? 'Sending...' : 'Send Feedback'}
+                onPress={async () => {
+                  const message = feedbackMessage.trim();
+                  if (message.length < 5) {
+                    Alert.alert('BoloBill', 'Please enter at least 5 characters.');
+                    return;
+                  }
+                  try {
+                    await feedbackMutation.mutateAsync({message});
+                    setFeedbackMessage('');
+                    setIsFeedbackOpen(false);
+                    Alert.alert('BoloBill', 'Feedback sent successfully.');
+                  } catch (error) {
+                    const errMessage =
+                      error instanceof Error ? error.message : 'Failed to submit feedback';
+                    Alert.alert('BoloBill', errMessage);
+                  }
+                }}
+                disabled={feedbackMutation.isPending}
+              />
+            </>
+          ) : null}
         </View>
 
         <View style={styles.section}>

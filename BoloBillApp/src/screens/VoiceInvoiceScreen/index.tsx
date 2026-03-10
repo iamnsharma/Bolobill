@@ -101,7 +101,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
       setManualItems([]);
       setShowManualForm(false);
       setCustomerName('');
-      navigation.navigate('InvoicePreview', { invoice });
+      navigation.navigate('InvoicePreview', {invoice, editable: true});
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
       const apiMessage = axiosError.response?.data?.message;
@@ -171,7 +171,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
       setManualItems([]);
       setShowManualForm(false);
       setCustomerName('');
-      navigation.navigate('InvoicePreview', {invoice});
+      navigation.navigate('InvoicePreview', {invoice, editable: true});
     } catch (error) {
       const axiosError = error as AxiosError<{message?: string}>;
       Alert.alert(
@@ -200,7 +200,7 @@ export const VoiceInvoiceScreen = ({ navigation }: Props) => {
       return;
     }
 
-    navigation.navigate('InvoicePreview', { invoice: generatedVoiceInvoice });
+    navigation.navigate('InvoicePreview', {invoice: generatedVoiceInvoice, editable: true});
   };
 
   const deleteSavedRecording = () => {

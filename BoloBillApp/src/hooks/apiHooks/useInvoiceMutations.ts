@@ -32,7 +32,9 @@ export const useUpdateInvoiceById = () => {
       payload,
     }: {
       id: string;
-      payload: Partial<Pick<CreateInvoiceFromVoiceResponse, 'items' | 'voiceTranscript'>>;
+      payload: Partial<
+        Pick<CreateInvoiceFromVoiceResponse, 'items' | 'voiceTranscript' | 'customerName'>
+      >;
     }) =>
       invoiceService.updateById(id, payload),
     onSuccess: (_data, variables) => {

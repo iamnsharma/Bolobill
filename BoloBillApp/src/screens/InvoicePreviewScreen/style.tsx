@@ -111,6 +111,14 @@ export const getStyles = (theme: AppTheme) =>
       justifyContent: 'space-between',
       gap: 10,
     },
+    itemEditRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    itemEditField: {
+      flex: 1,
+    },
     itemMeta: {
       color: theme.colors.textSecondary,
       fontSize: 13,

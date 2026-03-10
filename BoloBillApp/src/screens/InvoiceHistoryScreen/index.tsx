@@ -18,6 +18,7 @@ import { useDeleteInvoiceById, useInvoices } from '../../hooks/apiHooks';
 import { getStyles } from './style';
 import { T } from '../../lang/constants';
 import {createInvoicePdfForDownload} from '../../utils/invoice/pdf';
+import {buildInvoiceFileName} from '../../utils/invoice/fileName';
 
 type Props = {
   navigation: {
@@ -67,7 +68,7 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
 
       const searchable = `${invoice.id ?? ''} ${invoice.invoiceId} ${
         invoice.voiceTranscript
-      }`.toLowerCase();
+      } ${invoice.customerName} ${buildInvoiceFileName(invoice)}`.toLowerCase();
       return matchesDate && searchable.includes(normalizedQuery);
     });
   }, [dateFilter, invoicesQuery.data?.invoices, searchQuery]);
@@ -165,13 +166,14 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
           >
             <View style={styles.invoiceLeft}>
               <BaseText
-                style={styles.invoiceName}
-              >{`invoice_${invoice.invoiceId}.pdf`}</BaseText>
+                style={styles.invoiceName}>
+                {buildInvoiceFileName(invoice)}
+              </BaseText>
               <BaseText style={styles.invoiceMeta}>
                 {new Date(invoice.createdAt).toLocaleString('en-IN')}
               </BaseText>
               <BaseText style={styles.invoiceMeta}>
-                {invoice.invoiceId} | Rs {invoice.total}
+                {invoice.customerName} | Rs {invoice.total}
               </BaseText>
             </View>
             <View style={styles.invoiceActions}>

@@ -80,7 +80,9 @@ export const invoiceService = {
 
   updateById: async (
     id: string,
-    payload: Partial<Pick<CreateInvoiceFromVoiceResponse, 'items' | 'voiceTranscript'>>,
+    payload: Partial<
+      Pick<CreateInvoiceFromVoiceResponse, 'items' | 'voiceTranscript' | 'customerName'>
+    >,
   ): Promise<CreateInvoiceFromVoiceResponse> => {
     const response = await privateClient.put<{invoice: CreateInvoiceFromVoiceResponse}>(
       `${ENDPOINTS.INVOICE_LIST}/${id}`,

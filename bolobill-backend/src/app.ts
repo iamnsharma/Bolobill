@@ -2,6 +2,7 @@ import cors from 'cors';
 import path from 'path';
 import express from 'express';
 import {authRouter} from './modules/auth/auth.routes';
+import {feedbackRouter} from './modules/feedback/feedback.routes';
 import {invoiceRouter} from './modules/invoice/invoice.routes';
 import {errorMiddleware} from './middleware/error.middleware';
 
@@ -15,6 +16,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/feedback', feedbackRouter);
 app.use('/api/invoices', invoiceRouter);
 // Backward-compatible endpoint with existing mobile code.
 app.use('/api/invoice', invoiceRouter);

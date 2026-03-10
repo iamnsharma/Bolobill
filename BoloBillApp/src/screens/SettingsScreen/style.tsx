@@ -12,6 +12,43 @@ export const getStyles = (theme: AppTheme) =>
       gap: 16,
       paddingBottom: 24,
     },
+    walletHero: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 14,
+      padding: 14,
+      gap: 6,
+    },
+    walletHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    walletTitle: {
+      color: theme.colors.surface,
+      fontSize: 16,
+      fontWeight: '800',
+    },
+    walletBadge: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    walletBadgeText: {
+      color: theme.colors.primary,
+      fontSize: 10,
+      fontWeight: '800',
+    },
+    walletAmount: {
+      color: theme.colors.surface,
+      fontSize: 28,
+      fontWeight: '900',
+    },
+    walletSubtitle: {
+      color: theme.colors.surface,
+      opacity: 0.9,
+      fontSize: 12,
+    },
     section: {
       backgroundColor: theme.colors.surface,
       borderRadius: 12,
@@ -106,6 +143,20 @@ export const getStyles = (theme: AppTheme) =>
       fontSize: 12,
       lineHeight: 18,
     },
+    profileFieldRow: {
+      marginTop: 6,
+      gap: 2,
+    },
+    profileFieldLabel: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    profileFieldValue: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '700',
+    },
     themePillRow: {
       flexDirection: 'row',
       gap: 8,
@@ -154,5 +205,24 @@ export const getStyles = (theme: AppTheme) =>
     },
     languageTabTextActive: {
       color: theme.colors.surface,
+    },
+    feedbackInput: {
+      minHeight: 110,
+      paddingTop: 12,
+    },
+    feedbackHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    feedbackHeaderTextWrap: {
+      flex: 1,
+      gap: 4,
+    },
+    feedbackToggleText: {
+      color: theme.colors.primary,
+      fontWeight: '700',
+      fontSize: 12,
     },
   });

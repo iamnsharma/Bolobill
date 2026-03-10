@@ -3,6 +3,7 @@ import {Platform} from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import {AuthUser} from '../../services/api/types/auth.types';
 import {CreateInvoiceFromVoiceResponse} from '../../services/api/types/invoice.types';
+import {buildInvoiceFileBaseName} from './fileName';
 
 const escapeHtml = (value: string) =>
   value
@@ -20,7 +21,8 @@ const buildInvoiceHtml = (
     dateStyle: 'medium',
     timeStyle: 'short',
   });
-  const accountName = user?.name?.trim() || 'BoloBill User';
+  const accountName =
+    user?.businessName?.trim() || user?.name?.trim() || 'BoloBill User';
   const accountPhone = user?.phone?.trim() || 'Not available';
 
   const itemRows = invoice.items
@@ -111,7 +113,7 @@ const buildInvoiceHtml = (
 };
 
 const generateInvoicePdfFile = async (invoice: CreateInvoiceFromVoiceResponse, user?: AuthUser) => {
-  const fileName = `bolobill-${invoice.invoiceId}`;
+  const fileName = buildInvoiceFileBaseName(invoice);
   const html = buildInvoiceHtml(invoice, user);
   const result = await generatePDF({
     html,
