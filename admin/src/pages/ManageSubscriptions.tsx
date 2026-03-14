@@ -188,7 +188,7 @@ export default function ManageSubscriptions() {
               <div>
                 <p className="fw-bold small mb-0">Users &amp; plans</p>
                 <p className="small text-muted mb-0">Assign plans per user</p>
-                <Link to="/users" className="btn btn-outline-primary btn-sm mt-1">Open</Link>
+                <Link to="/dashboard/users" className="btn btn-outline-primary btn-sm mt-1">Open</Link>
               </div>
             </div>
           </div>

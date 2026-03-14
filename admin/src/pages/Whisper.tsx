@@ -155,13 +155,13 @@ export default function Whisper() {
           </h3>
           <p className="small text-muted mb-2">
             Voice minutes limit is set <strong>per plan</strong> in{" "}
-            <Link to="/subscriptions">Manage subscriptions</Link>. Each plan has an
+            <Link to="/dashboard/subscriptions">Manage subscriptions</Link>. Each plan has an
             &quot;Voice minutes&quot; limit; users on that plan can use up to that
             amount per billing period.
           </p>
           <p className="small text-muted mb-0">
             To see how much each user has used, open{" "}
-            <Link to="/users">Manage users</Link> → click a user → check
+            <Link to="/dashboard/users">Manage users</Link> → click a user → check
             &quot;Voice / Whisper usage&quot; in their profile. Pending limit
             (remaining minutes) is plan limit minus that user&apos;s usage.
           </p>

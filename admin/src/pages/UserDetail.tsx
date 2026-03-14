@@ -76,7 +76,7 @@ export default function UserDetail() {
   return (
     <div className="mt-6 admin-page">
       <Link
-        to="/users"
+        to="/dashboard/users"
         className="btn btn-link btn-sm text-muted text-decoration-none mb-3 d-inline-flex align-items-center">
         <i className="ti ti-arrow-left me-1" />
         Back to {isSuperAdmin ? "Manage users" : "Users"}
@@ -228,7 +228,7 @@ export default function UserDetail() {
                     </button>
                     {!isSuperAdmin && (
                       <Link
-                        to={`/invoices?userId=${user.id}`}
+                        to={`/dashboard/invoices?userId=${user.id}`}
                         className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
                         <i className="ti ti-receipt" />
                         View invoices

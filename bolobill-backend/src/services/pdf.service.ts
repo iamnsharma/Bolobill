@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import {InvoiceItemInput} from './transcriptParser.service';
 import {env} from '../config/env';
 
@@ -13,8 +14,10 @@ type GeneratePdfInput = {
   transcript?: string;
   billToName?: string;
   billToPhone?: string;
-  /** Path to QR code image (e.g. UPI) to embed in PDF for "Scan to pay". */
+  /** Path to QR code image file on disk (fallback). */
   qrImagePath?: string;
+  /** Public URL of the same QR image (preferred: we fetch this so the PDF uses the exact image served to users). */
+  qrImageUrl?: string;
 };
 
 const pdfDir = path.join(process.cwd(), 'storage/pdfs');
@@ -38,6 +41,40 @@ export const generateInvoicePdf = async (
   const customerName = input.billToName?.trim() || 'Customer';
   const source = input.transcript?.trim() ? 'voice' : 'manual';
   const computedTotal = input.items.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0);
+
+  // Load QR image: prefer fetching from public URL (same bytes as in browser), else read from file path
+  let qrImageSource: Buffer | null = null;
+  const loadFromUrl = async (url: string): Promise<Buffer | null> => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const ab = await res.arrayBuffer();
+      return await sharp(Buffer.from(ab))
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .png()
+        .toBuffer();
+    } catch {
+      return null;
+    }
+  };
+  const loadFromPath = async (filePath: string): Promise<Buffer | null> => {
+    try {
+      const abs = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+      if (!fs.existsSync(abs)) return null;
+      return await sharp(abs)
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .png()
+        .toBuffer();
+    } catch {
+      return null;
+    }
+  };
+  if (input.qrImageUrl) {
+    qrImageSource = await loadFromUrl(input.qrImageUrl);
+  }
+  if (!qrImageSource && input.qrImagePath) {
+    qrImageSource = await loadFromPath(input.qrImagePath);
+  }
 
   await new Promise<void>((resolve, reject) => {
     const doc = new PDFDocument({size: 'A4', margin: 0});
@@ -170,12 +207,15 @@ export const generateInvoicePdf = async (
 
     const qrSize = 88;
     const qrBoxX = tableRight - qrSize - 8;
-    const hasQr = input.qrImagePath && fs.existsSync(input.qrImagePath);
-    if (hasQr) {
+    if (qrImageSource) {
       const qrBoxY = y;
       doc.roundedRect(qrBoxX - 4, qrBoxY - 2, qrSize + 24, qrSize + 28, 4).fillAndStroke('#FFF7ED', '#e66239');
       doc.fontSize(9).fillColor('#9a3412').font('Helvetica-Bold').text('Scan to pay', qrBoxX - 4, qrBoxY + 4, { width: qrSize + 24, align: 'center' });
-      doc.image(input.qrImagePath!, qrBoxX, qrBoxY + 16, { width: qrSize, height: qrSize });
+      try {
+        doc.image(qrImageSource, qrBoxX, qrBoxY + 16, { width: qrSize, height: qrSize });
+      } catch {
+        // If image embed fails, box and label are still drawn
+      }
       y += qrSize + 32;
     }
 

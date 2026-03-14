@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MembershipProvider } from "./contexts/MembershipContext";
 import BusinessOnlyRoute from "./components/BusinessOnlyRoute";
 import SuperAdminOnlyRoute from "./components/SuperAdminOnlyRoute";
+import GuestOnlyRoute from "./components/GuestOnlyRoute";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -39,9 +40,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/"
+        element={
+          <GuestOnlyRoute>
+            <Landing />
+          </GuestOnlyRoute>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <GuestOnlyRoute>
+            <LoginPage />
+          </GuestOnlyRoute>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <GuestOnlyRoute>
+            <SignupPage />
+          </GuestOnlyRoute>
+        }
+      />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsConditions />} />
       <Route

@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useMembership } from "../contexts/MembershipContext";
 import ConfirmModal from "../components/ConfirmModal";
 
+// Standard order: overview → users → subscriptions → tools → config
 const SUPERADMIN_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
   { to: "/dashboard/users", icon: "ti-users", label: "Manage users" },
@@ -12,10 +13,11 @@ const SUPERADMIN_NAV = [
   { to: "/dashboard/store-links", icon: "ti-link", label: "Store links" },
 ];
 
+// Standard order: overview → primary action → list → reports → operations → settings → account
 const BUSINESS_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
-  { to: "/dashboard/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
   { to: "/dashboard/invoices/new", icon: "ti-plus", label: "Create Bill" },
+  { to: "/dashboard/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
   { to: "/dashboard/sales", icon: "ti-chart-bar", label: "Sales Summary" },
   { to: "/dashboard/items-sold", icon: "ti-package", label: "Items Sold" },
   { to: "/dashboard/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },

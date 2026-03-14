@@ -1,6 +1,8 @@
 import fs from 'fs';
+import path from 'path';
 import mongoose from 'mongoose';
 import {ApiError} from '../../common/ApiError';
+import {env} from '../../config/env';
 import {UserModel} from '../../models/User.model';
 import {InvoiceModel} from '../../models/Invoice.model';
 import {generateInvoicePdf} from '../../services/pdf.service';
@@ -125,6 +127,7 @@ export const invoiceService = {
       total,
       transcript,
       qrImagePath: user.qrCodePath || undefined,
+      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -170,6 +173,7 @@ export const invoiceService = {
       total,
       transcript,
       qrImagePath: user.qrCodePath || undefined,
+      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -211,6 +215,7 @@ export const invoiceService = {
       total,
       transcript,
       qrImagePath: user.qrCodePath || undefined,
+      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -405,6 +410,7 @@ export const invoiceService = {
       total: invoice.total,
       transcript: invoice.voiceTranscript,
       qrImagePath: user.qrCodePath || undefined,
+      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
     });
     invoice.pdfPath = pdf.pdfPath;
 

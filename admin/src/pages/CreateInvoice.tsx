@@ -121,7 +121,7 @@ export default function CreateInvoice() {
       setReviewOpen(false);
       setReviewData(null);
       resetForm();
-      navigate("/invoices", { replace: true });
+      navigate("/dashboard/invoices", { replace: true });
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -379,7 +379,7 @@ export default function CreateInvoice() {
               <button
                 type="button"
                 className="btn btn-outline-secondary me-2"
-                onClick={() => navigate("/invoices")}>
+                onClick={() => navigate("/dashboard/invoices")}>
                 Cancel
               </button>
               <button

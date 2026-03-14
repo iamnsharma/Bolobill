@@ -238,7 +238,7 @@ export default function Users() {
                           </td>
                           <td>
                             <Link
-                              to={`/users/${u.id}`}
+                              to={`/dashboard/users/${u.id}`}
                               className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
                               <i className="ti ti-eye" />
                               Detail

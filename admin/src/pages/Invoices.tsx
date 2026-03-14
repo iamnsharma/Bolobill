@@ -120,7 +120,7 @@ export default function Invoices() {
             </button>
             {!isSuperAdmin && (
               <Link
-                to="/invoices/new"
+                to="/dashboard/invoices/new"
                 className="btn btn-success d-flex align-items-center gap-1">
                 <i className="ti ti-plus" />
                 Create Bill
@@ -204,7 +204,7 @@ export default function Invoices() {
                             <td>
                               {inv.user ? (
                                 <Link
-                                  to={`/users/${inv.user.id}`}
+                                  to={`/dashboard/users/${inv.user.id}`}
                                   className="text-decoration-none">
                                   {inv.user.name ?? inv.user.phone}
                                 </Link>

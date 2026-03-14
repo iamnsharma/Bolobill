@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminApi, type AdminInvoice } from '../api/admin';
-import { exportInvoiceAsPdf } from '../utils/exportInvoicePdf';
+import { exportInvoiceWithReactPdf } from '../utils/exportInvoiceWithReactPdf';
 
 type InvoiceData = Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string };
 
@@ -42,12 +42,43 @@ export default function InvoiceViewModal({
       .finally(() => setLoading(false));
   }, [invoiceId]);
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (!invoice) return;
+    // Prefer server-generated PDF (same file as WhatsApp share, includes uploaded QR image)
+    if (invoice.pdfUrl) {
+      const a = document.createElement('a');
+      a.href = invoice.pdfUrl;
+      a.download = `invoice-${invoice.invoiceId}.pdf`;
+      a.rel = 'noopener noreferrer';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
     const createdBy = invoice.user
       ? [invoice.user.businessName, invoice.user.name].filter(Boolean).join(' — ') || invoice.user.phone
       : undefined;
-    exportInvoiceAsPdf({
+    let qrImageDataUrl: string | undefined;
+    try {
+      const { url } = await adminApi.getQrCode();
+      if (url) {
+        const res = await fetch(url, { credentials: 'include', mode: 'cors' });
+        if (res.ok) {
+          const blob = await res.blob();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.onerror = reject;
+            r.readAsDataURL(blob);
+          });
+          qrImageDataUrl = dataUrl;
+        }
+      }
+    } catch {
+      // ignore; export without QR
+    }
+    await exportInvoiceWithReactPdf({
       invoiceId: invoice.invoiceId,
       customerName: invoice.customerName,
       createdBy: createdBy || undefined,
@@ -55,6 +86,7 @@ export default function InvoiceViewModal({
       total: invoice.total,
       createdAt: invoice.createdAt,
       source: invoice.source,
+      qrImageSrc: qrImageDataUrl,
     });
   };
 
