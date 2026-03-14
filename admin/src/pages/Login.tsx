@@ -22,10 +22,13 @@ export default function Login() {
       await login(phone.trim(), pin.trim());
       navigate("/", { replace: true });
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Invalid phone or PIN.";
-      setError(msg);
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      if (status === 403) {
+        setError("Only project admin and business accounts can sign in here. If you registered as a business in the BoloBill app, use the same phone and PIN.");
+      } else {
+        setError(msg || "Invalid phone or PIN.");
+      }
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,7 @@ export default function Login() {
               <span className="fs-4 fw-bold text-dark">BoloBill Admin</span>
             </div>
             <p className="text-muted small mb-0">
-              Sign in with your admin phone and PIN
+              Superadmin: project owner. Business: sign in with the same phone and PIN you set in the BoloBill app.
             </p>
           </div>
 

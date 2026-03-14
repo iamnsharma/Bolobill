@@ -6,7 +6,9 @@ export default function Memberships() {
   return (
     <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Memberships</h1>
-      <p className="text-muted mb-4">Membership details and manage plans for the app.</p>
+      <p className="text-muted mb-4">
+        Manage subscription or membership plans for the app. When implemented, you will see active plans and can update offerings here.
+      </p>
 
       <div className="card border-0 shadow-sm rounded-3">
         <div className="card-body p-5 text-center">

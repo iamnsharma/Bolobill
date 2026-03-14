@@ -1,8 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { authApi, AuthUser } from '../api/auth';
+import { adminApi } from '../api/admin';
 
 interface AuthContextValue {
   user: AuthUser | null;
+  isSuperAdmin: boolean;
   loading: boolean;
   login: (phone: string, pin: string) => Promise<void>;
   logout: () => void;
@@ -13,6 +15,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(authApi.getStoredUser());
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,15 +24,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    authApi
-      .me()
-      .then(({ user: u }) => {
+    adminApi
+      .getMe()
+      .then(({ user: u, isSuperAdmin: superAdmin }) => {
         setUser(u);
+        setIsSuperAdmin(superAdmin);
         authApi.setStoredAuth(token, u);
       })
       .catch(() => {
         authApi.logout();
         setUser(null);
+        setIsSuperAdmin(false);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -37,7 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (phone: string, pin: string) => {
     const { token, user: u } = await authApi.login({ phone, pin });
     authApi.setStoredAuth(token, u);
-    setUser(u);
+    const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
+    setUser(me);
+    setIsSuperAdmin(superAdmin);
+    authApi.setStoredAuth(token, me);
   }, []);
 
   const logout = useCallback(() => {
@@ -47,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextValue = {
     user,
+    isSuperAdmin,
     loading,
     login,
     logout,

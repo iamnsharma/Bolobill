@@ -48,7 +48,9 @@ export default function Users() {
   return (
     <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Users</h1>
-      <p className="text-muted mb-4">View users and blacklist (no delete).</p>
+      <p className="text-muted mb-4">
+        View all app users (shopkeepers and personal). Search by name, phone, or business. You can blacklist a user to revoke access; data is not deleted.
+      </p>
 
       <div className="card border-0 shadow-sm rounded-3 mb-4">
         <div className="card-body p-4">

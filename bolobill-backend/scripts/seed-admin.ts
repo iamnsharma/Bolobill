@@ -33,7 +33,7 @@ async function seed() {
         name: ADMIN_NAME,
         phone: ADMIN_PHONE,
         pinHash,
-        role: 'admin',
+        role: 'superadmin',
         businessName: '',
         accountType: 'personal',
       },
@@ -41,7 +41,7 @@ async function seed() {
     {upsert: true, new: true},
   );
 
-  console.log('Admin user seeded:', result.phone, result.role);
+  console.log('Superadmin user seeded:', result.phone, result.role);
   await mongoose.disconnect();
   process.exit(0);
 }

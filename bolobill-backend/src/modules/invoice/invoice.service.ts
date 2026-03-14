@@ -164,8 +164,120 @@ export const invoiceService = {
     return invoice;
   },
 
-  async getAllInvoices(userId: string) {
-    return InvoiceModel.find({userId}).sort({createdAt: -1});
+  async getAllInvoices(
+    userId: string,
+    filters?: {from?: Date; to?: Date; search?: string},
+  ) {
+    const query: Record<string, unknown> = {userId};
+    if (filters?.from || filters?.to) {
+      query.createdAt = {};
+      if (filters.from) (query.createdAt as Record<string, Date>).$gte = filters.from;
+      if (filters.to) (query.createdAt as Record<string, Date>).$lte = filters.to;
+    }
+    if (filters?.search?.trim()) {
+      query.customerName = {$regex: filters.search.trim(), $options: 'i'};
+    }
+    return InvoiceModel.find(query).sort({createdAt: -1});
+  },
+
+  async getSalesSummary(
+    userId: string,
+    from?: Date,
+    to?: Date,
+  ): Promise<{
+    total: number;
+    today: number;
+    thisWeek: number;
+    thisMonth: number;
+    thisYear: number;
+    filteredTotal: number;
+  }> {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const baseMatch = {userId};
+    const todayInvoices = await InvoiceModel.find({
+      ...baseMatch,
+      createdAt: {$gte: startOfDay, $lte: now},
+    });
+    const weekInvoices = await InvoiceModel.find({
+      ...baseMatch,
+      createdAt: {$gte: startOfWeek, $lte: now},
+    });
+    const monthInvoices = await InvoiceModel.find({
+      ...baseMatch,
+      createdAt: {$gte: startOfMonth, $lte: now},
+    });
+    const yearInvoices = await InvoiceModel.find({
+      ...baseMatch,
+      createdAt: {$gte: startOfYear, $lte: now},
+    });
+
+    const sum = (invs: {total: number}[]) => invs.reduce((s, i) => s + i.total, 0);
+    const today = sum(todayInvoices);
+    const thisWeek = sum(weekInvoices);
+    const thisMonth = sum(monthInvoices);
+    const thisYear = sum(yearInvoices);
+
+    let filteredTotal = thisYear;
+    if (from || to) {
+      const rangeQuery: Record<string, Date> = {};
+      if (from) rangeQuery.$gte = from;
+      if (to) rangeQuery.$lte = to;
+      const rangeInvoices = await InvoiceModel.find({
+        ...baseMatch,
+        createdAt: rangeQuery,
+      });
+      filteredTotal = sum(rangeInvoices);
+    }
+
+    const allInvoices = await InvoiceModel.find(baseMatch);
+    const total = sum(allInvoices);
+
+    return {
+      total,
+      today,
+      thisWeek,
+      thisMonth,
+      thisYear,
+      filteredTotal,
+    };
+  },
+
+  async getItemsSold(
+    userId: string,
+    from?: Date,
+    to?: Date,
+  ): Promise<{itemName: string; quantity: number; amount: number}[]> {
+    const query: Record<string, unknown> = {userId};
+    if (from || to) {
+      query.createdAt = {};
+      if (from) (query.createdAt as Record<string, Date>).$gte = from;
+      if (to) (query.createdAt as Record<string, Date>).$lte = to;
+    }
+    const invoices = await InvoiceModel.find(query);
+    const map = new Map<string, {quantity: number; amount: number}>();
+    for (const inv of invoices) {
+      for (const it of inv.items) {
+        const name = (it.name || '').trim() || 'Unknown';
+        const qty = parseFloat(String(it.quantity)) || 0;
+        const amt = Number(it.totalPrice) || 0;
+        const existing = map.get(name);
+        if (existing) {
+          existing.quantity += qty;
+          existing.amount += amt;
+        } else {
+          map.set(name, {quantity: qty, amount: amt});
+        }
+      }
+    }
+    return Array.from(map.entries())
+      .map(([itemName, {quantity, amount}]) => ({itemName, quantity, amount}))
+      .sort((a, b) => b.amount - a.amount);
   },
 
   async getLatestPdfs(userId: string, limit = 5) {

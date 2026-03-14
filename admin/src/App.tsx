@@ -8,6 +8,10 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Memberships from './pages/Memberships';
 import ManageFeatures from './pages/ManageFeatures';
+import Sales from './pages/Sales';
+import ItemsSold from './pages/ItemsSold';
+import OutOfStock from './pages/OutOfStock';
+import CreateInvoice from './pages/CreateInvoice';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -36,6 +40,10 @@ function AppRoutes() {
       >
         <Route index element={<Dashboard />} />
         <Route path="invoices" element={<Invoices />} />
+        <Route path="invoices/new" element={<CreateInvoice />} />
+        <Route path="sales" element={<Sales />} />
+        <Route path="items-sold" element={<ItemsSold />} />
+        <Route path="out-of-stock" element={<OutOfStock />} />
         <Route path="users" element={<Users />} />
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="memberships" element={<Memberships />} />

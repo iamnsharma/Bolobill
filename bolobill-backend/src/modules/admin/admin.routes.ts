@@ -1,18 +1,17 @@
 import {Request, Response, Router} from 'express';
 import type {NextFunction} from 'express';
 import {authMiddleware} from '../../middleware/auth.middleware';
-import {adminMiddleware} from '../../middleware/admin.middleware';
+import {adminMiddleware, requireSuperAdmin} from '../../middleware/admin.middleware';
 import {asyncHandler} from '../../common/asyncHandler';
 import {adminController} from './admin.controller';
 
 export const adminRouter = Router();
 
-// Health check (no auth) – so we can verify /api/admin is mounted
+// Health check (no auth)
 adminRouter.get('/', (_req, res) => {
   res.json({ok: true, scope: 'admin'});
 });
 
-// All routes below require auth + admin role
 adminRouter.use((req: Request, res: Response, next: NextFunction) => {
   authMiddleware(req, res, next);
   return Promise.resolve();
@@ -21,12 +20,24 @@ adminRouter.use((req: Request, res: Response, next: NextFunction) =>
   Promise.resolve(adminMiddleware(req, res, next)),
 );
 
-// Fixed paths first (so /invoices, /users, /stats are not captured by :id)
-adminRouter.get('/stats', asyncHandler(adminController.getStats));
-adminRouter.get('/invoices', asyncHandler(adminController.listInvoices));
-adminRouter.get('/users', asyncHandler(adminController.listUsers));
+// Superadmin-only routes (platform-wide)
+adminRouter.get('/stats', requireSuperAdmin, asyncHandler(adminController.getStats));
+adminRouter.get('/users', requireSuperAdmin, asyncHandler(adminController.listUsers));
+adminRouter.get('/users/:id', requireSuperAdmin, asyncHandler(adminController.getUserById));
+adminRouter.patch('/users/:id/blacklist', requireSuperAdmin, asyncHandler(adminController.setBlacklist));
 
-// Parameterized routes
+// Fixed paths for both superadmin and business admin (business sees own data only)
+adminRouter.get('/me', asyncHandler(adminController.getMe));
+adminRouter.get('/sales-summary', asyncHandler(adminController.getSalesSummary));
+adminRouter.get('/items-sold', asyncHandler(adminController.getItemsSold));
+adminRouter.get('/invoices', asyncHandler(adminController.listInvoices));
+adminRouter.post('/invoices', asyncHandler(adminController.createInvoice));
 adminRouter.get('/invoices/:id', asyncHandler(adminController.getInvoiceById));
-adminRouter.get('/users/:id', asyncHandler(adminController.getUserById));
-adminRouter.patch('/users/:id/blacklist', asyncHandler(adminController.setBlacklist));
+adminRouter.put('/invoices/:id', requireSuperAdmin, asyncHandler(adminController.updateInvoice));
+
+// Out of stock (business admin sees own only)
+adminRouter.get('/out-of-stock', asyncHandler(adminController.listOutOfStock));
+adminRouter.post('/out-of-stock', asyncHandler(adminController.createOutOfStock));
+adminRouter.get('/out-of-stock/:id', asyncHandler(adminController.getOutOfStockById));
+adminRouter.put('/out-of-stock/:id', asyncHandler(adminController.updateOutOfStock));
+adminRouter.delete('/out-of-stock/:id', asyncHandler(adminController.deleteOutOfStock));

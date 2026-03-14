@@ -78,8 +78,39 @@ export const invoiceController = {
 
   async getAll(req: Request, res: Response) {
     const userId = getUserId(req);
-    const invoices = await invoiceService.getAllInvoices(userId);
+    const from = typeof req.query.from === 'string' ? new Date(req.query.from) : undefined;
+    const to = typeof req.query.to === 'string' ? new Date(req.query.to) : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+    const invoices = await invoiceService.getAllInvoices(userId, {
+      from: Number.isNaN(from?.getTime()) ? undefined : from,
+      to: Number.isNaN(to?.getTime()) ? undefined : to,
+      search,
+    });
     return res.json({invoices: invoices.map(invoice => toInvoiceVm(invoice))});
+  },
+
+  async getSalesSummary(req: Request, res: Response) {
+    const userId = getUserId(req);
+    const from = typeof req.query.from === 'string' ? new Date(req.query.from) : undefined;
+    const to = typeof req.query.to === 'string' ? new Date(req.query.to) : undefined;
+    const summary = await invoiceService.getSalesSummary(
+      userId,
+      Number.isNaN(from?.getTime()) ? undefined : from,
+      Number.isNaN(to?.getTime()) ? undefined : to,
+    );
+    return res.json(summary);
+  },
+
+  async getItemsSold(req: Request, res: Response) {
+    const userId = getUserId(req);
+    const from = typeof req.query.from === 'string' ? new Date(req.query.from) : undefined;
+    const to = typeof req.query.to === 'string' ? new Date(req.query.to) : undefined;
+    const items = await invoiceService.getItemsSold(
+      userId,
+      Number.isNaN(from?.getTime()) ? undefined : from,
+      Number.isNaN(to?.getTime()) ? undefined : to,
+    );
+    return res.json({items});
   },
 
   async getLatestPdfs(req: Request, res: Response) {

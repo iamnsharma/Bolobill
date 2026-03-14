@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 
-const NAV_ITEMS = [
+const SUPERADMIN_NAV = [
   { to: '/', icon: 'ti-home', label: 'Dashboard' },
   { to: '/invoices', icon: 'ti-receipt', label: 'Invoices' },
   { to: '/users', icon: 'ti-users', label: 'Users' },
@@ -11,12 +11,22 @@ const NAV_ITEMS = [
   { to: '/manage-features', icon: 'ti-settings', label: 'Manage features' },
 ];
 
+const BUSINESS_NAV = [
+  { to: '/', icon: 'ti-home', label: 'Dashboard' },
+  { to: '/invoices', icon: 'ti-receipt', label: 'Bills & Invoices' },
+  { to: '/invoices/new', icon: 'ti-plus', label: 'Create Bill' },
+  { to: '/sales', icon: 'ti-chart-bar', label: 'Sales Summary' },
+  { to: '/items-sold', icon: 'ti-package', label: 'Items Sold' },
+  { to: '/out-of-stock', icon: 'ti-alert-circle', label: 'Out of Stock' },
+];
+
 export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, isSuperAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const navItems = useMemo(() => (isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV), [isSuperAdmin]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed((s) => !s);
@@ -113,7 +123,7 @@ export default function DashboardLayout() {
           <li className="px-4 py-2">
             <small className="nav-text">Main</small>
           </li>
-          {NAV_ITEMS.map(({ to, icon, label }) => (
+          {navItems.map(({ to, icon, label }) => (
             <li key={to}>
               <NavLink
                 to={to}

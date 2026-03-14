@@ -76,6 +76,11 @@ export const getStyles = (theme: AppTheme) =>
       height: 16,
       tintColor: theme.colors.primary,
     },
+    whatsappBtn: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: '#25D366',
+    },
     section: {
       backgroundColor: theme.colors.surface,
       borderColor: theme.colors.border,

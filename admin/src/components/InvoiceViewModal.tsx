@@ -4,6 +4,11 @@ import { exportInvoiceAsPdf } from '../utils/exportInvoicePdf';
 
 type InvoiceData = Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string };
 
+/** Normalize to digits only for wa.me (e.g. 919876543210) */
+function normalizePhoneForWhatsApp(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
 export default function InvoiceViewModal({
   invoiceId,
   onClose,
@@ -14,6 +19,9 @@ export default function InvoiceViewModal({
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWhatsAppShare, setShowWhatsAppShare] = useState(false);
+  const [whatsAppNumber, setWhatsAppNumber] = useState('');
+  const [whatsAppError, setWhatsAppError] = useState('');
 
   useEffect(() => {
     if (!invoiceId) {
@@ -46,6 +54,28 @@ export default function InvoiceViewModal({
       createdAt: invoice.createdAt,
       source: invoice.source,
     });
+  };
+
+  const handleShareOnWhatsApp = () => {
+    if (!invoice) return;
+    setWhatsAppError('');
+    const digits = normalizePhoneForWhatsApp(whatsAppNumber);
+    if (digits.length < 10) {
+      setWhatsAppError('Enter a valid phone number with country code (e.g. 919876543210)');
+      return;
+    }
+    const message = [
+      `Bill from BoloBill – Invoice ${invoice.invoiceId}`,
+      `Customer: ${invoice.customerName}`,
+      `Total: ₹${invoice.total}`,
+      invoice.pdfUrl ? `Download PDF: ${invoice.pdfUrl}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setShowWhatsAppShare(false);
+    setWhatsAppNumber('');
   };
 
   if (!invoiceId) return null;
@@ -149,19 +179,70 @@ export default function InvoiceViewModal({
             )}
           </div>
           {invoice && !loading && (
-            <div className="modal-footer border-top bg-light px-4 py-3">
-              <button type="button" className="btn btn-secondary d-flex align-items-center gap-1" onClick={onClose}>
-                <i className="ti ti-x" />
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary d-flex align-items-center gap-1"
-                onClick={handleExportPdf}
-              >
-                <i className="ti ti-file-export" />
-                Export PDF
-              </button>
+            <div className="modal-footer border-top bg-light px-4 py-3 flex-wrap gap-2">
+              {showWhatsAppShare ? (
+                <div className="w-100 d-flex flex-column gap-2">
+                  <label className="form-label small mb-0 fw-bold">Share to WhatsApp – enter phone number</label>
+                  <p className="small text-muted mb-0">Include country code, no + or spaces (e.g. 919876543210)</p>
+                  <div className="d-flex gap-2 flex-wrap align-items-center">
+                    <input
+                      type="tel"
+                      className="form-control"
+                      placeholder="e.g. 919876543210"
+                      value={whatsAppNumber}
+                      onChange={(e) => {
+                        setWhatsAppNumber(e.target.value);
+                        setWhatsAppError('');
+                      }}
+                      style={{ maxWidth: 220 }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-success d-flex align-items-center gap-1"
+                      onClick={handleShareOnWhatsApp}
+                    >
+                      <i className="ti ti-brand-whatsapp" />
+                      Open WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => {
+                        setShowWhatsAppShare(false);
+                        setWhatsAppNumber('');
+                        setWhatsAppError('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {whatsAppError && <div className="small text-danger">{whatsAppError}</div>}
+                </div>
+              ) : (
+                <>
+                  <button type="button" className="btn btn-secondary d-flex align-items-center gap-1" onClick={onClose}>
+                    <i className="ti ti-x" />
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary d-flex align-items-center gap-1"
+                    onClick={handleExportPdf}
+                  >
+                    <i className="ti ti-file-export" />
+                    Export PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-success d-flex align-items-center gap-1"
+                    onClick={() => setShowWhatsAppShare(true)}
+                  >
+                    <i className="ti ti-brand-whatsapp" />
+                    Share on WhatsApp
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

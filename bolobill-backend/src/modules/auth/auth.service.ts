@@ -40,7 +40,8 @@ export const authService = {
   },
 
   async login(input: {phone: string; pin: string}) {
-    const user = await UserModel.findOne({phone: input.phone});
+    const phone = String(input.phone).trim();
+    const user = await UserModel.findOne({phone});
     if (!user) {
       throw new ApiError(404, 'User not found');
     }

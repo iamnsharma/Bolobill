@@ -43,9 +43,42 @@ export interface AdminStats {
   activeMemberships: number;
 }
 
+export interface SalesSummary {
+  total: number;
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+  thisYear: number;
+  filteredTotal: number;
+}
+
+export interface ItemSold {
+  itemName: string;
+  quantity: number;
+  amount: number;
+}
+
+export interface OutOfStockItem {
+  _id: string;
+  name: string;
+  quantity: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const adminApi = {
+  getMe: () =>
+    api.get<{ user: AdminUser; isSuperAdmin: boolean }>('/admin/me').then((r) => r.data),
+
   getStats: () =>
     api.get<AdminStats>('/admin/stats').then((r) => r.data),
+
+  getSalesSummary: (params?: { userId?: string; from?: string; to?: string }) =>
+    api.get<SalesSummary>('/admin/sales-summary', { params: params ?? {} }).then((r) => r.data),
+
+  getItemsSold: (params?: { userId?: string; from?: string; to?: string }) =>
+    api.get<{ items: ItemSold[] }>('/admin/items-sold', { params: params ?? {} }).then((r) => r.data),
 
   getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
     api
@@ -68,6 +101,8 @@ export const adminApi = {
     limit?: number;
     userId?: string;
     search?: string;
+    from?: string;
+    to?: string;
   }) =>
     api
       .get<{
@@ -82,9 +117,29 @@ export const adminApi = {
           limit: params?.limit ?? 20,
           userId: params?.userId,
           search: params?.search,
+          from: params?.from,
+          to: params?.to,
         },
       })
       .then((r) => r.data),
+
+  createInvoice: (body: { customerName?: string; items: Array<{ name: string; quantity: string | number; totalPrice: number }>; note?: string }) =>
+    api.post<{ invoice: AdminInvoice }>('/admin/invoices', body).then((r) => r.data.invoice),
+
+  updateInvoice: (id: string, body: { customerName?: string; items?: Array<{ name: string; quantity: string | number; totalPrice: number }>; voiceTranscript?: string }) =>
+    api.put<{ invoice: AdminInvoice }>(`/admin/invoices/${id}`, body).then((r) => r.data.invoice),
+
+  listOutOfStock: () =>
+    api.get<{ items: OutOfStockItem[] }>('/admin/out-of-stock').then((r) => r.data),
+
+  createOutOfStock: (body: { name: string; quantity?: string; note?: string }) =>
+    api.post<{ item: OutOfStockItem }>('/admin/out-of-stock', body).then((r) => r.data.item),
+
+  updateOutOfStock: (id: string, body: { name?: string; quantity?: string; note?: string }) =>
+    api.put<{ item: OutOfStockItem }>(`/admin/out-of-stock/${id}`, body).then((r) => r.data.item),
+
+  deleteOutOfStock: (id: string) =>
+    api.delete(`/admin/out-of-stock/${id}`).then((r) => r.data),
 
   getInvoiceById: (id: string) =>
     api

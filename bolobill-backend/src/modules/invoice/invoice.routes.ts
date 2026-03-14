@@ -49,6 +49,8 @@ invoiceRouter.post('/translate-text', asyncHandler(invoiceController.translateTe
 invoiceRouter.post('/create', upload.single('audio'), asyncHandler(invoiceController.createVoice));
 invoiceRouter.post('/voice', upload.single('audio'), asyncHandler(invoiceController.createVoice));
 invoiceRouter.post('/manual', asyncHandler(invoiceController.createManual));
+invoiceRouter.get('/sales-summary', asyncHandler(invoiceController.getSalesSummary));
+invoiceRouter.get('/items-sold', asyncHandler(invoiceController.getItemsSold));
 invoiceRouter.get('/', asyncHandler(invoiceController.getAll));
 invoiceRouter.get('/latest/pdfs', asyncHandler(invoiceController.getLatestPdfs));
 invoiceRouter.get('/:id/preview', asyncHandler(invoiceController.previewById));

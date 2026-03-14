@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     businessName: {type: String, trim: true, default: ''},
     phone: {type: String, required: true, unique: true, index: true},
     pinHash: {type: String, required: true},
-    role: {type: String, enum: ['user', 'admin'], default: 'user'},
+    role: {type: String, enum: ['user', 'admin', 'superadmin'], default: 'user'},
     isBlacklisted: {type: Boolean, default: false},
     accountType: {type: String, enum: ['personal', 'business'], default: 'personal'},
     usage: {

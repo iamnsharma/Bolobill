@@ -6,7 +6,9 @@ export default function ManageFeatures() {
   return (
     <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Manage features</h1>
-      <p className="text-muted mb-4">Control which features are available in the app.</p>
+      <p className="text-muted mb-4">
+        Enable or disable app features (e.g. voice billing, manual billing) and control visibility by version or plan. Backend integration pending.
+      </p>
 
       <div className="card border-0 shadow-sm rounded-3">
         <div className="card-body p-5 text-center">

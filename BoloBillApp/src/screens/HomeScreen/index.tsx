@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {ActivityIndicator, Alert, Image, Pressable, ScrollView, Share, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, Linking, Platform, Pressable, ScrollView, Share, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {BaseButton, BaseText} from '../../components/atoms';
@@ -102,6 +102,67 @@ export const HomeScreen = ({navigation}: Props) => {
     }
   };
 
+  const onShareOnWhatsApp = (invoice: (typeof recentInvoices)[number]) => {
+    if (isGuest) {
+      showGuestAlert();
+      return;
+    }
+    const doShare = async (phoneDigits?: string) => {
+      try {
+        const filePath = await createInvoicePdfForShare(invoice, user);
+        if (!filePath) {
+          Alert.alert('BoloBill', 'Failed to create PDF.');
+          return;
+        }
+        if (phoneDigits && phoneDigits.length >= 10) {
+          Linking.openURL(`whatsapp://send?phone=${phoneDigits}`).catch(() => {});
+          setTimeout(() => {
+            Share.share({
+              title: 'Share bill on WhatsApp',
+              url: `file://${filePath}`,
+              message: `Bill from BoloBill – Invoice ${invoice.invoiceId}. Total: Rs ${invoice.total}.`,
+            }).catch(() => {});
+          }, 600);
+        } else {
+          await Share.share({
+            title: 'Share bill on WhatsApp',
+            url: `file://${filePath}`,
+            message: `Bill from BoloBill – Invoice ${invoice.invoiceId}. Total: Rs ${invoice.total}.`,
+          });
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to share PDF';
+        Alert.alert('BoloBill', message);
+      }
+    };
+
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        'Share to WhatsApp',
+        'Enter phone number with country code (e.g. 919876543210). We\'ll open the chat, then you can send the bill.',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Share',
+            onPress: (value: string | undefined) => {
+              const digits = (value ?? '').replace(/\D/g, '');
+              if (digits.length > 0 && digits.length < 10) {
+                Alert.alert('BoloBill', 'Please enter a valid number with country code (e.g. 919876543210).');
+                return;
+              }
+              doShare(digits.length >= 10 ? digits : undefined);
+            },
+          },
+        ],
+        'plain-text',
+        '',
+        'number-pad',
+      );
+    } else {
+      doShare();
+    }
+  };
+
   const onPreviewInvoice = (invoice: (typeof recentInvoices)[number]) => {
     if (isGuest) {
       showGuestAlert();
@@ -201,6 +262,13 @@ export const HomeScreen = ({navigation}: Props) => {
                   style={styles.actionIcon}
                   resizeMode="contain"
                 />
+              </Pressable>
+              <Pressable
+                onPress={() => onShareOnWhatsApp(invoice)}
+                style={styles.iconBtn}
+                accessibilityLabel="Share on WhatsApp"
+              >
+                <BaseText style={styles.whatsappBtn}>WA</BaseText>
               </Pressable>
             </View>
           </View>
