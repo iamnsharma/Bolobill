@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminStats, type SalesSummary } from "../api/admin";
-import { DownloadAppSection } from "../components/DownloadAppSection";
 
 const PLACEHOLDER = "—";
 const NEED_API = "Need backend API";

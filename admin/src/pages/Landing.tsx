@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import bolobillLogo from "../assets/images/bolobill-logo.png";
 import feat1 from "../assets/images/features/bb1.png";
 import feat2 from "../assets/images/features/bb2.png";
 import feat3 from "../assets/images/features/bb3.png";
