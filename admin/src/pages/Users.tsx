@@ -29,6 +29,7 @@ export default function Users() {
       });
     } catch (e: unknown) {
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to load users');
+      setData({ users: [], total: 0, page: 1, limit: 20, totalPages: 0 });
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ export default function Users() {
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />
             </div>
-          ) : data ? (
+          ) : (
             <>
               <div className="table-responsive">
                 <table className="table table-hover align-middle mb-0">
@@ -95,10 +96,10 @@ export default function Users() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.users.length === 0 ? (
+                    {!data || data.users.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="text-center text-muted py-4">
-                          No users found.
+                          {error ? 'API unavailable or error. Check backend.' : 'No users found.'}
                         </td>
                       </tr>
                     ) : (
@@ -155,7 +156,7 @@ export default function Users() {
                 </div>
               )}
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

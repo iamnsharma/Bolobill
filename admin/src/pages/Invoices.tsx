@@ -36,6 +36,7 @@ export default function Invoices() {
       });
     } catch (e: unknown) {
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to load invoices');
+      setData({ invoices: [], total: 0, page: 1, limit: 20, totalPages: 0 });
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function Invoices() {
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />
             </div>
-          ) : data ? (
+          ) : (
             <>
               <div className="table-responsive">
                 <table className="table table-hover align-middle mb-0">
@@ -104,10 +105,10 @@ export default function Invoices() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.invoices.length === 0 ? (
+                    {!data || data.invoices.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="text-center text-muted py-4">
-                          No invoices found.
+                          {error ? 'API unavailable or error. Check backend.' : 'No invoices found.'}
                         </td>
                       </tr>
                     ) : (
@@ -151,7 +152,7 @@ export default function Invoices() {
                   </tbody>
                 </table>
               </div>
-              {data.totalPages > 1 && (
+              {data && data.totalPages > 1 && (
                 <div className="d-flex justify-content-between align-items-center px-4 py-3 border-top">
                   <small className="text-muted">
                     {data.total} total · page {data.page} of {data.totalPages}
@@ -177,7 +178,7 @@ export default function Invoices() {
                 </div>
               )}
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

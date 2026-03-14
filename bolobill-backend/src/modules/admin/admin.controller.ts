@@ -13,6 +13,11 @@ const parseLimit = (q: unknown) => {
 };
 
 export const adminController = {
+  getStats: asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await adminService.getStats();
+    return res.json(stats);
+  }),
+
   listUsers: asyncHandler(async (req: Request, res: Response) => {
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit);

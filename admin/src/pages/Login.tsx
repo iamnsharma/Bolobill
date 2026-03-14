@@ -59,7 +59,7 @@ export default function Login() {
                 id="phone"
                 type="tel"
                 className="form-control form-control-lg"
-                placeholder="e.g. 6283515870"
+                placeholder="6283515870"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
@@ -74,7 +74,7 @@ export default function Login() {
                 id="pin"
                 type="password"
                 className="form-control form-control-lg"
-                placeholder="••••••••"
+                placeholder="870870"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 autoComplete="off"

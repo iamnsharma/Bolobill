@@ -4,6 +4,20 @@ import {UserModel} from '../../models/User.model';
 import type {UserDocument} from '../../models/User.model';
 
 export const adminService = {
+  async getStats() {
+    const [totalInvoices, totalUsers, blacklistedUsers] = await Promise.all([
+      InvoiceModel.countDocuments(),
+      UserModel.countDocuments({role: {$ne: 'admin'}}),
+      UserModel.countDocuments({role: {$ne: 'admin'}, isBlacklisted: true}),
+    ]);
+    return {
+      totalInvoices,
+      totalUsers,
+      blacklistedUsers,
+      activeMemberships: 0, // Not implemented yet
+    };
+  },
+
   async listUsers(params: { page?: number; limit?: number; search?: string }) {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(100, Math.max(1, params.limit ?? 20));

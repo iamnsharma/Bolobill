@@ -36,7 +36,17 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface AdminStats {
+  totalInvoices: number;
+  totalUsers: number;
+  blacklistedUsers: number;
+  activeMemberships: number;
+}
+
 export const adminApi = {
+  getStats: () =>
+    api.get<AdminStats>('/admin/stats').then((r) => r.data),
+
   getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
     api
       .get<{ users: AdminUser[]; total: number; page: number; limit: number; totalPages: number }>(
