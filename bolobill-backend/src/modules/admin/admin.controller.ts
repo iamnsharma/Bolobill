@@ -61,4 +61,11 @@ export const adminController = {
       totalPages: result.totalPages,
     });
   }),
+
+  getInvoiceById: asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const invoice = await adminService.getInvoiceById(id);
+    const vm = toAdminInvoiceVm(invoice as Parameters<typeof toAdminInvoiceVm>[0]);
+    return res.json({invoice: {...vm, pdfUrl: undefined}});
+  }),
 };

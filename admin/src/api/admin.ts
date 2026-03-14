@@ -85,4 +85,9 @@ export const adminApi = {
         },
       })
       .then((r) => r.data),
+
+  getInvoiceById: (id: string) =>
+    api
+      .get<{ invoice: Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string } }>(`/admin/invoices/${id}`)
+      .then((r) => r.data.invoice),
 };

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { adminApi, type AdminInvoice } from '../api/admin';
+import InvoiceViewModal from '../components/InvoiceViewModal';
 
 export default function Invoices() {
   const [searchParams] = useSearchParams();
   const userIdFromQuery = searchParams.get('userId') ?? '';
+  const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [data, setData] = useState<{
     invoices: AdminInvoice[];
     total: number;
@@ -135,16 +137,13 @@ export default function Invoices() {
                             {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '—'}
                           </td>
                           <td>
-                            {inv.pdfUrl && (
-                              <a
-                                href={inv.pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-sm btn-outline-primary"
-                              >
-                                PDF
-                              </a>
-                            )}
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => setViewInvoiceId(inv.id)}
+                            >
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -181,6 +180,11 @@ export default function Invoices() {
           )}
         </div>
       </div>
+
+      <InvoiceViewModal
+        invoiceId={viewInvoiceId}
+        onClose={() => setViewInvoiceId(null)}
+      />
     </div>
   );
 }

@@ -130,16 +130,16 @@ export default function Users() {
                   </tbody>
                 </table>
               </div>
-              {data.totalPages > 1 && (
+              {data && data.totalPages > 1 ? (
                 <div className="d-flex justify-content-between align-items-center px-4 py-3 border-top">
                   <small className="text-muted">
-                    {data.total} total · page {data.page} of {data.totalPages}
+                    {data?.total} total · page {data?.page} of {data?.totalPages}
                   </small>
                   <div className="btn-group btn-group-sm">
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
-                      disabled={data.page <= 1}
+                      disabled={(data?.page ?? 1) <= 1}
                       onClick={() => setPage((p) => p - 1)}
                     >
                       Previous
@@ -147,14 +147,14 @@ export default function Users() {
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
-                      disabled={data.page >= data.totalPages}
+                      disabled={(data?.page ?? 1) >= (data?.totalPages ?? 0)}
                       onClick={() => setPage((p) => p + 1)}
                     >
                       Next
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
             </>
           )}
         </div>

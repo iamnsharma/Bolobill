@@ -27,5 +27,6 @@ adminRouter.get('/invoices', asyncHandler(adminController.listInvoices));
 adminRouter.get('/users', asyncHandler(adminController.listUsers));
 
 // Parameterized routes
+adminRouter.get('/invoices/:id', asyncHandler(adminController.getInvoiceById));
 adminRouter.get('/users/:id', asyncHandler(adminController.getUserById));
 adminRouter.patch('/users/:id/blacklist', asyncHandler(adminController.setBlacklist));

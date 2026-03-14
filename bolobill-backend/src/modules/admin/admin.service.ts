@@ -110,4 +110,14 @@ export const adminService = {
       totalPages: Math.ceil(total / limit),
     };
   },
+
+  async getInvoiceById(id: string) {
+    const invoice = await InvoiceModel.findById(id)
+      .populate('userId', 'name phone businessName')
+      .lean();
+    if (!invoice) {
+      throw new ApiError(404, 'Invoice not found');
+    }
+    return invoice;
+  },
 };
