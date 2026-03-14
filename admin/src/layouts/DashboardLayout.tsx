@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 const NAV_ITEMS = [
   { to: '/', icon: 'ti-home', label: 'Dashboard' },
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -28,7 +30,12 @@ export default function DashboardLayout() {
     setMobileOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
     logout();
     navigate('/login', { replace: true });
   };
@@ -80,7 +87,7 @@ export default function DashboardLayout() {
                 <hr className="dropdown-divider" />
               </li>
               <li>
-                <button type="button" className="dropdown-item text-danger" onClick={handleLogout}>
+                <button type="button" className="dropdown-item text-danger" onClick={handleLogoutClick}>
                   <i className="ti ti-logout me-2" />
                   Log out
                 </button>
@@ -125,8 +132,8 @@ export default function DashboardLayout() {
           <li>
             <button
               type="button"
-              className="nav-link border-0 bg-transparent w-100 text-start"
-              onClick={handleLogout}
+              className="nav-link border-0 bg-transparent w-100 text-start text-danger"
+              onClick={handleLogoutClick}
             >
               <i className="ti ti-logout" />
               <span className="nav-text">Log out</span>
@@ -134,6 +141,17 @@ export default function DashboardLayout() {
           </li>
         </ul>
       </aside>
+
+      <ConfirmModal
+        show={showLogoutConfirm}
+        title="Log out?"
+        message="You will need to sign in again to access the admin panel."
+        variant="warning"
+        confirmLabel="Log out"
+        cancelLabel="Cancel"
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
 
       <main
         id="content"

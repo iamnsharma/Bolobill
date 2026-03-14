@@ -55,24 +55,28 @@ export default function Invoices() {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Invoices</h1>
       <p className="text-muted mb-4">
         {userIdFromQuery ? 'Invoices for this user.' : 'All app invoices across users.'}
       </p>
 
-      <div className="card border-0 shadow-sm rounded-3 mb-3">
-        <div className="card-body">
-          <form className="d-flex gap-2 flex-wrap" onSubmit={onSearch}>
+      <div className="card border-0 shadow-sm rounded-3 mb-4">
+        <div className="card-body p-4">
+          <form className="d-flex gap-2 flex-wrap align-items-center" onSubmit={onSearch}>
+            <span className="d-flex align-items-center text-muted me-1">
+              <i className="ti ti-search" />
+            </span>
             <input
               type="search"
               className="form-control"
-              style={{ maxWidth: 260 }}
+              style={{ maxWidth: 280 }}
               placeholder="Invoice ID or customer name"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary d-flex align-items-center gap-1">
+              <i className="ti ti-search" />
               Search
             </button>
           </form>
@@ -97,13 +101,13 @@ export default function Invoices() {
                 <table className="table table-hover align-middle mb-0">
                   <thead className="bg-light">
                     <tr>
-                      <th>Invoice ID</th>
-                      <th>Customer</th>
-                      <th>Total</th>
-                      <th>Source</th>
-                      <th>User</th>
-                      <th>Created</th>
-                      <th></th>
+                      <th><i className="ti ti-receipt me-1" />Invoice ID</th>
+                      <th><i className="ti ti-user me-1" />Customer</th>
+                      <th><i className="ti ti-cash me-1" />Total</th>
+                      <th><i className="ti ti-tag me-1" />Source</th>
+                      <th><i className="ti ti-users me-1" />User</th>
+                      <th><i className="ti ti-calendar me-1" />Created</th>
+                      <th style={{ width: 90 }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -139,9 +143,10 @@ export default function Invoices() {
                           <td>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-primary"
+                              className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
                               onClick={() => setViewInvoiceId(inv.id)}
                             >
+                              <i className="ti ti-eye" />
                               View
                             </button>
                           </td>

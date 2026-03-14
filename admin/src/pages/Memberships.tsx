@@ -4,7 +4,7 @@ export default function Memberships() {
   const showAlert = () => alert(NEED_BACKEND_ALERT);
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Memberships</h1>
       <p className="text-muted mb-4">Membership details and manage plans for the app.</p>
 

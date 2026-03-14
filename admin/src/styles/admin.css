@@ -1,0 +1,86 @@
+/* Admin layout & page spacing */
+.admin-page {
+  animation: adminFadeIn 0.25s ease-out;
+}
+
+@keyframes adminFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.content .container-fluid {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Cards: consistent padding and hover */
+.card.rounded-3 {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card.rounded-3:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Tables: better spacing and alignment */
+.table th {
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  color: var(--bs-secondary);
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.table td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Form controls in cards */
+.card-body .form-control {
+  border-radius: 0.5rem;
+}
+
+.card-body .btn {
+  border-radius: 0.5rem;
+}
+
+/* Modal body spacing */
+.modal-body .invoice-view .d-flex.pb-2,
+.modal-body .invoice-view .mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.modal-body .invoice-view .table {
+  margin-bottom: 1.5rem !important;
+}
+
+.modal-body .invoice-view .table th,
+.modal-body .invoice-view .table td {
+  padding: 0.625rem 0.75rem;
+}
+
+/* Page titles */
+.mb-6 > h1 {
+  letter-spacing: -0.02em;
+}
+
+.mb-6 > .text-muted {
+  margin-bottom: 1.5rem !important;
+}
+
+/* Buttons with icons */
+.btn .ti {
+  font-size: 1.1em;
+  vertical-align: -0.1em;
+}

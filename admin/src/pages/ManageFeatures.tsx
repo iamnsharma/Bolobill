@@ -4,7 +4,7 @@ export default function ManageFeatures() {
   const showAlert = () => alert(NEED_BACKEND_ALERT);
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Manage features</h1>
       <p className="text-muted mb-4">Control which features are available in the app.</p>
 

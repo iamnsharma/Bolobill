@@ -1,6 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminApi, type AdminUser } from '../api/admin';
+import ConfirmModal from '../components/ConfirmModal';
+
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="d-flex align-items-start gap-3 py-3 border-bottom border-light">
+      <span
+        className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted"
+        style={{ width: 40, height: 40 }}
+      >
+        <i className={`ti ${icon}`} />
+      </span>
+      <div className="flex-grow-1 min-w-0">
+        <p className="mb-0 small text-muted text-uppercase fw-semibold">{label}</p>
+        <p className="mb-0 mt-1">{value ?? '—'}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function UserDetail() {
   const { id } = useParams<{ id: string }>();
@@ -8,6 +34,7 @@ export default function UserDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showBlacklistConfirm, setShowBlacklistConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -17,7 +44,10 @@ export default function UserDetail() {
       .getUserById(id)
       .then(setUser)
       .catch((e: unknown) => {
-        setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to load user');
+        setError(
+          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+            'Failed to load user'
+        );
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -29,24 +59,32 @@ export default function UserDetail() {
     try {
       const updated = await adminApi.setBlacklist(id, newValue);
       setUser(updated);
+      setShowBlacklistConfirm(false);
     } catch (e: unknown) {
-      alert((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to update');
+      alert(
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          'Failed to update'
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
   return (
-    <div className="mb-6">
-      <Link to="/users" className="btn btn-link btn-sm text-muted text-decoration-none mb-2">
+    <div className="mb-6 admin-page">
+      <Link
+        to="/users"
+        className="btn btn-link btn-sm text-muted text-decoration-none mb-3 d-inline-flex align-items-center"
+      >
         <i className="ti ti-arrow-left me-1" />
         Back to Users
       </Link>
-      <h1 className="fs-3 mb-1 fw-bold">User detail</h1>
-      <p className="text-muted mb-4">{id}</p>
+      <h1 className="fs-3 mb-1 fw-bold">User details</h1>
+      <p className="text-muted mb-4">View and manage this user.</p>
 
       {error && (
-        <div className="alert alert-danger" role="alert">
+        <div className="alert alert-danger d-flex align-items-center" role="alert">
+          <i className="ti ti-alert-circle me-2" />
           {error}
         </div>
       )}
@@ -56,50 +94,101 @@ export default function UserDetail() {
           <div className="spinner-border text-primary" role="status" />
         </div>
       ) : user ? (
-        <div className="card border-0 shadow-sm rounded-3">
-          <div className="card-body p-4">
-            <div className="row">
-              <div className="col-md-6">
-                <p className="mb-2"><strong>Name</strong> {user.name}</p>
-                <p className="mb-2"><strong>Phone</strong> {user.phone}</p>
-                <p className="mb-2"><strong>Business</strong> {user.businessName || '—'}</p>
-                <p className="mb-2"><strong>Account type</strong> {user.accountType ?? '—'}</p>
-                <p className="mb-2">
-                  <strong>Status</strong>{' '}
-                  {user.isBlacklisted ? (
-                    <span className="badge bg-danger">Blacklisted</span>
-                  ) : (
-                    <span className="badge bg-success">Active</span>
-                  )}
-                </p>
-                <p className="mb-2">
-                  <strong>Bills created</strong> {user.usage?.invoiceRequestSuccessCount ?? 0}
-                </p>
-                <p className="mb-0 small text-muted">
-                  Created {user.createdAt ? new Date(user.createdAt).toLocaleString() : '—'}
-                </p>
+        <>
+          <div className="row g-4">
+            <div className="col-lg-8">
+              <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="card-body p-4 p-lg-5">
+                  <InfoRow icon="ti-user" label="Name" value={user.name} />
+                  <InfoRow icon="ti-phone" label="Phone" value={user.phone} />
+                  <InfoRow icon="ti-building-store" label="Business" value={user.businessName || '—'} />
+                  <InfoRow icon="ti-badge" label="Account type" value={user.accountType ?? '—'} />
+                  <div className="d-flex align-items-start gap-3 py-3">
+                    <span
+                      className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted"
+                      style={{ width: 40, height: 40 }}
+                    >
+                      <i className="ti ti-receipt" />
+                    </span>
+                    <div className="flex-grow-1 min-w-0">
+                      <p className="mb-0 small text-muted text-uppercase fw-semibold">Bills created</p>
+                      <p className="mb-0 mt-1">{user.usage?.invoiceRequestSuccessCount ?? 0}</p>
+                    </div>
+                  </div>
+                  <InfoRow
+                    icon="ti-calendar"
+                    label="Created"
+                    value={
+                      user.createdAt ? new Date(user.createdAt).toLocaleString() : '—'
+                    }
+                  />
+                </div>
               </div>
             </div>
-            <hr />
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className={`btn ${user.isBlacklisted ? 'btn-success' : 'btn-warning'}`}
-                disabled={actionLoading}
-                onClick={toggleBlacklist}
-              >
-                {actionLoading ? (
-                  <span className="spinner-border spinner-border-sm me-1" />
-                ) : null}
-                {user.isBlacklisted ? 'Remove from blacklist' : 'Blacklist user'}
-              </button>
-              <Link to={`/invoices?userId=${user.id}`} className="btn btn-outline-primary">
-                View invoices
-              </Link>
+            <div className="col-lg-4">
+              <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="card-body p-4">
+                  <p className="small text-muted text-uppercase fw-semibold mb-2">Status</p>
+                  {user.isBlacklisted ? (
+                    <span className="badge bg-danger fs-6 px-3 py-2">
+                      <i className="ti ti-user-off me-1" />
+                      Blacklisted
+                    </span>
+                  ) : (
+                    <span className="badge bg-success fs-6 px-3 py-2">
+                      <i className="ti ti-circle-check me-1" />
+                      Active
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
+                <div className="card-body p-4">
+                  <p className="small text-muted text-uppercase fw-semibold mb-3">Actions</p>
+                  <div className="d-flex flex-column gap-2">
+                    <button
+                      type="button"
+                      className={`btn ${user.isBlacklisted ? 'btn-success' : 'btn-warning'} w-100 d-flex align-items-center justify-content-center gap-2`}
+                      disabled={actionLoading}
+                      onClick={() => setShowBlacklistConfirm(true)}
+                    >
+                      {actionLoading ? (
+                        <span className="spinner-border spinner-border-sm" />
+                      ) : (
+                        <i className={`ti ${user.isBlacklisted ? 'ti-user-check' : 'ti-user-off'}`} />
+                      )}
+                      {user.isBlacklisted ? 'Remove from blacklist' : 'Blacklist user'}
+                    </button>
+                    <Link
+                      to={`/invoices?userId=${user.id}`}
+                      className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                    >
+                      <i className="ti ti-receipt" />
+                      View invoices
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       ) : null}
+
+      <ConfirmModal
+        show={showBlacklistConfirm}
+        title={user?.isBlacklisted ? 'Remove from blacklist?' : 'Blacklist this user?'}
+        message={
+          user?.isBlacklisted
+            ? 'This user will be able to use the app again.'
+            : 'This user will be blocked from using the app. You can remove them from the blacklist later.'
+        }
+        variant={user?.isBlacklisted ? 'primary' : 'warning'}
+        confirmLabel={user?.isBlacklisted ? 'Remove' : 'Blacklist'}
+        cancelLabel="Cancel"
+        onConfirm={toggleBlacklist}
+        onCancel={() => setShowBlacklistConfirm(false)}
+        loading={actionLoading}
+      />
     </div>
   );
 }
