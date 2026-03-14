@@ -13,6 +13,14 @@ export interface RegisterPayload {
   accountType?: 'personal' | 'business';
 }
 
+export interface RegisterWithOtpPayload {
+  phone: string;
+  otp: string;
+  name: string;
+  businessName: string;
+  pin: string;
+}
+
 export interface AuthUser {
   id: string;
   phone: string;
@@ -38,6 +46,21 @@ export const authApi = {
       ...payload,
       accountType: payload.accountType ?? 'business',
     });
+    return data;
+  },
+
+  sendOtp: async (phone: string): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>('/auth/send-otp', { phone });
+    return data;
+  },
+
+  verifyOtp: async (phone: string, otp: string): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/verify-otp', { phone, otp });
+    return data;
+  },
+
+  registerWithOtp: async (payload: RegisterWithOtpPayload): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/register-with-otp', payload);
     return data;
   },
 

@@ -29,6 +29,19 @@ export type RegisterPayload = {
   accountType?: 'business' | 'personal';
 };
 
+export type RegisterWithOtpPayload = {
+  phone: string;
+  otp: string;
+  name: string;
+  businessName: string;
+  pin: string;
+};
+
+export type LoginWithPinPayload = {
+  phone: string;
+  pin: string;
+};
+
 export type VerifyOtpResponse = {
   token: string;
   user: AuthUser;

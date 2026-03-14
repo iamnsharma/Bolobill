@@ -1,12 +1,13 @@
-import React, {useMemo, useState} from 'react';
-import {KeyboardAvoidingView, Platform, Pressable, ScrollView, View, Image} from 'react-native';
+import React, {useMemo, useState, useCallback} from 'react';
+import {KeyboardAvoidingView, Platform, Pressable, ScrollView, View} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BaseButton, BaseInput, BaseText } from '../../components/atoms';
 import { t } from '../../lang';
 import { T } from '../../lang/constants';
 import { useAuthStore, useThemeStore } from '../../stores';
 import { getStyles } from './style';
-import appLogo from '../../assets/icons/bolobill-logo.png';
+
+const RESEND_COOLDOWN_SEC = 60;
 
 type Props = {
   navigation: {
@@ -21,20 +22,37 @@ type Props = {
 
 export const RegisterScreen = ({ navigation, route }: Props) => {
   const theme = useThemeStore(s => s.theme);
-  const register = useAuthStore(s => s.register);
+  const registerWithOtp = useAuthStore(s => s.registerWithOtp);
+  const sendOtp = useAuthStore(s => s.sendOtp);
   const isLoading = useAuthStore(s => s.isLoading);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const [phone, setPhone] = useState(route?.params?.phone ?? '');
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [otp, setOtp] = useState('');
   const [pin, setPin] = useState('');
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [nameError, setNameError] = useState('');
   const [businessNameError, setBusinessNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [pinError, setPinError] = useState('');
   const [apiError, setApiError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const startResendCooldown = useCallback(() => {
+    setResendCooldown(RESEND_COOLDOWN_SEC);
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   const onContinueDetails = () => {
     let valid = true;
@@ -50,38 +68,59 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
     } else {
       setBusinessNameError('');
     }
-
     if (phone.trim().length < 10) {
       setPhoneError('Enter a valid 10-digit phone number');
       valid = false;
     } else {
       setPhoneError('');
     }
-
-    if (!valid) {
-      return;
-    }
+    if (!valid) return;
     setStep(2);
   };
 
-  const onVerifyAndContinue = async () => {
+  const onSendOtp = async () => {
     setApiError('');
+    try {
+      await sendOtp(phone);
+      setStep(3);
+      startResendCooldown();
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Failed to send OTP');
+    }
+  };
+
+  const onResendOtp = async () => {
+    setApiError('');
+    try {
+      await sendOtp(phone);
+      startResendCooldown();
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Failed to resend OTP');
+    }
+  };
+
+  const onVerifyAndCreateAccount = async () => {
+    setApiError('');
+    if (otp.trim().length < 6) {
+      setOtpError('Enter 6-digit OTP');
+      return;
+    }
+    setOtpError('');
     if (pin.trim().length < 4) {
       setPinError('PIN should be at least 4 digits');
       return;
     }
     setPinError('');
     try {
-      await register({
+      await registerWithOtp({
         phone,
-        name,
-        businessName,
-        pin,
-        accountType: 'business',
+        otp: otp.trim(),
+        name: name.trim(),
+        businessName: businessName.trim(),
+        pin: pin.trim(),
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      setApiError(message);
+      setApiError(error instanceof Error ? error.message : 'Registration failed');
     }
   };
 
@@ -95,34 +134,33 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.heroCard}>
-            <View style={styles.logoWrap}>
-              <Image source={appLogo} style={styles.logo} resizeMode="contain" />
-            </View>
             <BaseText style={styles.title}>{t(T.AUTH_REGISTER_TITLE)}</BaseText>
             <BaseText style={styles.subtitle}>
               {step === 1
-                ? 'Set up your business profile in two quick steps.'
-                : 'Create a secure 6-digit PIN for your account.'}
+                ? 'Set up your business profile.'
+                : step === 2
+                  ? 'Send OTP to your number.'
+                  : 'Enter OTP and create PIN.'}
             </BaseText>
             <View style={styles.stepRow}>
               <View style={[styles.stepDot, styles.stepDotActive]} />
-              <View style={[styles.stepLine, step === 2 ? styles.stepLineActive : null]} />
-              <View style={[styles.stepDot, step === 2 ? styles.stepDotActive : null]} />
+              <View style={[styles.stepLine, step >= 2 ? styles.stepLineActive : null]} />
+              <View style={[styles.stepDot, step >= 2 ? styles.stepDotActive : null]} />
+              <View style={[styles.stepLine, step === 3 ? styles.stepLineActive : null]} />
+              <View style={[styles.stepDot, step === 3 ? styles.stepDotActive : null]} />
             </View>
           </View>
 
           <View style={styles.formSection}>
             {apiError ? <BaseText style={styles.apiErrorText}>{apiError}</BaseText> : null}
-            {step === 1 ? (
+            {step === 1 && (
               <>
                 <BaseInput
                   label="Full Name"
                   value={name}
                   onChangeText={value => {
                     setName(value);
-                    if (nameError) {
-                      setNameError('');
-                    }
+                    if (nameError) setNameError('');
                   }}
                   maxLength={40}
                   placeholder="Enter your full name"
@@ -133,9 +171,7 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
                   value={phone}
                   onChangeText={value => {
                     setPhone(value);
-                    if (phoneError) {
-                      setPhoneError('');
-                    }
+                    if (phoneError) setPhoneError('');
                   }}
                   keyboardType="number-pad"
                   maxLength={10}
@@ -147,9 +183,7 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
                   value={businessName}
                   onChangeText={value => {
                     setBusinessName(value);
-                    if (businessNameError) {
-                      setBusinessNameError('');
-                    }
+                    if (businessNameError) setBusinessNameError('');
                   }}
                   maxLength={60}
                   placeholder="e.g. Sharma Kirana - Jaipur Branch"
@@ -158,42 +192,74 @@ export const RegisterScreen = ({ navigation, route }: Props) => {
                 <BaseButton
                   title="Continue"
                   onPress={onContinueDetails}
-                  disabled={
-                    phone.length < 10 || name.trim().length < 2 || businessName.trim().length < 2
-                  }
+                  disabled={phone.length < 10 || name.trim().length < 2 || businessName.trim().length < 2}
                 />
               </>
-            ) : (
+            )}
+            {step === 2 && (
               <>
                 <View style={styles.summaryCard}>
                   <BaseText style={styles.summaryText}>{`+91 ${phone}`}</BaseText>
                   <BaseText style={styles.summaryText}>{name}</BaseText>
                   <BaseText style={styles.summaryText}>{businessName}</BaseText>
                 </View>
+                <BaseButton
+                  title={t(T.AUTH_SEND_OTP)}
+                  onPress={onSendOtp}
+                  loading={isLoading}
+                />
+                <Pressable onPress={() => setStep(1)}>
+                  <BaseText style={styles.changeText}>Back</BaseText>
+                </Pressable>
+              </>
+            )}
+            {step === 3 && (
+              <>
+                <View style={styles.summaryCard}>
+                  <BaseText style={styles.summaryText}>{`+91 ${phone}`}</BaseText>
+                </View>
                 <BaseInput
-                  label="Create 6-digit PIN"
-                  value={pin}
+                  label={t(T.AUTH_OTP)}
+                  value={otp}
                   onChangeText={value => {
-                    setPin(value);
-                    if (pinError) {
-                      setPinError('');
-                    }
+                    setOtp(value.replace(/\D/g, '').slice(0, 6));
+                    if (otpError) setOtpError('');
                   }}
                   keyboardType="number-pad"
                   maxLength={6}
+                  placeholder="Enter 6-digit OTP"
+                  error={otpError}
+                />
+                <BaseInput
+                  label="Create PIN (4–8 digits)"
+                  value={pin}
+                  onChangeText={value => {
+                    setPin(value);
+                    if (pinError) setPinError('');
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={8}
                   placeholder="Enter PIN"
                   error={pinError}
                 />
                 <View style={styles.actionRow}>
-                  <BaseButton title="Back" onPress={() => setStep(1)} style={styles.secondaryBtn} />
+                  <BaseButton
+                    title={resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend OTP'}
+                    onPress={onResendOtp}
+                    disabled={resendCooldown > 0 || isLoading}
+                    style={styles.secondaryBtn}
+                  />
                   <BaseButton
                     title={t(T.AUTH_VERIFY_CONTINUE)}
-                    onPress={onVerifyAndContinue}
+                    onPress={onVerifyAndCreateAccount}
                     loading={isLoading}
-                    disabled={pin.length < 4}
+                    disabled={otp.length < 6 || pin.length < 4}
                     style={styles.primaryBtn}
                   />
                 </View>
+                <Pressable onPress={() => setStep(2)}>
+                  <BaseText style={styles.changeText}>Back</BaseText>
+                </Pressable>
               </>
             )}
 

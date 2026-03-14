@@ -55,12 +55,8 @@ export const authService = {
     return {token, user};
   },
 
+  /** Send OTP (login or signup). Works for any phone; does not reveal if user exists. */
   async requestOtp(phone: string) {
-    const user = await UserModel.findOne({phone});
-    if (!user) {
-      throw new ApiError(404, 'User not found for this phone');
-    }
-
     return {
       message: 'OTP sent (static for now)',
       otp: STATIC_OTP,
@@ -77,6 +73,34 @@ export const authService = {
       throw new ApiError(404, 'User not found');
     }
 
+    const token = signAuthToken({userId: user._id.toString(), phone: user.phone});
+    return {token, user};
+  },
+
+  /** Register after OTP verification (new users only). */
+  async registerWithOtp(input: {
+    phone: string;
+    otp: string;
+    name: string;
+    businessName: string;
+    pin: string;
+    accountType?: 'personal' | 'business';
+  }) {
+    if (input.otp !== STATIC_OTP) {
+      throw new ApiError(401, 'Invalid OTP');
+    }
+    const existing = await UserModel.findOne({phone: input.phone});
+    if (existing) {
+      throw new ApiError(409, 'Phone already registered');
+    }
+    const pinHash = await bcrypt.hash(input.pin, 10);
+    const user = await UserModel.create({
+      name: input.name.trim(),
+      businessName: input.businessName.trim(),
+      phone: input.phone.trim(),
+      pinHash,
+      accountType: input.accountType ?? 'business',
+    });
     const token = signAuthToken({userId: user._id.toString(), phone: user.phone});
     return {token, user};
   },

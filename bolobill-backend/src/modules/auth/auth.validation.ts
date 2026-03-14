@@ -38,3 +38,12 @@ export const resetPinSchema = z.object({
   otp: z.string().length(6),
   newPin: z.string().min(4).max(8),
 });
+
+export const registerWithOtpSchema = z.object({
+  phone: z.string().min(10),
+  otp: z.string().length(6),
+  name: z.string().min(2),
+  businessName: z.string().trim().min(1, 'Business / Branch name is required'),
+  pin: z.string().min(4).max(8),
+  accountType: z.enum(['personal', 'business']).optional(),
+});

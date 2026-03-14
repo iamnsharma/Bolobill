@@ -2,6 +2,8 @@ export const ENDPOINTS = {
   TRANSACTION_CREATE: '/transactions/create',
   WALLET_BALANCE: '/wallet/balance',
   AUTH_REGISTER: '/auth/register',
+  AUTH_REGISTER_WITH_OTP: '/auth/register-with-otp',
+  AUTH_LOGIN: '/auth/login',
   AUTH_SEND_OTP: '/auth/send-otp',
   AUTH_VERIFY_OTP: '/auth/verify-otp',
   AUTH_ME: '/auth/me',

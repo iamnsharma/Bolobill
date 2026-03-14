@@ -1,6 +1,12 @@
 import {create} from 'zustand';
 import {authService} from '../services/api/modules/auth.service';
-import {AuthUser, RegisterPayload, VerifyOtpPayload} from '../services/api/types/auth.types';
+import {
+  AuthUser,
+  RegisterPayload,
+  RegisterWithOtpPayload,
+  VerifyOtpPayload,
+  LoginWithPinPayload,
+} from '../services/api/types/auth.types';
 import {STORAGE_KEYS} from '../utils/storage/keys';
 import {storage} from '../utils/storage/mmkv';
 
@@ -14,7 +20,9 @@ type AuthState = {
   initializeAuth: () => void;
   sendOtp: (phone: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  registerWithOtp: (payload: RegisterWithOtpPayload) => Promise<void>;
   loginWithOtp: (payload: VerifyOtpPayload) => Promise<void>;
+  loginWithPin: (payload: LoginWithPinPayload) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => void;
 };
@@ -63,6 +71,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({isLoading: true});
     try {
       const response = await authService.register(payload);
+      storage.delete(STORAGE_KEYS.GUEST_MODE);
+      storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
+      storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));
+      set({
+        token: response.token,
+        user: response.user,
+        isLoggedIn: true,
+        isGuest: false,
+      });
+    } finally {
+      set({isLoading: false});
+    }
+  },
+  registerWithOtp: async payload => {
+    set({isLoading: true});
+    try {
+      const response = await authService.registerWithOtp(payload);
+      storage.delete(STORAGE_KEYS.GUEST_MODE);
+      storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
+      storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));
+      set({
+        token: response.token,
+        user: response.user,
+        isLoggedIn: true,
+        isGuest: false,
+      });
+    } finally {
+      set({isLoading: false});
+    }
+  },
+  loginWithPin: async payload => {
+    set({isLoading: true});
+    try {
+      const response = await authService.login(payload);
       storage.delete(STORAGE_KEYS.GUEST_MODE);
       storage.set(STORAGE_KEYS.AUTH_TOKEN, response.token);
       storage.set(STORAGE_KEYS.AUTH_USER, JSON.stringify(response.user));

@@ -1,6 +1,12 @@
 import {privateClient} from '../clients/privateClient';
 import {ENDPOINTS} from '../endpoints';
-import {RegisterPayload, VerifyOtpPayload, VerifyOtpResponse} from '../types/auth.types';
+import {
+  RegisterPayload,
+  RegisterWithOtpPayload,
+  VerifyOtpPayload,
+  VerifyOtpResponse,
+  LoginWithPinPayload,
+} from '../types/auth.types';
 
 export const authService = {
   sendOtp: async (phone: string) => {
@@ -15,6 +21,19 @@ export const authService = {
       ENDPOINTS.AUTH_REGISTER,
       payload,
     );
+    return response.data;
+  },
+
+  registerWithOtp: async (payload: RegisterWithOtpPayload): Promise<VerifyOtpResponse> => {
+    const response = await privateClient.post<VerifyOtpResponse>(
+      ENDPOINTS.AUTH_REGISTER_WITH_OTP,
+      payload,
+    );
+    return response.data;
+  },
+
+  login: async (payload: LoginWithPinPayload): Promise<VerifyOtpResponse> => {
+    const response = await privateClient.post<VerifyOtpResponse>(ENDPOINTS.AUTH_LOGIN, payload);
     return response.data;
   },
 

@@ -5,6 +5,7 @@ import {authService} from './auth.service';
 import {
   loginSchema,
   registerSchema,
+  registerWithOtpSchema,
   requestOtpSchema,
   resetPinSchema,
   verifyOtpSchema,
@@ -26,6 +27,19 @@ export const authController = {
     }
 
     const result = await authService.register(parsed.data);
+    return res.status(201).json({
+      token: result.token,
+      user: toAuthUserVm(result.user),
+    });
+  },
+
+  async registerWithOtp(req: Request, res: Response) {
+    const parsed = registerWithOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+
+    const result = await authService.registerWithOtp(parsed.data);
     return res.status(201).json({
       token: result.token,
       user: toAuthUserVm(result.user),

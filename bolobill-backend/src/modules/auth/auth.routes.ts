@@ -7,8 +7,8 @@ export const authRouter = Router();
 
 authRouter.get('/me', authMiddleware, asyncHandler(authController.me));
 authRouter.post('/register', asyncHandler(authController.register));
+authRouter.post('/register-with-otp', asyncHandler(authController.registerWithOtp));
 authRouter.post('/login', asyncHandler(authController.login));
-// Backward-compatible aliases used by existing React Native code.
 authRouter.post('/send-otp', asyncHandler(authController.requestForgotOtp));
 authRouter.post('/verify-otp', asyncHandler(authController.verifyOtp));
 authRouter.post('/forgot/request-otp', asyncHandler(authController.requestForgotOtp));
