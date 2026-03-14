@@ -25,7 +25,7 @@ export default function Login() {
       const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       if (status === 403) {
-        setError("Only project admin and business accounts can sign in here. If you registered as a business in the BoloBill app, use the same phone and PIN.");
+        setError("Access denied. Use the phone and PIN from your BoloBill business account.");
       } else {
         setError(msg || "Invalid phone or PIN.");
       }
@@ -48,7 +48,7 @@ export default function Login() {
               <span className="fs-4 fw-bold text-dark">BoloBill Admin</span>
             </div>
             <p className="text-muted small mb-0">
-              Superadmin: project owner. Business: sign in with the same phone and PIN you set in the BoloBill app.
+              Sign in with your phone number and PIN.
             </p>
           </div>
 
