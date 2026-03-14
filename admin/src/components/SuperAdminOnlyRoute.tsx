@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function SuperAdminOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin } = useAuth();
   if (!isSuperAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
 }

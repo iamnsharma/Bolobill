@@ -88,6 +88,58 @@ export const invoiceService = {
     return items.map((item) => ({name: item.name, quantity: item.quantity}));
   },
 
+  /** Preview voice: transcribe and parse to items + transcript (no invoice created). */
+  async previewVoiceInvoice(input: {audioPath: string; language?: string}) {
+    const transcript = await transcribeAudio(input.audioPath, input.language);
+    const {items, total} = await parseItemsWithFallback(transcript);
+    if (!items.length) {
+      throw new ApiError(422, 'Unable to parse items from recording. Speak clearly, e.g. "2 kg rice 100 rupees".');
+    }
+    const localizedItems = await localizeItemNamesByLanguage(items, input.language);
+    return {items: localizedItems, transcript, total};
+  },
+
+  /** Create invoice from reviewed voice data (after user edits in review screen). */
+  async createInvoiceFromVoicePreview(input: {
+    userId: string;
+    customerName: string;
+    items: InvoiceItemInput[];
+    transcript?: string;
+    durationSec?: number;
+  }) {
+    const user = await UserModel.findById(input.userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    const billToName = input.customerName?.trim() || 'Customer';
+    const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const invoiceId = createInvoiceId();
+    const transcript = input.transcript?.trim() ?? '';
+
+    const pdf = await generateInvoicePdf({
+      invoiceId,
+      customerName: user.name,
+      customerPhone: user.phone,
+      billToName,
+      items: input.items,
+      total,
+      transcript,
+    });
+
+    const invoice = await InvoiceModel.create({
+      userId: user._id,
+      invoiceId,
+      customerName: billToName,
+      items: input.items,
+      total,
+      voiceTranscript: transcript,
+      pdfPath: pdf.pdfPath,
+      source: 'voice',
+    });
+
+    return invoice;
+  },
+
   async createVoiceInvoice(input: {
     userId: string;
     audioPath: string;

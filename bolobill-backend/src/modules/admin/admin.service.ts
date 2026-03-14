@@ -44,6 +44,32 @@ export const adminService = {
     };
   },
 
+  /** Aggregate Whisper (voice-to-text) usage across all app users. Super admin only. */
+  async getWhisperUsage() {
+    const appUserFilter = {role: {$nin: ['admin', 'superadmin']}};
+    const users = await UserModel.find(appUserFilter)
+      .select('usage.voiceToTextSecondsUsed')
+      .lean();
+    const totalSeconds = users.reduce(
+      (sum, u) => sum + (Number((u as { usage?: { voiceToTextSecondsUsed?: number } }).usage?.voiceToTextSecondsUsed) || 0),
+      0,
+    );
+    const totalMinutes = totalSeconds / 60;
+    // OpenAI Whisper API: $0.006 per minute (approximate)
+    const costPerMinuteUSD = 0.006;
+    const costUSD = totalMinutes * costPerMinuteUSD;
+    // Approximate INR (use env or fixed rate; default ~83)
+    const usdToInr = Number(process.env.USD_TO_INR) || 83;
+    const costINR = costUSD * usdToInr;
+    return {
+      totalSeconds: Math.round(totalSeconds),
+      totalMinutes: Math.round(totalMinutes * 100) / 100,
+      costUSD: Math.round(costUSD * 100) / 100,
+      costINR: Math.round(costINR * 100) / 100,
+      usersWithUsage: users.filter((u) => Number((u as { usage?: { voiceToTextSecondsUsed?: number } }).usage?.voiceToTextSecondsUsed) > 0).length,
+    };
+  },
+
   async listUsers(params: { page?: number; limit?: number; search?: string }) {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(100, Math.max(1, params.limit ?? 20));

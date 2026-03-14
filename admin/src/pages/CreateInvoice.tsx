@@ -5,6 +5,9 @@ import {
   VoiceRecorder,
   type RecordingResult,
 } from "../components/VoiceRecorder";
+import ReviewInvoiceModal, {
+  type ReviewInvoiceData,
+} from "../components/ReviewInvoiceModal";
 
 type LineItem = { name: string; quantity: string; totalPrice: string };
 
@@ -18,13 +21,15 @@ export default function CreateInvoice() {
   const [customerName, setCustomerName] = useState("");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<LineItem[]>([{ ...defaultLine }]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voiceRecording, setVoiceRecording] = useState<RecordingResult | null>(
     null,
   );
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewData, setReviewData] = useState<ReviewInvoiceData | null>(null);
+  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
 
   const addLine = () => setLines((prev) => [...prev, { ...defaultLine }]);
 
@@ -51,7 +56,7 @@ export default function CreateInvoice() {
     setVoiceError(null);
   };
 
-  const handleCreateFromVoice = async () => {
+  const handleReviewFromVoice = async () => {
     if (!voiceRecording || !customerName.trim()) return;
     setVoiceLoading(true);
     setVoiceError(null);
@@ -62,19 +67,68 @@ export default function CreateInvoice() {
         type: voiceRecording.mimeType,
       });
       formData.append("audio", file);
-      formData.append("customerName", customerName.trim());
-      formData.append("durationSec", String(voiceRecording.durationSec));
       formData.append("language", "en");
-      await adminApi.createVoiceInvoice(formData);
-      resetForm();
-      navigate("/invoices", { replace: true });
+      const result = await adminApi.previewVoiceInvoice(formData);
+      setReviewData({
+        customerName: customerName.trim(),
+        items: result.items.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          totalPrice: i.totalPrice,
+        })),
+        transcript: result.transcript,
+        durationSec: voiceRecording.durationSec,
+        source: "voice",
+      });
+      setReviewOpen(true);
     } catch (err: unknown) {
       setVoiceError(
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to create bill from voice.",
+          ?.message ?? "Failed to parse recording. Try again or speak clearly.",
       );
     } finally {
       setVoiceLoading(false);
+    }
+  };
+
+  const handleReviewConfirm = async (data: ReviewInvoiceData) => {
+    setReviewSubmitLoading(true);
+    setError(null);
+    setVoiceError(null);
+    try {
+      if (data.source === "voice") {
+        await adminApi.createFromVoicePreview({
+          customerName: data.customerName,
+          items: data.items.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            totalPrice: i.totalPrice,
+          })),
+          transcript: data.transcript,
+          durationSec: data.durationSec,
+        });
+      } else {
+        await adminApi.createInvoice({
+          customerName: data.customerName,
+          items: data.items.map((i) => ({
+            name: i.name,
+            quantity: String(i.quantity),
+            totalPrice: i.totalPrice,
+          })),
+          note: data.note,
+        });
+      }
+      setReviewOpen(false);
+      setReviewData(null);
+      resetForm();
+      navigate("/invoices", { replace: true });
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to create bill",
+      );
+    } finally {
+      setReviewSubmitLoading(false);
     }
   };
 
@@ -85,42 +139,6 @@ export default function CreateInvoice() {
     setVoiceRecording(null);
     setError(null);
     setVoiceError(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName.trim()) {
-      setError("Customer name is required.");
-      return;
-    }
-    const validLines = lines.filter((l) => l.name.trim());
-    if (validLines.length === 0) {
-      setError("Add at least one item with a name.");
-      return;
-    }
-    const items = validLines.map((l) => ({
-      name: l.name.trim(),
-      quantity: String(parseFloat(l.quantity) || 1),
-      totalPrice: parseFloat(l.totalPrice) || 0,
-    }));
-    setLoading(true);
-    setError(null);
-    try {
-      await adminApi.createInvoice({
-        customerName: customerName.trim(),
-        items,
-        note: note.trim() || undefined,
-      });
-      resetForm();
-      navigate("/invoices", { replace: true });
-    } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to create bill",
-      );
-    } finally {
-      setLoading(false);
-    }
   };
 
   const canRecord = customerName.trim().length > 0;
@@ -205,21 +223,24 @@ export default function CreateInvoice() {
                     Recorded {voiceRecording.durationSec}s
                   </span>
                 </div>
+                <p className="small text-muted mb-2">
+                  Review and edit the parsed items before creating the bill.
+                </p>
                 <div className="d-flex gap-2 flex-wrap">
                   <button
                     type="button"
                     className="btn btn-success"
-                    onClick={handleCreateFromVoice}
+                    onClick={handleReviewFromVoice}
                     disabled={voiceLoading || !customerName.trim()}>
                     {voiceLoading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" />
-                        Creating…
+                        Parsing…
                       </>
                     ) : (
                       <>
-                        <i className="ti ti-check me-1" />
-                        Create bill from recording
+                        <i className="ti ti-clipboard-check me-1" />
+                        Review &amp; create bill
                       </>
                     )}
                   </button>
@@ -240,7 +261,6 @@ export default function CreateInvoice() {
       {/* Manual form — shown only when Manual is selected */}
       {mode === "manual" && (
         <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-          <form onSubmit={handleSubmit}>
           <div className="card-body p-4">
             <div className="row g-3 mb-4">
               <div className="col-md-6">
@@ -354,16 +374,49 @@ export default function CreateInvoice() {
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
                 className="btn btn-primary"
-                disabled={loading}>
-                {loading ? "Creating…" : "Create Bill"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!customerName.trim()) {
+                    setError("Customer name is required.");
+                    return;
+                  }
+                  const validLines = lines.filter((l) => l.name.trim());
+                  if (validLines.length === 0) {
+                    setError("Add at least one item with a name.");
+                    return;
+                  }
+                  setError(null);
+                  setReviewData({
+                    customerName: customerName.trim(),
+                    items: validLines.map((l) => ({
+                      name: l.name.trim(),
+                      quantity: l.quantity,
+                      totalPrice: parseFloat(l.totalPrice) || 0,
+                    })),
+                    note: note.trim() || undefined,
+                    source: "manual",
+                  });
+                  setReviewOpen(true);
+                }}>
+                Review & create bill
               </button>
             </div>
           </div>
-        </form>
         </div>
       )}
+
+      <ReviewInvoiceModal
+        open={reviewOpen}
+        initialData={reviewData}
+        onClose={() => {
+          setReviewOpen(false);
+          setReviewData(null);
+        }}
+        onConfirm={handleReviewConfirm}
+        loading={reviewSubmitLoading}
+      />
     </div>
   );
 }

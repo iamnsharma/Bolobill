@@ -43,6 +43,14 @@ export interface AdminStats {
   activeMemberships: number;
 }
 
+export interface WhisperUsage {
+  totalSeconds: number;
+  totalMinutes: number;
+  costUSD: number;
+  costINR: number;
+  usersWithUsage: number;
+}
+
 export interface SalesSummary {
   total: number;
   today: number;
@@ -73,6 +81,9 @@ export const adminApi = {
 
   getStats: () =>
     api.get<AdminStats>('/admin/stats').then((r) => r.data),
+
+  getWhisperUsage: () =>
+    api.get<WhisperUsage>('/admin/whisper-usage').then((r) => r.data),
 
   getSalesSummary: (params?: { userId?: string; from?: string; to?: string }) =>
     api.get<SalesSummary>('/admin/sales-summary', { params: params ?? {} }).then((r) => r.data),
@@ -132,6 +143,25 @@ export const adminApi = {
   /** Speech-to-text: create bill from voice recording (same API as app). */
   createVoiceInvoice: (formData: FormData) =>
     api.post<{ invoice: AdminInvoice }>('/invoices/voice', formData, { timeout: 60000 }).then((r) => r.data.invoice),
+
+  /** Preview voice: get parsed items + transcript without creating invoice. */
+  previewVoiceInvoice: (formData: FormData) =>
+    api
+      .post<{ items: Array<{ name: string; quantity: string; totalPrice: number }>; transcript: string; total: number }>(
+        '/invoices/voice/preview',
+        formData,
+        { timeout: 60000 }
+      )
+      .then((r) => r.data),
+
+  /** Create invoice from reviewed voice data (after user edits in review screen). */
+  createFromVoicePreview: (body: {
+    customerName: string;
+    items: Array<{ name: string; quantity: string | number; totalPrice: number }>;
+    transcript?: string;
+    durationSec?: number;
+  }) =>
+    api.post<{ invoice: AdminInvoice }>('/invoices/voice/create-from-preview', body).then((r) => r.data.invoice),
 
   updateInvoice: (id: string, body: { customerName?: string; items?: Array<{ name: string; quantity: string | number; totalPrice: number }>; voiceTranscript?: string }) =>
     api.put<{ invoice: AdminInvoice }>(`/admin/invoices/${id}`, body).then((r) => r.data.invoice),

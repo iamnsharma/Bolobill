@@ -43,6 +43,11 @@ export const adminController = {
     return res.json(stats);
   }),
 
+  getWhisperUsage: asyncHandler(async (_req: Request, res: Response) => {
+    const usage = await adminService.getWhisperUsage();
+    return res.json(usage);
+  }),
+
   listUsers: asyncHandler(async (req: Request, res: Response) => {
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit);

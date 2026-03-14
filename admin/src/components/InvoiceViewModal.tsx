@@ -4,9 +4,11 @@ import { exportInvoiceAsPdf } from '../utils/exportInvoicePdf';
 
 type InvoiceData = Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string };
 
-/** Normalize to digits only for wa.me (e.g. 919876543210) */
+/** Normalize to digits only for wa.me (e.g. 919876543210). Add 91 if user entered 10 digits (India). */
 function normalizePhoneForWhatsApp(value: string): string {
-  return value.replace(/\D/g, '');
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 10 && !value.trim().startsWith('91')) return '91' + digits;
+  return digits;
 }
 
 export default function InvoiceViewModal({
@@ -61,14 +63,13 @@ export default function InvoiceViewModal({
     setWhatsAppError('');
     const digits = normalizePhoneForWhatsApp(whatsAppNumber);
     if (digits.length < 10) {
-      setWhatsAppError('Enter a valid phone number with country code (e.g. 919876543210)');
+      setWhatsAppError('Enter at least 10 digits (e.g. 9876543210 or 919876543210)');
       return;
     }
     const message = [
-      `Bill from BoloBill – Invoice ${invoice.invoiceId}`,
-      `Customer: ${invoice.customerName}`,
-      `Total: ₹${invoice.total}`,
-      invoice.pdfUrl ? `Download PDF: ${invoice.pdfUrl}` : '',
+      `Bolo Bill – ${invoice.invoiceId}`,
+      `Customer: ${invoice.customerName} | Total: ₹${invoice.total}`,
+      invoice.pdfUrl ? invoice.pdfUrl : '',
     ]
       .filter(Boolean)
       .join('\n');
@@ -169,6 +170,19 @@ export default function InvoiceViewModal({
                     Total: <span className="text-primary">₹{invoice.total}</span>
                   </p>
                 </div>
+                {invoice.pdfUrl && (
+                  <div className="mt-3 pt-3 border-top">
+                    <a
+                      href={invoice.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+                    >
+                      <i className="ti ti-file" />
+                      Open bill PDF
+                    </a>
+                  </div>
+                )}
                 {invoice.voiceTranscript && (
                   <div className="mt-4 pt-4 border-top">
                     <p className="mb-1 fw-bold text-muted small text-uppercase">Transcript</p>
@@ -182,19 +196,21 @@ export default function InvoiceViewModal({
             <div className="modal-footer border-top bg-light px-4 py-3 flex-wrap gap-2">
               {showWhatsAppShare ? (
                 <div className="w-100 d-flex flex-column gap-2">
-                  <label className="form-label small mb-0 fw-bold">Share to WhatsApp – enter phone number</label>
-                  <p className="small text-muted mb-0">Include country code, no + or spaces (e.g. 919876543210)</p>
+                  <label className="form-label small mb-0 fw-bold">Send bill to WhatsApp number</label>
+                  <p className="small text-muted mb-0">
+                    Enter the customer&apos;s number. You don&apos;t need to save the contact — WhatsApp will open a chat with this number (new or existing). For India, 10 digits (e.g. 9876543210) are enough; we add 91 automatically.
+                  </p>
                   <div className="d-flex gap-2 flex-wrap align-items-center">
                     <input
                       type="tel"
                       className="form-control"
-                      placeholder="e.g. 919876543210"
+                      placeholder="e.g. 9876543210 or 919876543210"
                       value={whatsAppNumber}
                       onChange={(e) => {
                         setWhatsAppNumber(e.target.value);
                         setWhatsAppError('');
                       }}
-                      style={{ maxWidth: 220 }}
+                      style={{ maxWidth: 260 }}
                       autoFocus
                     />
                     <button
@@ -203,7 +219,7 @@ export default function InvoiceViewModal({
                       onClick={handleShareOnWhatsApp}
                     >
                       <i className="ti ti-brand-whatsapp" />
-                      Open WhatsApp
+                      Open chat &amp; send
                     </button>
                     <button
                       type="button"
@@ -239,7 +255,7 @@ export default function InvoiceViewModal({
                     onClick={() => setShowWhatsAppShare(true)}
                   >
                     <i className="ti ti-brand-whatsapp" />
-                    Share on WhatsApp
+                    Share bill PDF on WhatsApp
                   </button>
                 </>
               )}

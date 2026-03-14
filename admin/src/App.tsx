@@ -3,7 +3,11 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MembershipProvider } from "./contexts/MembershipContext";
 import BusinessOnlyRoute from "./components/BusinessOnlyRoute";
 import SuperAdminOnlyRoute from "./components/SuperAdminOnlyRoute";
-import Login from "./pages/Login";
+import Landing from "./pages/Landing";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsConditions from "./pages/TermsConditions";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Invoices from "./pages/Invoices";
@@ -16,6 +20,7 @@ import ItemsSold from "./pages/ItemsSold";
 import OutOfStock from "./pages/OutOfStock";
 import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
+import Whisper from "./pages/Whisper";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -33,9 +38,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsConditions />} />
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <MembershipProvider>
@@ -99,6 +108,14 @@ function AppRoutes() {
           element={
             <SuperAdminOnlyRoute>
               <ManageSubscriptions />
+            </SuperAdminOnlyRoute>
+          }
+        />
+        <Route
+          path="whisper"
+          element={
+            <SuperAdminOnlyRoute>
+              <Whisper />
             </SuperAdminOnlyRoute>
           }
         />

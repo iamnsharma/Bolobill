@@ -47,6 +47,8 @@ invoiceRouter.use(authMiddleware);
 
 invoiceRouter.post('/translate-text', asyncHandler(invoiceController.translateText));
 invoiceRouter.post('/create', upload.single('audio'), asyncHandler(invoiceController.createVoice));
+invoiceRouter.post('/voice/preview', upload.single('audio'), asyncHandler(invoiceController.previewVoice));
+invoiceRouter.post('/voice/create-from-preview', asyncHandler(invoiceController.createFromVoicePreview));
 invoiceRouter.post('/voice', upload.single('audio'), asyncHandler(invoiceController.createVoice));
 invoiceRouter.post('/manual', asyncHandler(invoiceController.createManual));
 invoiceRouter.get('/sales-summary', asyncHandler(invoiceController.getSalesSummary));

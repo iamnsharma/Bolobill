@@ -6,6 +6,7 @@ import {
   manualInvoiceSchema,
   translateTextSchema,
   updateInvoiceSchema,
+  createFromVoicePreviewSchema,
 } from './invoice.validation';
 
 const getUserId = (req: Request) => {
@@ -32,6 +33,48 @@ export const invoiceController = {
     });
     await invoiceService.incrementUserUsage(userId, {invoiceRequestSuccessCount: 1});
     return res.status(200).json({invoice});
+  },
+
+  async previewVoice(req: Request, res: Response) {
+    getUserId(req);
+    if (!req.file?.path) {
+      throw new ApiError(400, 'audio file is required');
+    }
+    try {
+      const result = await invoiceService.previewVoiceInvoice({
+        audioPath: req.file.path,
+        language: req.body.language,
+      });
+      return res.status(200).json(result);
+    } finally {
+      await invoiceService.cleanupTempFile(req.file?.path);
+    }
+  },
+
+  async createFromVoicePreview(req: Request, res: Response) {
+    const userId = getUserId(req);
+    const parsed = createFromVoicePreviewSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const payload = parsed.data;
+    const items = payload.items.map((it) => ({
+      name: it.name,
+      quantity: String(it.quantity),
+      totalPrice: it.totalPrice,
+    }));
+    const invoice = await invoiceService.createInvoiceFromVoicePreview({
+      userId,
+      customerName: payload.customerName,
+      items,
+      transcript: payload.transcript,
+      durationSec: payload.durationSec,
+    });
+    await invoiceService.incrementUserUsage(userId, {
+      invoiceRequestSuccessCount: 1,
+      voiceToTextSecondsUsed: payload.durationSec ?? 0,
+    });
+    return res.status(201).json({invoice: toInvoiceVm(invoice)});
   },
 
   async createVoice(req: Request, res: Response) {

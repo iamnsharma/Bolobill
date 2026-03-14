@@ -5,20 +5,21 @@ import { useMembership } from "../contexts/MembershipContext";
 import ConfirmModal from "../components/ConfirmModal";
 
 const SUPERADMIN_NAV = [
-  { to: "/", icon: "ti-home", label: "Dashboard" },
-  { to: "/users", icon: "ti-users", label: "Manage users" },
-  { to: "/subscriptions", icon: "ti-crown", label: "Manage subscriptions" },
-  { to: "/store-links", icon: "ti-link", label: "Store links" },
+  { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
+  { to: "/dashboard/users", icon: "ti-users", label: "Manage users" },
+  { to: "/dashboard/subscriptions", icon: "ti-crown", label: "Manage subscriptions" },
+  { to: "/dashboard/whisper", icon: "ti-microphone", label: "Whisper" },
+  { to: "/dashboard/store-links", icon: "ti-link", label: "Store links" },
 ];
 
 const BUSINESS_NAV = [
-  { to: "/", icon: "ti-home", label: "Dashboard" },
-  { to: "/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
-  { to: "/invoices/new", icon: "ti-plus", label: "Create Bill" },
-  { to: "/sales", icon: "ti-chart-bar", label: "Sales Summary" },
-  { to: "/items-sold", icon: "ti-package", label: "Items Sold" },
-  { to: "/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },
-  { to: "/memberships", icon: "ti-crown", label: "Plans" },
+  { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
+  { to: "/dashboard/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
+  { to: "/dashboard/invoices/new", icon: "ti-plus", label: "Create Bill" },
+  { to: "/dashboard/sales", icon: "ti-chart-bar", label: "Sales Summary" },
+  { to: "/dashboard/items-sold", icon: "ti-package", label: "Items Sold" },
+  { to: "/dashboard/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },
+  { to: "/dashboard/memberships", icon: "ti-crown", label: "Plans" },
 ];
 
 export default function DashboardLayout() {
@@ -80,7 +81,7 @@ export default function DashboardLayout() {
         <div className="ms-auto d-flex align-items-center gap-2">
           {hasActiveMembership && (
             <NavLink
-              to="/memberships"
+              to="/dashboard/memberships"
               className="membership-header-badge text-decoration-none"
               title="Your membership"
               aria-label="Your membership">
@@ -128,7 +129,7 @@ export default function DashboardLayout() {
         className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-show" : ""}`}>
         <div className="logo-area">
           <NavLink
-            to="/"
+            to="/dashboard"
             className="d-inline-flex align-items-center text-dark text-decoration-none">
             <span className="icon-shape icon-sm bg-primary text-white rounded-2 d-flex align-items-center justify-content-center">
               <i className="ti ti-receipt" />
@@ -144,7 +145,7 @@ export default function DashboardLayout() {
             <li key={to}>
               <NavLink
                 to={to}
-                end={to === "/"}
+                end={to === "/dashboard"}
                 className={({ isActive }) =>
                   `nav-link ${isActive ? "active" : ""}`
                 }

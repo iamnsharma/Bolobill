@@ -45,6 +45,7 @@ adminRouter.use((req: Request, res: Response, next: NextFunction) =>
 
 // Superadmin-only routes (platform-wide)
 adminRouter.get('/stats', requireSuperAdmin, asyncHandler(adminController.getStats));
+adminRouter.get('/whisper-usage', requireSuperAdmin, asyncHandler(adminController.getWhisperUsage));
 adminRouter.get('/users', requireSuperAdmin, asyncHandler(adminController.listUsers));
 adminRouter.get('/users/:id', requireSuperAdmin, asyncHandler(adminController.getUserById));
 adminRouter.patch('/users/:id/blacklist', requireSuperAdmin, asyncHandler(adminController.setBlacklist));
