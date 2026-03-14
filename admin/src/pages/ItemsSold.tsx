@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { adminApi, type ItemSold } from '../api/admin';
+import { useState, useEffect } from "react";
+import { adminApi, type ItemSold } from "../api/admin";
 
 const formatMoney = (n: number) => `₹${Number(n).toLocaleString()}`;
 
@@ -7,8 +7,8 @@ export default function ItemsSold() {
   const [items, setItems] = useState<ItemSold[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -20,7 +20,10 @@ export default function ItemsSold() {
       });
       setItems(res.items ?? []);
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to load items');
+      setError(
+        (e as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to load items",
+      );
       setItems([]);
     } finally {
       setLoading(false);
@@ -32,17 +35,20 @@ export default function ItemsSold() {
   }, [dateFrom, dateTo]);
 
   return (
-    <div className="mb-6 admin-page">
+    <div className="mt-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Items Sold</h1>
       <p className="text-muted mb-4">
-        See which items sold how much, with quantity and amount. Use the date filter to view sales for a specific period.
+        See which items sold how much, with quantity and amount. Use the date
+        filter to view sales for a specific period.
       </p>
 
       <div className="card border-0 shadow-sm rounded-3 mb-4">
         <div className="card-body p-4">
           <div className="d-flex flex-wrap gap-3 align-items-end">
             <div>
-              <label className="form-label small text-muted mb-1">From date</label>
+              <label className="form-label small text-muted mb-1">
+                From date
+              </label>
               <input
                 type="date"
                 className="form-control"
@@ -51,7 +57,9 @@ export default function ItemsSold() {
               />
             </div>
             <div>
-              <label className="form-label small text-muted mb-1">To date</label>
+              <label className="form-label small text-muted mb-1">
+                To date
+              </label>
               <input
                 type="date"
                 className="form-control"
@@ -80,9 +88,18 @@ export default function ItemsSold() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="bg-light">
                   <tr>
-                    <th><i className="ti ti-package me-1" />Item name</th>
-                    <th className="text-end"><i className="ti ti-number me-1" />Quantity</th>
-                    <th className="text-end"><i className="ti ti-cash me-1" />Amount (₹)</th>
+                    <th>
+                      <i className="ti ti-package me-1" />
+                      Item name
+                    </th>
+                    <th className="text-end">
+                      <i className="ti ti-number me-1" />
+                      Quantity
+                    </th>
+                    <th className="text-end">
+                      <i className="ti ti-cash me-1" />
+                      Amount (₹)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

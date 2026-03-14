@@ -1,6 +1,44 @@
+/* Auth / Login page */
+.auth-page {
+  background: linear-gradient(145deg, #f0f4ff 0%, #e8eeff 50%, #f5f7fa 100%);
+}
+
+.auth-card {
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+}
+
+.auth-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(135deg, var(--bs-primary) 0%, #0a58ca 100%);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.auth-logo {
+  max-width: 120px;
+  height: auto;
+  display: inline-block;
+}
+
 /* Admin layout & page spacing */
 .admin-page {
   animation: adminFadeIn 0.25s ease-out;
+  padding-top: 1.25rem;
+}
+
+.admin-page > h1 {
+  margin-top: 0;
+}
+
+.admin-page > h1 + .text-muted,
+.admin-page > .text-muted.mb-4 {
+  margin-top: 0.5rem;
 }
 
 @keyframes adminFadeIn {
@@ -11,6 +49,12 @@
   to {
     opacity: 1;
   }
+}
+
+/* Main content starts below fixed navbar */
+#content.content {
+  padding-top: 4.5rem;
+  margin-top: 0;
 }
 
 .content .container-fluid {
@@ -83,4 +127,69 @@
 .btn .ti {
   font-size: 1.1em;
   vertical-align: -0.1em;
+}
+
+/* Voice recorder */
+.voice-recorder {
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.voice-recorder-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.voice-recorder-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem 1.5rem;
+  color: var(--bs-secondary);
+  gap: 0.25rem;
+}
+
+.voice-recorder-overlay-content .ti-lock {
+  color: var(--bs-primary);
+  opacity: 0.9;
+}
+
+.voice-recorder-mic {
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.voice-recorder-mic.recording {
+  background: #dc3545 !important;
+}
+
+.voice-recorder-mic--clickable {
+  cursor: pointer;
+}
+
+.voice-recorder-mic--clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0.25rem 0.75rem rgba(13, 110, 253, 0.35);
+}
+
+.voice-recorder-mic--clickable:focus {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.voice-recorder-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }

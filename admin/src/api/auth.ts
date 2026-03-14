@@ -5,6 +5,14 @@ export interface LoginPayload {
   pin: string;
 }
 
+export interface RegisterPayload {
+  name: string;
+  businessName: string;
+  phone: string;
+  pin: string;
+  accountType?: 'personal' | 'business';
+}
+
 export interface AuthUser {
   id: string;
   phone: string;
@@ -22,6 +30,14 @@ export interface LoginResponse {
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
     const { data } = await api.post<LoginResponse>('/auth/login', payload);
+    return data;
+  },
+
+  register: async (payload: RegisterPayload): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/register', {
+      ...payload,
+      accountType: payload.accountType ?? 'business',
+    });
     return data;
   },
 

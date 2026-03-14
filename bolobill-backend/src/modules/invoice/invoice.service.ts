@@ -80,6 +80,13 @@ export const invoiceService = {
     };
   },
 
+  /** Parse voice to items only (for e.g. out-of-stock list). Does not create invoice. */
+  async getItemsFromVoice(input: {audioPath: string; language?: string}) {
+    const transcript = await transcribeAudio(input.audioPath, input.language);
+    const {items} = await parseItemsWithFallback(transcript);
+    return items.map((item) => ({name: item.name, quantity: item.quantity}));
+  },
+
   async createVoiceInvoice(input: {
     userId: string;
     audioPath: string;

@@ -7,6 +7,7 @@ interface AuthContextValue {
   isSuperAdmin: boolean;
   loading: boolean;
   login: (phone: string, pin: string) => Promise<void>;
+  register: (payload: { name: string; businessName: string; phone: string; pin: string }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -48,6 +49,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authApi.setStoredAuth(token, me);
   }, []);
 
+  const register = useCallback(
+    async (payload: { name: string; businessName: string; phone: string; pin: string }) => {
+      const { token, user: u } = await authApi.register({
+        ...payload,
+        accountType: 'business',
+      });
+      authApi.setStoredAuth(token, u);
+      const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
+      setUser(me);
+      setIsSuperAdmin(superAdmin);
+      authApi.setStoredAuth(token, me);
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     authApi.logout();
     setUser(null);
@@ -58,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSuperAdmin,
     loading,
     login,
+    register,
     logout,
     isAuthenticated: !!user,
   };

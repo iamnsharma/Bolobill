@@ -1,13 +1,14 @@
-const NEED_BACKEND_ALERT = 'Need to implement APIs in backend yet';
+const NEED_BACKEND_ALERT = "Need to implement APIs in backend yet";
 
 export default function Memberships() {
   const showAlert = () => alert(NEED_BACKEND_ALERT);
 
   return (
-    <div className="mb-6 admin-page">
+    <div className="mt-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Memberships</h1>
       <p className="text-muted mb-4">
-        Manage subscription or membership plans for the app. When implemented, you will see active plans and can update offerings here.
+        Manage subscription or membership plans for the app. When implemented,
+        you will see active plans and can update offerings here.
       </p>
 
       <div className="card border-0 shadow-sm rounded-3">
@@ -17,8 +18,9 @@ export default function Memberships() {
           </div>
           <h3 className="h5 mb-2">Membership details &amp; manage plans</h3>
           <p className="text-muted small mb-4">
-            Backend needs admin endpoints for membership overview and plan management (e.g.{' '}
-            <code>GET /api/admin/memberships</code>, update plans).
+            Backend needs admin endpoints for membership overview and plan
+            management (e.g. <code>GET /api/admin/memberships</code>, update
+            plans).
           </p>
           <button type="button" className="btn btn-primary" onClick={showAlert}>
             <i className="ti ti-alert-circle me-1" />

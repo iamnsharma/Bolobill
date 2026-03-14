@@ -126,6 +126,10 @@ export const adminApi = {
   createInvoice: (body: { customerName?: string; items: Array<{ name: string; quantity: string | number; totalPrice: number }>; note?: string }) =>
     api.post<{ invoice: AdminInvoice }>('/admin/invoices', body).then((r) => r.data.invoice),
 
+  /** Speech-to-text: create bill from voice recording (same API as app). */
+  createVoiceInvoice: (formData: FormData) =>
+    api.post<{ invoice: AdminInvoice }>('/invoices/voice', formData, { timeout: 60000 }).then((r) => r.data.invoice),
+
   updateInvoice: (id: string, body: { customerName?: string; items?: Array<{ name: string; quantity: string | number; totalPrice: number }>; voiceTranscript?: string }) =>
     api.put<{ invoice: AdminInvoice }>(`/admin/invoices/${id}`, body).then((r) => r.data.invoice),
 
@@ -134,6 +138,9 @@ export const adminApi = {
 
   createOutOfStock: (body: { name: string; quantity?: string; note?: string }) =>
     api.post<{ item: OutOfStockItem }>('/admin/out-of-stock', body).then((r) => r.data.item),
+
+  createOutOfStockFromVoice: (formData: FormData) =>
+    api.post<{ items: OutOfStockItem[] }>('/admin/out-of-stock/voice', formData, { timeout: 60000 }).then((r) => r.data.items),
 
   updateOutOfStock: (id: string, body: { name?: string; quantity?: string; note?: string }) =>
     api.put<{ item: OutOfStockItem }>(`/admin/out-of-stock/${id}`, body).then((r) => r.data.item),

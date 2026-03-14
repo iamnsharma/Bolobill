@@ -5,6 +5,7 @@ import {adminService} from './admin.service';
 import {toAdminUserVm, toAdminInvoiceVm} from './admin.viewmodel';
 import type {AdminContext} from '../../middleware/admin.middleware';
 import {manualInvoiceSchema, updateInvoiceSchema} from '../invoice/invoice.validation';
+import {invoiceService} from '../invoice/invoice.service';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & { adminContext?: AdminContext }).adminContext;
@@ -185,6 +186,20 @@ export const adminController = {
       note: req.body?.note,
     });
     return res.status(201).json({item});
+  }),
+
+  createOutOfStockFromVoice: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.path) {
+      throw new ApiError(400, 'audio file is required');
+    }
+    const language = typeof req.body?.language === 'string' ? req.body.language : undefined;
+    try {
+      const items = await adminService.createOutOfStockFromVoice(ctx.userId, req.file.path, language);
+      return res.status(201).json({items});
+    } finally {
+      await invoiceService.cleanupTempFile(req.file.path);
+    }
   }),
 
   getOutOfStockById: asyncHandler(async (req: Request, res: Response) => {

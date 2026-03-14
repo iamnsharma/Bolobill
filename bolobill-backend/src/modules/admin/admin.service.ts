@@ -197,4 +197,20 @@ export const adminService = {
   async getOutOfStockById(userId: string, id: string) {
     return outOfStockService.getById(userId, id);
   },
+
+  async createOutOfStockFromVoice(userId: string, audioPath: string, language?: string) {
+    const items = await invoiceService.getItemsFromVoice({audioPath, language});
+    if (!items.length) {
+      throw new ApiError(422, 'Unable to parse items from recording. Speak clearly, e.g. "rice, salt, oil".');
+    }
+    const created = [];
+    for (const item of items) {
+      const doc = await outOfStockService.create(userId, {
+        name: item.name,
+        quantity: item.quantity || undefined,
+      });
+      created.push(doc);
+    }
+    return created;
+  },
 };
