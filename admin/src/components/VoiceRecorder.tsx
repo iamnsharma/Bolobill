@@ -47,10 +47,15 @@ export function VoiceRecorder({ onRecorded, onError, disabled = false }: Props) 
     };
   }, [stopTimer, stopStream]);
 
+  const VOICE_RESTRICTED = true; // Set to false to re-enable recording
   const startRecording = useCallback(async () => {
     if (status !== 'idle') return;
     if (disabled) {
       onError?.('Please enter customer name first.');
+      return;
+    }
+    if (VOICE_RESTRICTED) {
+      window.alert('Voice feature is currently restricted by the developer. You cannot record with the mic.');
       return;
     }
     try {
