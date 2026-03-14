@@ -94,9 +94,7 @@ export default function Dashboard() {
           : "Your sales at a glance. View bills, sales summary, items sold, and out-of-stock list from the sidebar."}
       </p>
 
-      <div className="mb-4">
-        <DownloadAppSection />
-      </div>
+      <div className="mb-4">{/* <DownloadAppSection /> */}</div>
 
       {isSuperAdmin ? (
         <>
@@ -173,7 +171,11 @@ export default function Dashboard() {
             <div className="card-body p-4">
               <h3 className="h5 mb-3">Quick actions</h3>
               <p className="text-muted small mb-0">
-                <strong>Manage users</strong> — view all users, filter by signup, blacklist. <strong>Manage subscriptions</strong> — set plan limits, notify expiring, add/remove plans per user. <strong>Store links</strong> — set App Store &amp; Play Store URLs.
+                <strong>Manage users</strong> — view all users, filter by
+                signup, blacklist. <strong>Manage subscriptions</strong> — set
+                plan limits, notify expiring, add/remove plans per user.{" "}
+                <strong>Store links</strong> — set App Store &amp; Play Store
+                URLs.
               </p>
             </div>
           </div>

@@ -18,6 +18,7 @@ import StoreLinks from "./pages/StoreLinks";
 import Sales from "./pages/Sales";
 import ItemsSold from "./pages/ItemsSold";
 import OutOfStock from "./pages/OutOfStock";
+import QrCode from "./pages/QrCode";
 import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
 import Whisper from "./pages/Whisper";
@@ -90,6 +91,14 @@ function AppRoutes() {
           element={
             <BusinessOnlyRoute>
               <OutOfStock />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="qr-code"
+          element={
+            <BusinessOnlyRoute>
+              <QrCode />
             </BusinessOnlyRoute>
           }
         />

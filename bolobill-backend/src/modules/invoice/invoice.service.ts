@@ -124,6 +124,7 @@ export const invoiceService = {
       items: input.items,
       total,
       transcript,
+      qrImagePath: user.qrCodePath || undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -168,6 +169,7 @@ export const invoiceService = {
       items: localizedItems,
       total,
       transcript,
+      qrImagePath: user.qrCodePath || undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -208,6 +210,7 @@ export const invoiceService = {
       items: input.items,
       total,
       transcript,
+      qrImagePath: user.qrCodePath || undefined,
     });
 
     const invoice = await InvoiceModel.create({
@@ -401,6 +404,7 @@ export const invoiceService = {
       items: invoice.items as unknown as InvoiceItemInput[],
       total: invoice.total,
       transcript: invoice.voiceTranscript,
+      qrImagePath: user.qrCodePath || undefined,
     });
     invoice.pdfPath = pdf.pdfPath;
 

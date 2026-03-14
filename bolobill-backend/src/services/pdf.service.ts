@@ -13,6 +13,8 @@ type GeneratePdfInput = {
   transcript?: string;
   billToName?: string;
   billToPhone?: string;
+  /** Path to QR code image (e.g. UPI) to embed in PDF for "Scan to pay". */
+  qrImagePath?: string;
 };
 
 const pdfDir = path.join(process.cwd(), 'storage/pdfs');
@@ -67,11 +69,12 @@ export const generateInvoicePdf = async (
       doc.restore();
     };
 
-    const headerHeight = 44;
+    const headerHeight = 52;
     const drawHeader = (y: number) => {
       doc.rect(0, y, pageWidth, headerHeight).fill('#e66239');
-      doc.fillColor('#ffffff').fontSize(20).font('Helvetica-Bold').text(BRAND, margin, y + 12, {width: contentWidth});
-      doc.fontSize(12).font('Helvetica').text('Invoice', margin, y + 30, {width: contentWidth});
+      doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text(BRAND, margin, y + 14, { width: contentWidth });
+      doc.fontSize(11).font('Helvetica').text('INVOICE', margin, y + 34, { width: contentWidth });
+      doc.strokeColor('#d97706').lineWidth(0.5).moveTo(0, y + headerHeight).lineTo(pageWidth, y + headerHeight).stroke();
       doc.fillColor('#000000');
     };
 
@@ -109,6 +112,7 @@ export const generateInvoicePdf = async (
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#111827').text('Items', margin, y);
     y += 14;
 
+    const tableTopY = y;
     doc.strokeColor('#d1d5db').lineWidth(0.6);
     doc.moveTo(margin, y).lineTo(tableRight, y).stroke();
     y += 12;
@@ -123,13 +127,14 @@ export const generateInvoicePdf = async (
     const tableTotalWidth = tableRight - tableTotalX;
     const rowHeight = 14;
 
+    doc.rect(margin, y - 2, tableRight - margin, 16).fill('#f3f4f6');
     doc.fontSize(9).font('Helvetica-Bold').fillColor('#4b5563');
     doc.text('Item', tableItemX, y, {width: tableItemWidth});
     doc.text('Qty', tableQtyX, y, {width: tableQtyWidth});
     doc.text('Price', tablePriceX, y, {width: tablePriceWidth, align: 'right'});
     doc.text('Total', tableTotalX, y, {width: tableTotalWidth, align: 'right'});
     doc.fillColor('#111827').font('Helvetica');
-    y += 12;
+    y += 14;
 
     doc.moveTo(margin, y).lineTo(tableRight, y).stroke();
     y += 10;
@@ -153,13 +158,26 @@ export const generateInvoicePdf = async (
 
     y += 10;
     doc.moveTo(margin, y).lineTo(tableRight, y).stroke();
-    y += 16;
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#111827');
+    y += 2;
+    doc.rect(margin, y, tableRight - margin, 22).fillAndStroke('#FFF7ED', '#e66239');
+    y += 6;
+    doc.fontSize(13).font('Helvetica-Bold').fillColor('#111827');
     const totalLabelY = y;
-    doc.text('Total', margin, totalLabelY);
-    doc.text(formatPrice(computedTotal), tableTotalX, totalLabelY, {width: tableTotalWidth, align: 'right'});
+    doc.text('Total', margin + 8, totalLabelY);
+    doc.text(formatPrice(computedTotal), tableTotalX, totalLabelY, { width: tableTotalWidth - 8, align: 'right' });
     doc.font('Helvetica').fontSize(10);
-    y += 28;
+    y += 22;
+
+    const qrSize = 88;
+    const qrBoxX = tableRight - qrSize - 8;
+    const hasQr = input.qrImagePath && fs.existsSync(input.qrImagePath);
+    if (hasQr) {
+      const qrBoxY = y;
+      doc.roundedRect(qrBoxX - 4, qrBoxY - 2, qrSize + 24, qrSize + 28, 4).fillAndStroke('#FFF7ED', '#e66239');
+      doc.fontSize(9).fillColor('#9a3412').font('Helvetica-Bold').text('Scan to pay', qrBoxX - 4, qrBoxY + 4, { width: qrSize + 24, align: 'center' });
+      doc.image(input.qrImagePath!, qrBoxX, qrBoxY + 16, { width: qrSize, height: qrSize });
+      y += qrSize + 32;
+    }
 
     if (input.transcript?.trim()) {
       doc.fontSize(9).fillColor('#6b7280').font('Helvetica-Bold').text('Transcript', margin, y);
@@ -170,6 +188,7 @@ export const generateInvoicePdf = async (
     }
 
     const footerY = pageHeight - 22;
+    doc.strokeColor('#e5e7eb').lineWidth(0.5).moveTo(margin, footerY - 10).lineTo(tableRight, footerY - 10).stroke();
     doc.fontSize(8).fillColor('#9ca3af');
     doc.text(FOOTER_TEXT, margin, footerY, {align: 'center', width: contentWidth});
     doc.fillColor('#000000');

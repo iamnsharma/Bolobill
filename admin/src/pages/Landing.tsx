@@ -90,11 +90,11 @@ export default function Landing() {
             <Link
               to="/"
               className="landing-logo text-decoration-none text-dark">
-              <img
+              {/* <img
                 src={bolobillLogo}
                 alt="Bolo Bill"
                 className="landing-logo-img"
-              />
+              /> */}
               <span className="landing-logo-text">Bolo Bill</span>
             </Link>
             <nav className="d-flex align-items-center gap-2 gap-md-3">
@@ -148,8 +148,14 @@ export default function Landing() {
               </div>
             </div>
             <div className="col-lg-6 mt-5 mt-lg-0 text-center landing-hero-visual-wrap">
-              <div className="landing-hero-visual rounded-4 overflow-hidden shadow-lg">
-                <img src={feat1} alt="Bolo Bill app" className="img-fluid" />
+              <div className="landing-hero-visual landing-hero-youtube rounded-4 overflow-hidden shadow-lg">
+                <iframe
+                  src="https://www.youtube.com/embed/IviyiULyjzI?rel=0"
+                  title="Bolo Bill – Voice to bill, Share on WhatsApp"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="landing-hero-youtube-iframe"
+                />
               </div>
             </div>
           </div>

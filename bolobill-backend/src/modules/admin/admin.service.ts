@@ -267,6 +267,44 @@ export const adminService = {
     return created;
   },
 
+  async getQrCode(userId: string): Promise<{ url: string | null }> {
+    const user = await UserModel.findById(userId).select('qrCodePath').lean();
+    if (!user || !(user as UserDocument & { qrCodePath?: string }).qrCodePath) {
+      return { url: null };
+    }
+    const qrPath = (user as UserDocument & { qrCodePath?: string }).qrCodePath as string;
+    if (!fs.existsSync(qrPath)) {
+      await UserModel.updateOne({ _id: userId }, { $set: { qrCodePath: '' } });
+      return { url: null };
+    }
+    const filename = path.basename(qrPath);
+    const { env } = await import('../../config/env');
+    return { url: `${env.BASE_URL}/api/files/qr/${filename}` };
+  },
+
+  async uploadQrCode(userId: string, uploadedPath: string): Promise<{ url: string }> {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new ApiError(404, 'User not found');
+    if (user.qrCodePath && fs.existsSync(user.qrCodePath)) {
+      fs.unlinkSync(user.qrCodePath);
+    }
+    user.qrCodePath = uploadedPath;
+    await user.save();
+    const filename = path.basename(uploadedPath);
+    const { env } = await import('../../config/env');
+    return { url: `${env.BASE_URL}/api/files/qr/${filename}` };
+  },
+
+  async deleteQrCode(userId: string): Promise<void> {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new ApiError(404, 'User not found');
+    if (user.qrCodePath && fs.existsSync(user.qrCodePath)) {
+      fs.unlinkSync(user.qrCodePath);
+    }
+    user.qrCodePath = '';
+    await user.save();
+  },
+
   getStoreLinks(): { playStoreUrl: string; appStoreUrl: string } {
     return readStoreLinks();
   },

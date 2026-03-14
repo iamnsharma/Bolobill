@@ -130,8 +130,8 @@
 }
 
 .landing-logo-img {
-  height: 44px;
-  width: auto;
+  height: 80px;
+  width: 80px;
   display: block;
   flex-shrink: 0;
   object-fit: contain;
@@ -284,6 +284,22 @@
 .landing-hero-visual:hover {
   transform: scale(1.02);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* YouTube embed in hero – responsive 16:9 */
+.landing-hero-youtube {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.landing-hero-youtube-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 /* Trust strip – below hero */
@@ -866,6 +882,22 @@
 
 .card-body .btn {
   border-radius: 0.5rem;
+}
+
+/* Create invoice: standard-height inputs and row action buttons */
+.create-invoice-input {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+}
+
+.create-invoice-row-btn {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Modal body spacing */

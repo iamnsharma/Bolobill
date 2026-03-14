@@ -191,4 +191,13 @@ export const adminApi = {
 
   updateStoreLinks: (body: { playStoreUrl?: string; appStoreUrl?: string }) =>
     api.put<{ playStoreUrl: string; appStoreUrl: string }>('/admin/store-links', body).then((r) => r.data),
+
+  getQrCode: () =>
+    api.get<{ url: string | null }>('/admin/qr-code').then((r) => r.data),
+
+  uploadQrCode: (formData: FormData) =>
+    api.post<{ url: string }>('/admin/qr-code', formData).then((r) => r.data),
+
+  deleteQrCode: () =>
+    api.delete('/admin/qr-code').then((r) => r.data),
 };

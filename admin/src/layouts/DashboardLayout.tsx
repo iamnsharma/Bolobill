@@ -19,6 +19,7 @@ const BUSINESS_NAV = [
   { to: "/dashboard/sales", icon: "ti-chart-bar", label: "Sales Summary" },
   { to: "/dashboard/items-sold", icon: "ti-package", label: "Items Sold" },
   { to: "/dashboard/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },
+  { to: "/dashboard/qr-code", icon: "ti-qrcode", label: "QR Code" },
   { to: "/dashboard/memberships", icon: "ti-crown", label: "Plans" },
 ];
 

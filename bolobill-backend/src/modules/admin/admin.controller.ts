@@ -1,6 +1,6 @@
-import {Request, Response} from 'express';
-import {asyncHandler} from '../../common/asyncHandler';
-import {ApiError} from '../../common/ApiError';
+import { Request, Response } from 'express';
+import { asyncHandler } from '../../common/asyncHandler';
+import { ApiError } from '../../common/ApiError';
 import {adminService} from './admin.service';
 import {toAdminUserVm, toAdminInvoiceVm} from './admin.viewmodel';
 import type {AdminContext} from '../../middleware/admin.middleware';
@@ -259,5 +259,26 @@ export const adminController = {
     const appStoreUrl = req.body?.appStoreUrl;
     const links = adminService.updateStoreLinks({ playStoreUrl, appStoreUrl });
     return res.json(links);
+  }),
+
+  getQrCode: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const result = await adminService.getQrCode(ctx.userId);
+    return res.json(result);
+  }),
+
+  uploadQrCode: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.path) {
+      throw new ApiError(400, 'QR code image is required (PNG, JPG or WebP)');
+    }
+    const result = await adminService.uploadQrCode(ctx.userId, req.file.path);
+    return res.status(201).json(result);
+  }),
+
+  deleteQrCode: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    await adminService.deleteQrCode(ctx.userId);
+    return res.json({ message: 'QR code removed' });
   }),
 };

@@ -11,7 +11,7 @@ import ReviewInvoiceModal, {
 
 type LineItem = { name: string; quantity: string; totalPrice: string };
 
-const defaultLine: LineItem = { name: "", quantity: "1", totalPrice: "0" };
+const defaultLine: LineItem = { name: "", quantity: "", totalPrice: "" };
 
 type CreateMode = "voice" | "manual";
 
@@ -308,16 +308,16 @@ export default function CreateInvoice() {
                     <th style={{ width: "40%" }}>Item name</th>
                     <th style={{ width: "15%" }}>Qty</th>
                     <th style={{ width: "25%" }}>Total price (₹)</th>
-                    <th style={{ width: "80px" }}></th>
+                    <th style={{ width: "100px" }} className="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((line, i) => (
                     <tr key={i}>
-                      <td>
+                      <td className="pe-2">
                         <input
                           type="text"
-                          className="form-control form-control-sm"
+                          className="form-control create-invoice-input"
                           placeholder="Item name"
                           value={line.name}
                           onChange={(e) =>
@@ -325,23 +325,23 @@ export default function CreateInvoice() {
                           }
                         />
                       </td>
-                      <td>
+                      <td className="pe-2">
                         <input
                           type="text"
-                          className="form-control form-control-sm"
-                          placeholder="1"
+                          className="form-control create-invoice-input"
+                          placeholder="Qty"
                           value={line.quantity}
                           onChange={(e) =>
                             updateLine(i, "quantity", e.target.value)
                           }
                         />
                       </td>
-                      <td>
+                      <td className="pe-2">
                         <input
                           type="number"
                           step="0.01"
                           min="0"
-                          className="form-control form-control-sm"
+                          className="form-control create-invoice-input"
                           placeholder="0"
                           value={line.totalPrice}
                           onChange={(e) =>
@@ -349,15 +349,24 @@ export default function CreateInvoice() {
                           }
                         />
                       </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => removeLine(i)}
-                          disabled={lines.length <= 1}
-                          aria-label="Remove row">
-                          <i className="ti ti-trash" />
-                        </button>
+                      <td className="ps-1">
+                        <div className="d-flex gap-1 justify-content-center align-items-center">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary create-invoice-row-btn"
+                            onClick={addLine}
+                            aria-label="Add item">
+                            <i className="ti ti-plus" />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger create-invoice-row-btn"
+                            onClick={() => removeLine(i)}
+                            disabled={lines.length <= 1}
+                            aria-label="Remove row">
+                            <i className="ti ti-trash" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -392,7 +401,7 @@ export default function CreateInvoice() {
                     customerName: customerName.trim(),
                     items: validLines.map((l) => ({
                       name: l.name.trim(),
-                      quantity: l.quantity,
+                      quantity: l.quantity.trim() || "1",
                       totalPrice: parseFloat(l.totalPrice) || 0,
                     })),
                     note: note.trim() || undefined,

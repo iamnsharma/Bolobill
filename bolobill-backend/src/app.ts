@@ -29,5 +29,6 @@ app.use('/api/invoice', invoiceRouter);
 app.use('/api/out-of-stock', outOfStockRouter);
 
 app.use('/api/files/pdfs', express.static(path.join(process.cwd(), 'storage/pdfs')));
+app.use('/api/files/qr', express.static(path.join(process.cwd(), 'storage/qr')));
 
 app.use(errorMiddleware);

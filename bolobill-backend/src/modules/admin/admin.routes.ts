@@ -28,6 +28,24 @@ const upload = multer({
   limits: {fileSize: 25 * 1024 * 1024},
 });
 
+const qrDir = path.join(process.cwd(), 'storage', 'qr');
+if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
+const qrUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, qrDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '') || '.png';
+      cb(null, `qr-${uuidv4()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only PNG, JPG or WebP images are allowed'));
+  },
+});
+
 export const adminRouter = Router();
 
 // Health check (no auth)
@@ -54,6 +72,9 @@ adminRouter.put('/store-links', requireSuperAdmin, asyncHandler(adminController.
 // Fixed paths for both superadmin and business admin (business sees own data only)
 adminRouter.get('/me', asyncHandler(adminController.getMe));
 adminRouter.get('/store-links', asyncHandler(adminController.getStoreLinks));
+adminRouter.get('/qr-code', asyncHandler(adminController.getQrCode));
+adminRouter.post('/qr-code', qrUpload.single('qr'), asyncHandler(adminController.uploadQrCode));
+adminRouter.delete('/qr-code', asyncHandler(adminController.deleteQrCode));
 adminRouter.get('/sales-summary', asyncHandler(adminController.getSalesSummary));
 adminRouter.get('/sales-summary/daily', asyncHandler(adminController.getSalesSummaryDaily));
 adminRouter.get('/items-sold', asyncHandler(adminController.getItemsSold));

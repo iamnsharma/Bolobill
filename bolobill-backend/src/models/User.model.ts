@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
       invoiceRequestSuccessCount: {type: Number, default: 0, min: 0},
       voiceToTextSecondsUsed: {type: Number, default: 0, min: 0},
     },
+    qrCodePath: {type: String, default: '', trim: true},
   },
   {timestamps: true},
 );
