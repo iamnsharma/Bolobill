@@ -8,7 +8,10 @@ export default function StoreLinks() {
   const [appStoreUrl, setAppStoreUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "danger"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "danger";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!isSuperAdmin) {
@@ -37,7 +40,10 @@ export default function StoreLinks() {
         playStoreUrl: playStoreUrl.trim() || undefined,
         appStoreUrl: appStoreUrl.trim() || undefined,
       });
-      setMessage({ type: "success", text: "Store links saved. All users will see these URLs in the Download app section." });
+      setMessage({
+        type: "success",
+        text: "Store links saved. All users will see these URLs in the Download app section.",
+      });
     } catch {
       setMessage({ type: "danger", text: "Failed to save. Try again." });
     } finally {
@@ -59,17 +65,20 @@ export default function StoreLinks() {
     return (
       <div className="admin-page">
         <div className="alert alert-warning">
-          Only super admins can manage store links. This page is not available for your account.
+          Only super admins can manage store links. This page is not available
+          for your account.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-page">
+    <div className="mt-6 admin-page">
       <h1 className="fs-3 mb-1 fw-bold">Store links</h1>
       <p className="text-muted mb-4">
-        Set the Google Play and App Store URLs for the BoloBill app. These links are shown to all users in the &quot;Download app&quot; section on the dashboard.
+        Set the Google Play and App Store URLs for the BoloBill app. These links
+        are shown to all users in the &quot;Download app&quot; section on the
+        dashboard.
       </p>
 
       {message && (
@@ -93,7 +102,9 @@ export default function StoreLinks() {
                 value={playStoreUrl}
                 onChange={(e) => setPlayStoreUrl(e.target.value)}
               />
-              <small className="text-muted">Leave empty to use default Play Store search.</small>
+              <small className="text-muted">
+                Leave empty to use default Play Store search.
+              </small>
             </div>
             <div className="mb-4">
               <label htmlFor="appStoreUrl" className="form-label fw-semibold">
@@ -107,13 +118,14 @@ export default function StoreLinks() {
                 value={appStoreUrl}
                 onChange={(e) => setAppStoreUrl(e.target.value)}
               />
-              <small className="text-muted">Leave empty to use default App Store search.</small>
+              <small className="text-muted">
+                Leave empty to use default App Store search.
+              </small>
             </div>
             <button
               type="submit"
               className="btn btn-primary btn-lg rounded-3 px-4"
-              disabled={saving}
-            >
+              disabled={saving}>
               {saving ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
@@ -133,7 +145,9 @@ export default function StoreLinks() {
       <div className="card border-0 bg-light bg-opacity-50 rounded-4 mt-4 p-4">
         <p className="small text-muted mb-0">
           <i className="ti ti-info-circle me-1" />
-          These URLs are used in the &quot;Get the app&quot; section on the dashboard. Business users will see the download buttons with your links when they log in.
+          These URLs are used in the &quot;Get the app&quot; section on the
+          dashboard. Business users will see the download buttons with your
+          links when they log in.
         </p>
       </div>
     </div>

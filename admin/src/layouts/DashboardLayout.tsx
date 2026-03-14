@@ -1,26 +1,24 @@
-import { useState, useMemo } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useMembership } from '../contexts/MembershipContext';
-import ConfirmModal from '../components/ConfirmModal';
+import { useState, useMemo } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { useMembership } from "../contexts/MembershipContext";
+import ConfirmModal from "../components/ConfirmModal";
 
 const SUPERADMIN_NAV = [
-  { to: '/', icon: 'ti-home', label: 'Dashboard' },
-  { to: '/invoices', icon: 'ti-receipt', label: 'Invoices' },
-  { to: '/users', icon: 'ti-users', label: 'Users' },
-  { to: '/memberships', icon: 'ti-crown', label: 'Memberships' },
-  { to: '/store-links', icon: 'ti-link', label: 'Store links' },
-  { to: '/manage-features', icon: 'ti-settings', label: 'Manage features' },
+  { to: "/", icon: "ti-home", label: "Dashboard" },
+  { to: "/users", icon: "ti-users", label: "Manage users" },
+  { to: "/subscriptions", icon: "ti-crown", label: "Manage subscriptions" },
+  { to: "/store-links", icon: "ti-link", label: "Store links" },
 ];
 
 const BUSINESS_NAV = [
-  { to: '/', icon: 'ti-home', label: 'Dashboard' },
-  { to: '/invoices', icon: 'ti-receipt', label: 'Bills & Invoices' },
-  { to: '/invoices/new', icon: 'ti-plus', label: 'Create Bill' },
-  { to: '/sales', icon: 'ti-chart-bar', label: 'Sales Summary' },
-  { to: '/items-sold', icon: 'ti-package', label: 'Items Sold' },
-  { to: '/out-of-stock', icon: 'ti-alert-circle', label: 'Out of Stock' },
-  { to: '/memberships', icon: 'ti-crown', label: 'Plans' },
+  { to: "/", icon: "ti-home", label: "Dashboard" },
+  { to: "/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
+  { to: "/invoices/new", icon: "ti-plus", label: "Create Bill" },
+  { to: "/sales", icon: "ti-chart-bar", label: "Sales Summary" },
+  { to: "/items-sold", icon: "ti-package", label: "Items Sold" },
+  { to: "/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },
+  { to: "/memberships", icon: "ti-crown", label: "Plans" },
 ];
 
 export default function DashboardLayout() {
@@ -30,7 +28,10 @@ export default function DashboardLayout() {
   const { user, isSuperAdmin, logout } = useAuth();
   const { hasActiveMembership } = useMembership();
   const navigate = useNavigate();
-  const navItems = useMemo(() => (isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV), [isSuperAdmin]);
+  const navItems = useMemo(
+    () => (isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV),
+    [isSuperAdmin],
+  );
 
   const toggleSidebar = () => {
     setSidebarCollapsed((s) => !s);
@@ -51,13 +52,13 @@ export default function DashboardLayout() {
   const handleLogoutConfirm = () => {
     setShowLogoutConfirm(false);
     logout();
-    navigate('/login', { replace: true });
+    navigate("/login", { replace: true });
   };
 
   return (
     <>
       <div
-        className={`overlay ${mobileOpen ? 'show' : ''}`}
+        className={`overlay ${mobileOpen ? "show" : ""}`}
         onClick={closeMobile}
         aria-hidden
       />
@@ -66,16 +67,14 @@ export default function DashboardLayout() {
           type="button"
           className="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm"
           onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
-        >
+          aria-label="Toggle sidebar">
           <i className="ti ti-layout-sidebar-left-expand" />
         </button>
         <button
           type="button"
           className="btn btn-light btn-icon btn-sm d-lg-none me-2"
           onClick={openMobile}
-          aria-label="Open menu"
-        >
+          aria-label="Open menu">
           <i className="ti ti-layout-sidebar-left-expand" />
         </button>
         <div className="ms-auto d-flex align-items-center gap-2">
@@ -84,9 +83,8 @@ export default function DashboardLayout() {
               to="/memberships"
               className="membership-header-badge text-decoration-none"
               title="Your membership"
-              aria-label="Your membership"
-            >
-              <i className="ti ti-crown" style={{ fontSize: '1rem' }} />
+              aria-label="Your membership">
+              <i className="ti ti-crown" style={{ fontSize: "1rem" }} />
             </NavLink>
           )}
           <div className="dropdown">
@@ -94,12 +92,13 @@ export default function DashboardLayout() {
               type="button"
               className="btn btn-light btn-sm dropdown-toggle d-flex align-items-center gap-2"
               data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
+              aria-expanded="false">
               <span className="avatar avatar-sm rounded-circle bg-primary text-white d-flex align-items-center justify-content-center">
-                {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+                {user?.name?.charAt(0)?.toUpperCase() || "A"}
               </span>
-              <span className="d-none d-sm-inline">{user?.name || user?.phone}</span>
+              <span className="d-none d-sm-inline">
+                {user?.name || user?.phone}
+              </span>
             </button>
             <ul className="dropdown-menu dropdown-menu-end">
               <li>
@@ -111,7 +110,10 @@ export default function DashboardLayout() {
                 <hr className="dropdown-divider" />
               </li>
               <li>
-                <button type="button" className="dropdown-item text-danger" onClick={handleLogoutClick}>
+                <button
+                  type="button"
+                  className="dropdown-item text-danger"
+                  onClick={handleLogoutClick}>
                   <i className="ti ti-logout me-2" />
                   Log out
                 </button>
@@ -123,14 +125,15 @@ export default function DashboardLayout() {
 
       <aside
         id="sidebar"
-        className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-show' : ''}`}
-      >
+        className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-show" : ""}`}>
         <div className="logo-area">
-          <NavLink to="/" className="d-inline-flex align-items-center text-dark text-decoration-none">
+          <NavLink
+            to="/"
+            className="d-inline-flex align-items-center text-dark text-decoration-none">
             <span className="icon-shape icon-sm bg-primary text-white rounded-2 d-flex align-items-center justify-content-center">
               <i className="ti ti-receipt" />
             </span>
-            <span className="logo-text ms-2 fw-bold">BoloBill Admin</span>
+            <span className="logo-text ms-2 fw-bold">BoloBill</span>
           </NavLink>
         </div>
         <ul className="nav flex-column">
@@ -141,10 +144,11 @@ export default function DashboardLayout() {
             <li key={to}>
               <NavLink
                 to={to}
-                end={to === '/'}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                onClick={closeMobile}
-              >
+                end={to === "/"}
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? "active" : ""}`
+                }
+                onClick={closeMobile}>
                 <i className={`ti ${icon}`} />
                 <span className="nav-text">{label}</span>
               </NavLink>
@@ -157,8 +161,7 @@ export default function DashboardLayout() {
             <button
               type="button"
               className="nav-link border-0 bg-transparent w-100 text-start text-danger"
-              onClick={handleLogoutClick}
-            >
+              onClick={handleLogoutClick}>
               <i className="ti ti-logout" />
               <span className="nav-text">Log out</span>
             </button>
@@ -179,8 +182,7 @@ export default function DashboardLayout() {
 
       <main
         id="content"
-        className={`content py-4 ${sidebarCollapsed ? 'full' : ''}`}
-      >
+        className={`content py-4 ${sidebarCollapsed ? "full" : ""}`}>
         <div className="container-fluid">
           <Outlet />
         </div>

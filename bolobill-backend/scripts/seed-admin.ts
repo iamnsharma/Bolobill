@@ -1,7 +1,10 @@
 /**
- * Seeds the static admin user (phone + PIN).
+ * Seeds the static super admin user (phone + PIN).
  * Run: npx tsx scripts/seed-admin.ts
- * Admin: phone 6283515870, pin 870870
+ *
+ * Super admin: phone 6283515870, PIN 870870
+ * After seeding, log in to the admin app with this phone + PIN to get full
+ * super admin UI: Manage users, Manage subscriptions, Store links, Manage features.
  */
 import dotenv from 'dotenv';
 import path from 'path';

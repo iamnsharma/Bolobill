@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .getMe()
       .then(({ user: u, isSuperAdmin: superAdmin }) => {
         setUser(u);
-        setIsSuperAdmin(superAdmin);
+        setIsSuperAdmin(superAdmin === true || u?.role === 'superadmin');
         authApi.setStoredAuth(token, u);
       })
       .catch(() => {
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authApi.setStoredAuth(token, u);
     const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
     setUser(me);
-    setIsSuperAdmin(superAdmin);
+    setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
     authApi.setStoredAuth(token, me);
   }, []);
 
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authApi.setStoredAuth(token, u);
     const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
     setUser(me);
-    setIsSuperAdmin(superAdmin);
+    setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
     authApi.setStoredAuth(token, me);
   }, []);
 
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.setStoredAuth(token, u);
       const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
       setUser(me);
-      setIsSuperAdmin(superAdmin);
+      setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
       authApi.setStoredAuth(token, me);
     },
     [],
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.setStoredAuth(token, u);
       const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
       setUser(me);
-      setIsSuperAdmin(superAdmin);
+      setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
       authApi.setStoredAuth(token, me);
     },
     [],

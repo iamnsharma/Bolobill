@@ -357,6 +357,172 @@
   transform: scale(1.05);
 }
 
+/* ========== Manage Subscriptions (super admin) ========== */
+.manage-subscriptions-page {
+  padding-bottom: 2rem;
+}
+
+.manage-subscriptions-hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f3460 50%, #16213e 100%);
+  color: #fff;
+  position: relative;
+}
+
+.manage-subscriptions-hero-inner {
+  position: relative;
+  padding: 1.75rem 1.5rem;
+  max-width: 720px;
+}
+
+.manage-subscriptions-hero-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.manage-subscriptions-hero-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem 0;
+  color: #fff;
+}
+
+.manage-subscriptions-hero-sub {
+  font-size: 0.9rem;
+  opacity: 0.88;
+  line-height: 1.45;
+}
+
+.manage-subscriptions-plan-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.manage-subscriptions-plan-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.manage-subscriptions-icon-wrap {
+  width: 64px;
+  height: 64px;
+  background: rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.manage-subscriptions-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.manage-subscriptions-icon-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 64px;
+  font-size: 1.5rem;
+}
+
+.manage-subscriptions-icon-upload {
+  cursor: pointer;
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.manage-subscriptions-icon-wrap:hover .manage-subscriptions-icon-upload {
+  opacity: 1;
+}
+
+.manage-subscriptions-plan-card--editing {
+  border: 2px solid var(--bs-primary) !important;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+}
+
+.manage-subscriptions-features {
+  color: var(--bs-body-color);
+}
+
+.manage-subscriptions-features li {
+  padding: 0.2rem 0;
+}
+
+.manage-subscriptions-quick-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.manage-subscriptions-quick-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+
+.manage-subscriptions-quick-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(13, 110, 253, 0.1);
+  flex-shrink: 0;
+}
+
+.manage-subscriptions-quick-card--cta {
+  border-style: dashed !important;
+  border-color: rgba(13, 110, 253, 0.35) !important;
+}
+
+.manage-subscriptions-quick-card--cta:hover {
+  border-color: var(--bs-primary) !important;
+  background: rgba(13, 110, 253, 0.04);
+}
+
+/* Delete confirmation modal */
+.manage-subscriptions-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+  animation: manageSubsBackdropIn 0.2s ease;
+}
+
+.manage-subscriptions-modal {
+  background: #fff;
+  max-width: 400px;
+  width: 100%;
+  padding: 1.75rem;
+  animation: manageSubsModalIn 0.25s ease;
+}
+
+.manage-subscriptions-modal-icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: rgba(220, 53, 69, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+@keyframes manageSubsBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes manageSubsModalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* ========== Download app section ========== */
 .download-app-section {
   position: relative;

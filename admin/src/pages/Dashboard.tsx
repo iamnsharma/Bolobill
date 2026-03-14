@@ -90,7 +90,7 @@ export default function Dashboard() {
       <h1 className="fs-3 mb-1 fw-bold">Dashboard</h1>
       <p className="text-muted mb-4">
         {isSuperAdmin
-          ? "Overview of BoloBill platform. Use the sidebar for Invoices, Users, and settings."
+          ? "Platform overview. Manage users, subscriptions, store links, and features from the sidebar."
           : "Your sales at a glance. View bills, sales summary, items sold, and out-of-stock list from the sidebar."}
       </p>
 
@@ -111,10 +111,9 @@ export default function Dashboard() {
                       ? stats.totalInvoices
                       : PLACEHOLDER
                 }
-                sub={apiAvailable ? "" : NEED_API}
+                sub={apiAvailable ? "Platform total" : NEED_API}
                 icon="ti-receipt"
                 color="primary"
-                href="/invoices"
               />
             </div>
             <div className="col-lg-3 col-md-6">
@@ -174,8 +173,7 @@ export default function Dashboard() {
             <div className="card-body p-4">
               <h3 className="h5 mb-3">Quick actions</h3>
               <p className="text-muted small mb-0">
-                Use the sidebar to open Invoices, Users, Memberships, Store links, and Manage
-                features.
+                <strong>Manage users</strong> — view all users, filter by signup, blacklist. <strong>Manage subscriptions</strong> — set plan limits, notify expiring, add/remove plans per user. <strong>Store links</strong> — set App Store &amp; Play Store URLs.
               </p>
             </div>
           </div>

@@ -1,8 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminUser } from "../api/admin";
 
+type GainedFilter = "all" | "1d" | "7d" | "30d" | "1y" | "custom";
+
+function filterUsersByGained(users: AdminUser[], filter: GainedFilter, customFrom?: string, customTo?: string): AdminUser[] {
+  if (filter === "all") return users;
+  const now = new Date();
+  let start = new Date(now);
+  if (filter === "1d") start.setDate(start.getDate() - 1);
+  else if (filter === "7d") start.setDate(start.getDate() - 7);
+  else if (filter === "30d") start.setMonth(start.getMonth() - 1);
+  else if (filter === "1y") start.setFullYear(start.getFullYear() - 1);
+  else if (filter === "custom" && customFrom) start = new Date(customFrom);
+  const end = filter === "custom" && customTo ? new Date(customTo) : now;
+  return users.filter((u) => {
+    const t = u.createdAt ? new Date(u.createdAt).getTime() : 0;
+    return t >= start.getTime() && t <= end.getTime();
+  });
+}
+
 export default function Users() {
+  const { isSuperAdmin } = useAuth();
   const [data, setData] = useState<{
     users: AdminUser[];
     total: number;
@@ -14,6 +34,9 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [gainedFilter, setGainedFilter] = useState<GainedFilter>("all");
+  const [gainedFrom, setGainedFrom] = useState("");
+  const [gainedTo, setGainedTo] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -52,13 +75,19 @@ export default function Users() {
     fetchUsers();
   };
 
+  const displayedUsers = useMemo(() => {
+    if (!data?.users) return [];
+    if (!isSuperAdmin) return data.users;
+    return filterUsersByGained(data.users, gainedFilter, gainedFrom || undefined, gainedTo || undefined);
+  }, [data?.users, isSuperAdmin, gainedFilter, gainedFrom, gainedTo]);
+
   return (
     <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Users</h1>
+      <h1 className="fs-3 mb-1 fw-bold">{isSuperAdmin ? "Manage users" : "Users"}</h1>
       <p className="text-muted mb-4">
-        View all app users (shopkeepers and personal). Search by name, phone, or
-        business. You can blacklist a user to revoke access; data is not
-        deleted.
+        {isSuperAdmin
+          ? "View all app users. Search, filter by signup date, open a user to add/remove subscription or blacklist."
+          : "View all app users (shopkeepers and personal). Search by name, phone, or business. You can blacklist a user to revoke access; data is not deleted."}
       </p>
 
       <div className="card border-0 shadow-sm rounded-3 mb-4">
@@ -83,6 +112,45 @@ export default function Users() {
               <i className="ti ti-search" />
               Search
             </button>
+            {isSuperAdmin && (
+              <>
+                <span className="text-muted ms-2 me-1">·</span>
+                <span className="small text-muted me-1">Gained:</span>
+                <select
+                  className="form-select form-select-sm"
+                  style={{ width: "auto" }}
+                  value={gainedFilter}
+                  onChange={(e) => setGainedFilter(e.target.value as GainedFilter)}
+                >
+                  <option value="all">All</option>
+                  <option value="1d">Last 24h</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="1y">Last year</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                {gainedFilter === "custom" && (
+                  <>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      style={{ width: 140 }}
+                      value={gainedFrom}
+                      onChange={(e) => setGainedFrom(e.target.value)}
+                      placeholder="From"
+                    />
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      style={{ width: 140 }}
+                      value={gainedTo}
+                      onChange={(e) => setGainedTo(e.target.value)}
+                      placeholder="To"
+                    />
+                  </>
+                )}
+              </>
+            )}
           </form>
         </div>
       </div>
@@ -141,8 +209,14 @@ export default function Users() {
                             : "No users found."}
                         </td>
                       </tr>
+                    ) : displayedUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="text-center text-muted py-4">
+                          No users in selected period. Try &quot;All&quot; or another range.
+                        </td>
+                      </tr>
                     ) : (
-                      data.users.map((u) => (
+                      displayedUsers.map((u) => (
                         <tr key={u.id}>
                           <td className="fw-medium">{u.name}</td>
                           <td>{u.phone}</td>

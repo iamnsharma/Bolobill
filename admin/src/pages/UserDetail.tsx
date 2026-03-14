@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminUser } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
 
@@ -31,6 +32,7 @@ function InfoRow({
 
 export default function UserDetail() {
   const { id } = useParams<{ id: string }>();
+  const { isSuperAdmin } = useAuth();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export default function UserDetail() {
         to="/users"
         className="btn btn-link btn-sm text-muted text-decoration-none mb-3 d-inline-flex align-items-center">
         <i className="ti ti-arrow-left me-1" />
-        Back to Users
+        Back to {isSuperAdmin ? "Manage users" : "Users"}
       </Link>
       <h1 className="fs-3 mb-1 fw-bold">User details</h1>
       <p className="text-muted mb-4">View and manage this user.</p>
@@ -128,6 +130,23 @@ export default function UserDetail() {
                       </p>
                     </div>
                   </div>
+                  {isSuperAdmin && user.usage?.voiceToTextSecondsUsed != null && (
+                    <div className="d-flex align-items-start gap-3 py-3 border-bottom border-light">
+                      <span
+                        className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted"
+                        style={{ width: 40, height: 40 }}>
+                        <i className="ti ti-microphone" />
+                      </span>
+                      <div className="flex-grow-1 min-w-0">
+                        <p className="mb-0 small text-muted text-uppercase fw-semibold">
+                          Voice / Whisper usage
+                        </p>
+                        <p className="mb-0 mt-1">
+                          {Math.round((user.usage.voiceToTextSecondsUsed ?? 0) / 60)} min
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <InfoRow
                     icon="ti-calendar"
                     label="Created"
@@ -159,6 +178,32 @@ export default function UserDetail() {
                   )}
                 </div>
               </div>
+              {isSuperAdmin && (
+                <div className="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
+                  <div className="card-body p-4">
+                    <p className="small text-muted text-uppercase fw-semibold mb-2">
+                      Subscription
+                    </p>
+                    <p className="small text-muted mb-3">
+                      Plan: — · Expiry: — (backend can be wired later)
+                    </p>
+                    <div className="d-flex flex-column gap-2">
+                      <button type="button" className="btn btn-outline-primary btn-sm w-100">
+                        <i className="ti ti-crown me-1" />
+                        Add subscription
+                      </button>
+                      <button type="button" className="btn btn-outline-secondary btn-sm w-100">
+                        <i className="ti ti-crown-off me-1" />
+                        Remove subscription
+                      </button>
+                      <button type="button" className="btn btn-outline-info btn-sm w-100">
+                        <i className="ti ti-bell me-1" />
+                        Notify about expiry
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
                 <div className="card-body p-4">
                   <p className="small text-muted text-uppercase fw-semibold mb-3">
@@ -181,12 +226,14 @@ export default function UserDetail() {
                         ? "Remove from blacklist"
                         : "Blacklist user"}
                     </button>
-                    <Link
-                      to={`/invoices?userId=${user.id}`}
-                      className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
-                      <i className="ti ti-receipt" />
-                      View invoices
-                    </Link>
+                    {!isSuperAdmin && (
+                      <Link
+                        to={`/invoices?userId=${user.id}`}
+                        className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                        <i className="ti ti-receipt" />
+                        View invoices
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
