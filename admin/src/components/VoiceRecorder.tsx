@@ -48,7 +48,11 @@ export function VoiceRecorder({ onRecorded, onError, disabled = false }: Props) 
   }, [stopTimer, stopStream]);
 
   const startRecording = useCallback(async () => {
-    if (status !== 'idle' || disabled) return;
+    if (status !== 'idle') return;
+    if (disabled) {
+      onError?.('Please enter customer name first.');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -133,28 +137,17 @@ export function VoiceRecorder({ onRecorded, onError, disabled = false }: Props) 
       ? `Recording ${formatTime(elapsedSec)}`
       : status === 'paused'
         ? `Paused at ${formatTime(elapsedSec)}`
-        : disabled
-          ? 'Enter customer name above to enable recording.'
-          : 'Tap the mic or Record to start. Use Pause/Resume or Stop when done.';
+        : 'Tap the mic or Record to start. Use Pause/Resume or Stop when done.';
 
   const isRecording = status === 'recording';
-  const canStartFromMic = status === 'idle' && !disabled;
+  const canStartFromMic = status === 'idle';
 
   const handleMicClick = () => {
     if (canStartFromMic) startRecording();
   };
 
   return (
-    <div className={`voice-recorder border rounded-3 p-4 bg-light bg-opacity-50 position-relative ${disabled ? 'voice-recorder--disabled' : ''}`}>
-      {disabled && (
-        <div className="voice-recorder-overlay rounded-3">
-          <div className="voice-recorder-overlay-content">
-            <i className="ti ti-lock mb-2" style={{ fontSize: '1.75rem' }} />
-            <span className="fw-semibold">Add customer name above to start</span>
-            <span className="small opacity-90">Recording will unlock once the field is filled.</span>
-          </div>
-        </div>
-      )}
+    <div className="voice-recorder border rounded-3 p-4 bg-light bg-opacity-50 position-relative">
       <div className="d-flex flex-column align-items-center gap-3">
         <div
           role="button"
@@ -181,7 +174,7 @@ export function VoiceRecorder({ onRecorded, onError, disabled = false }: Props) 
             type="button"
             className="btn btn-outline-primary btn-sm"
             onClick={startRecording}
-            disabled={status !== 'idle' || disabled}
+            disabled={status !== 'idle'}
           >
             <i className="ti ti-circle-plus me-1" />
             Record

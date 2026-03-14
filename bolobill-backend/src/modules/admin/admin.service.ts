@@ -1,9 +1,32 @@
+import path from 'path';
+import fs from 'fs';
 import {ApiError} from '../../common/ApiError';
 import {InvoiceModel} from '../../models/Invoice.model';
 import {UserModel} from '../../models/User.model';
 import type {UserDocument} from '../../models/User.model';
 import {invoiceService} from '../invoice/invoice.service';
 import {outOfStockService} from '../out-of-stock/outOfStock.service';
+
+const STORE_LINKS_PATH = path.join(process.cwd(), 'storage', 'store-links.json');
+
+function readStoreLinks(): { playStoreUrl: string; appStoreUrl: string } {
+  try {
+    const raw = fs.readFileSync(STORE_LINKS_PATH, 'utf-8');
+    const data = JSON.parse(raw) as { playStoreUrl?: string; appStoreUrl?: string };
+    return {
+      playStoreUrl: typeof data.playStoreUrl === 'string' ? data.playStoreUrl : '',
+      appStoreUrl: typeof data.appStoreUrl === 'string' ? data.appStoreUrl : '',
+    };
+  } catch {
+    return { playStoreUrl: '', appStoreUrl: '' };
+  }
+}
+
+function writeStoreLinks(data: { playStoreUrl: string; appStoreUrl: string }) {
+  const dir = path.dirname(STORE_LINKS_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(STORE_LINKS_PATH, JSON.stringify(data, null, 2), 'utf-8');
+}
 
 export const adminService = {
   async getStats() {
@@ -137,12 +160,16 @@ export const adminService = {
     return invoiceService.getSalesSummary(userId, from, to);
   },
 
+  async getSalesSummaryDaily(userId: string, from: Date, to: Date) {
+    return invoiceService.getSalesSummaryDaily(userId, from, to);
+  },
+
   async getItemsSold(userId: string, from?: Date, to?: Date) {
     return invoiceService.getItemsSold(userId, from, to);
   },
 
   async createInvoice(userId: string, payload: {
-    customerName?: string;
+    customerName: string;
     items: { name: string; quantity: string | number; totalPrice: number }[];
     note?: string;
   }) {
@@ -212,5 +239,19 @@ export const adminService = {
       created.push(doc);
     }
     return created;
+  },
+
+  getStoreLinks(): { playStoreUrl: string; appStoreUrl: string } {
+    return readStoreLinks();
+  },
+
+  updateStoreLinks(payload: { playStoreUrl?: string; appStoreUrl?: string }) {
+    const current = readStoreLinks();
+    const next = {
+      playStoreUrl: typeof payload.playStoreUrl === 'string' ? payload.playStoreUrl.trim() : current.playStoreUrl,
+      appStoreUrl: typeof payload.appStoreUrl === 'string' ? payload.appStoreUrl.trim() : current.appStoreUrl,
+    };
+    writeStoreLinks(next);
+    return next;
   },
 };

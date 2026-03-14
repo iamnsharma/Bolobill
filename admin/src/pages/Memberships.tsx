@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useMembership, type MembershipPlanId } from "../contexts/MembershipContext";
+import {
+  useMembership,
+  type MembershipPlanId,
+} from "../contexts/MembershipContext";
 
 const PLANS: Array<{
   id: MembershipPlanId;
@@ -78,14 +81,15 @@ export default function Memberships() {
   };
 
   return (
-    <div className="admin-page membership-page">
+    <div className="mt-6 admin-page membership-page">
       {/* Hero */}
       <div className="membership-hero rounded-4 overflow-hidden mb-5">
         <div className="membership-hero-inner">
           <span className="membership-hero-badge">Plans</span>
           <h1 className="membership-hero-title">Choose your growth plan</h1>
           <p className="membership-hero-sub">
-            Bill limits reset on your renewal date each month. Upgrade or change plan anytime.
+            Bill limits reset on your renewal date each month. Upgrade or change
+            plan anytime.
           </p>
         </div>
       </div>
@@ -108,7 +112,9 @@ export default function Memberships() {
               </div>
               <div>
                 <h2 className="h5 fw-bold mb-1">
-                  {currentPlan ? `Your plan: ${currentPlan}` : "No active membership"}
+                  {currentPlan
+                    ? `Your plan: ${currentPlan}`
+                    : "No active membership"}
                 </h2>
                 <p className="text-muted small mb-0">
                   {currentPlan
@@ -122,8 +128,7 @@ export default function Memberships() {
                 <button
                   type="button"
                   className="btn btn-outline-primary rounded-3"
-                  onClick={() => setManageOpen(!manageOpen)}
-                >
+                  onClick={() => setManageOpen(!manageOpen)}>
                   <i className="ti ti-settings me-1" />
                   Manage
                 </button>
@@ -131,8 +136,7 @@ export default function Memberships() {
                   <button
                     type="button"
                     className="btn btn-outline-danger rounded-3 btn-sm"
-                    onClick={handleCancelMembership}
-                  >
+                    onClick={handleCancelMembership}>
                     Cancel (UI only)
                   </button>
                 )}
@@ -153,7 +157,8 @@ export default function Memberships() {
       {/* All plans */}
       <h2 className="h5 fw-bold mb-3">All plans</h2>
       <p className="text-muted small mb-4">
-        Compare and choose. You can upgrade or switch plan anytime (UI only; payment integration coming later).
+        Compare and choose. You can upgrade or switch plan anytime (UI only;
+        payment integration coming later).
       </p>
 
       <div className="row g-4 mb-5">
@@ -163,8 +168,9 @@ export default function Memberships() {
             <div key={plan.id} className="col-md-6 col-lg-4">
               <div
                 className={`membership-plan-card card border-0 h-100 overflow-hidden rounded-4 ${isCurrent ? "membership-plan-card--active" : ""} ${plan.popular ? "membership-plan-card--popular" : ""}`}
-                style={{ "--plan-gradient": plan.gradient } as React.CSSProperties}
-              >
+                style={
+                  { "--plan-gradient": plan.gradient } as React.CSSProperties
+                }>
                 {plan.popular && (
                   <div className="membership-plan-card-ribbon">Popular</div>
                 )}
@@ -172,20 +178,31 @@ export default function Memberships() {
                 <div className="card-body position-relative p-4 d-flex flex-column">
                   <div className="d-flex align-items-center gap-3 mb-3">
                     <div className="membership-plan-icon-wrap rounded-3 overflow-hidden">
-                      <img src={plan.icon} alt={plan.name} className="membership-plan-icon" />
+                      <img
+                        src={plan.icon}
+                        alt={plan.name}
+                        className="membership-plan-icon"
+                      />
                     </div>
                     <div>
                       <h3 className="h4 fw-bold mb-0 text-dark">{plan.name}</h3>
                       <p className="text-primary fw-semibold mb-0">
                         ₹{plan.price.toLocaleString()}
-                        <span className="fw-normal text-muted small"> / month</span>
+                        <span className="fw-normal text-muted small">
+                          {" "}
+                          / month
+                        </span>
                       </p>
                     </div>
                   </div>
-                  <p className="small text-muted mb-3 flex-grow-1">{plan.description}</p>
+                  <p className="small text-muted mb-3 flex-grow-1">
+                    {plan.description}
+                  </p>
                   <ul className="list-unstyled small mb-4">
                     {plan.features.map((f, i) => (
-                      <li key={i} className="d-flex align-items-center gap-2 mb-2">
+                      <li
+                        key={i}
+                        className="d-flex align-items-center gap-2 mb-2">
                         <i className="ti ti-check text-success flex-shrink-0" />
                         <span>{f}</span>
                       </li>
@@ -201,8 +218,7 @@ export default function Memberships() {
                       <button
                         type="button"
                         className="btn btn-primary w-100 rounded-3 py-3 fw-semibold membership-plan-cta"
-                        onClick={() => handleSubscribe(plan.id)}
-                      >
+                        onClick={() => handleSubscribe(plan.id)}>
                         {currentPlan ? "Switch to this plan" : "Subscribe"}
                       </button>
                     )}
@@ -217,7 +233,9 @@ export default function Memberships() {
       <div className="card border-0 bg-light bg-opacity-50 rounded-4 p-4">
         <p className="small text-muted mb-0">
           <i className="ti ti-info-circle me-1" />
-          Need custom limits for your shop? Use Feedback in the app or contact support. Payment and real subscription management will be connected in a later update.
+          Need custom limits for your shop? Use Feedback in the app or contact
+          support. Payment and real subscription management will be connected in
+          a later update.
         </p>
       </div>
     </div>

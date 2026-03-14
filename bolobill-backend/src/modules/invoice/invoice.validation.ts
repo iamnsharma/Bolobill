@@ -7,7 +7,7 @@ const itemSchema = z.object({
 });
 
 export const manualInvoiceSchema = z.object({
-  customerName: z.string().trim().min(1).optional(),
+  customerName: z.string().trim().min(1, 'Customer name is required'),
   items: z.array(itemSchema).min(1),
   note: z.string().optional(),
 });

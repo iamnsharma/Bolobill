@@ -9,6 +9,7 @@ const SUPERADMIN_NAV = [
   { to: '/invoices', icon: 'ti-receipt', label: 'Invoices' },
   { to: '/users', icon: 'ti-users', label: 'Users' },
   { to: '/memberships', icon: 'ti-crown', label: 'Memberships' },
+  { to: '/store-links', icon: 'ti-link', label: 'Store links' },
   { to: '/manage-features', icon: 'ti-settings', label: 'Manage features' },
 ];
 

@@ -82,6 +82,23 @@ export const adminController = {
     return res.json(summary);
   }),
 
+  getSalesSummaryDaily: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const userId = ctx.isSuperAdmin && typeof req.query.userId === 'string'
+      ? req.query.userId
+      : ctx.userId;
+    const from = parseDate(req.query.from);
+    const to = parseDate(req.query.to);
+    if (!from || !to) {
+      throw new ApiError(400, 'Query from and to (YYYY-MM-DD) are required');
+    }
+    if (from > to) {
+      throw new ApiError(400, 'from must be before or equal to to');
+    }
+    const daily = await adminService.getSalesSummaryDaily(userId, from, to);
+    return res.json({daily});
+  }),
+
   getItemsSold: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
     const userId = ctx.isSuperAdmin && typeof req.query.userId === 'string'
@@ -225,5 +242,17 @@ export const adminController = {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     await adminService.deleteOutOfStock(ctx.userId, id);
     return res.json({message: 'Deleted'});
+  }),
+
+  getStoreLinks: asyncHandler(async (_req: Request, res: Response) => {
+    const links = adminService.getStoreLinks();
+    return res.json(links);
+  }),
+
+  updateStoreLinks: asyncHandler(async (req: Request, res: Response) => {
+    const playStoreUrl = req.body?.playStoreUrl;
+    const appStoreUrl = req.body?.appStoreUrl;
+    const links = adminService.updateStoreLinks({ playStoreUrl, appStoreUrl });
+    return res.json(links);
   }),
 };

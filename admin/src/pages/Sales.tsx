@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { adminApi, type SalesSummary as SalesSummaryType } from "../api/admin";
+import { SalesChartsSection } from "../components/SalesChartsSection";
 
 const formatMoney = (n: number) => `₹${Number(n).toLocaleString()}`;
 
@@ -39,7 +40,7 @@ export default function Sales() {
       <h1 className="fs-3 mb-1 fw-bold">Sales Summary</h1>
       <p className="text-muted mb-4">
         View your total sales for today, week, month, and year. Use the date
-        filter to see sales for a custom range.
+        filter for a custom range. Turn on &quot;Use sample data&quot; in the charts section to preview with dummy data.
       </p>
 
       <div className="card border-0 shadow-sm rounded-3 mb-4">
@@ -152,6 +153,10 @@ export default function Sales() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="mt-4">
+        <SalesChartsSection />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import mongoose from 'mongoose';
 import {ApiError} from '../../common/ApiError';
 import {UserModel} from '../../models/User.model';
 import {InvoiceModel} from '../../models/Invoice.model';
@@ -253,6 +254,19 @@ export const invoiceService = {
       thisYear,
       filteredTotal,
     };
+  },
+
+  async getSalesSummaryDaily(
+    userId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{date: string; total: number}[]> {
+    const result = await InvoiceModel.aggregate<{_id: string; total: number}>([
+      {$match: {userId: new mongoose.Types.ObjectId(userId), createdAt: {$gte: from, $lte: to}}},
+      {$group: {_id: {$dateToString: {format: '%Y-%m-%d', date: '$createdAt'}}, total: {$sum: '$total'}}},
+      {$sort: {_id: 1}},
+    ]);
+    return result.map((r) => ({date: r._id, total: r.total}));
   },
 
   async getItemsSold(

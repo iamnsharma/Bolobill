@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminStats, type SalesSummary } from "../api/admin";
+import { DownloadAppSection } from "../components/DownloadAppSection";
 
 const PLACEHOLDER = "—";
 const NEED_API = "Need backend API";
@@ -93,6 +94,10 @@ export default function Dashboard() {
           : "Your sales at a glance. View bills, sales summary, items sold, and out-of-stock list from the sidebar."}
       </p>
 
+      <div className="mb-4">
+        <DownloadAppSection />
+      </div>
+
       {isSuperAdmin ? (
         <>
           <div className="row g-3 mb-4">
@@ -169,7 +174,7 @@ export default function Dashboard() {
             <div className="card-body p-4">
               <h3 className="h5 mb-3">Quick actions</h3>
               <p className="text-muted small mb-0">
-                Use the sidebar to open Invoices, Users, Memberships, and Manage
+                Use the sidebar to open Invoices, Users, Memberships, Store links, and Manage
                 features.
               </p>
             </div>
@@ -241,27 +246,6 @@ export default function Dashboard() {
                 color="warning"
                 href="/sales"
               />
-            </div>
-          </div>
-          <div className="card border-0 shadow-sm rounded-3">
-            <div className="card-body p-4">
-              <h3 className="h5 mb-3">How to use</h3>
-              <p className="text-muted small mb-0">
-                <strong>Bills &amp; Invoices:</strong> View and search all your
-                bills. You cannot edit bills once created.
-                <br />
-                <strong>Create Bill:</strong> Create a new bill or invoice from
-                the web.
-                <br />
-                <strong>Sales Summary:</strong> See total sales with date
-                filters (day, week, month, year).
-                <br />
-                <strong>Items Sold:</strong> See which items sold how much, with
-                quantity and amount, and filter by date.
-                <br />
-                <strong>Out of Stock:</strong> Add items you need to restock and
-                share the list (e.g. as PDF) with your supplier.
-              </p>
             </div>
           </div>
         </>

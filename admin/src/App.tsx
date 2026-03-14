@@ -9,6 +9,7 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Memberships from './pages/Memberships';
 import ManageFeatures from './pages/ManageFeatures';
+import StoreLinks from './pages/StoreLinks';
 import Sales from './pages/Sales';
 import ItemsSold from './pages/ItemsSold';
 import OutOfStock from './pages/OutOfStock';
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="users" element={<Users />} />
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="memberships" element={<Memberships />} />
+        <Route path="store-links" element={<StoreLinks />} />
         <Route path="manage-features" element={<ManageFeatures />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -77,6 +77,9 @@ export const adminApi = {
   getSalesSummary: (params?: { userId?: string; from?: string; to?: string }) =>
     api.get<SalesSummary>('/admin/sales-summary', { params: params ?? {} }).then((r) => r.data),
 
+  getSalesSummaryDaily: (params: { from: string; to: string; userId?: string }) =>
+    api.get<{ daily: { date: string; total: number }[] }>('/admin/sales-summary/daily', { params }).then((r) => r.data),
+
   getItemsSold: (params?: { userId?: string; from?: string; to?: string }) =>
     api.get<{ items: ItemSold[] }>('/admin/items-sold', { params: params ?? {} }).then((r) => r.data),
 
@@ -152,4 +155,10 @@ export const adminApi = {
     api
       .get<{ invoice: Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string } }>(`/admin/invoices/${id}`)
       .then((r) => r.data.invoice),
+
+  getStoreLinks: () =>
+    api.get<{ playStoreUrl: string; appStoreUrl: string }>('/admin/store-links').then((r) => r.data),
+
+  updateStoreLinks: (body: { playStoreUrl?: string; appStoreUrl?: string }) =>
+    api.put<{ playStoreUrl: string; appStoreUrl: string }>('/admin/store-links', body).then((r) => r.data),
 };

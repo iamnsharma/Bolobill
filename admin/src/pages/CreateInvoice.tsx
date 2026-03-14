@@ -89,6 +89,10 @@ export default function CreateInvoice() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerName.trim()) {
+      setError("Customer name is required.");
+      return;
+    }
     const validLines = lines.filter((l) => l.name.trim());
     if (validLines.length === 0) {
       setError("Add at least one item with a name.");
@@ -103,7 +107,7 @@ export default function CreateInvoice() {
     setError(null);
     try {
       await adminApi.createInvoice({
-        customerName: customerName.trim() || undefined,
+        customerName: customerName.trim(),
         items,
         note: note.trim() || undefined,
       });
@@ -183,9 +187,7 @@ export default function CreateInvoice() {
                     setVoiceError(null);
                   }}
                 />
-                {!canRecord && (
-                  <small className="text-muted">Required before recording</small>
-                )}
+                <small className="text-muted">Required for voice bills</small>
               </div>
             </div>
             <div className="mt-4">
@@ -242,14 +244,20 @@ export default function CreateInvoice() {
           <div className="card-body p-4">
             <div className="row g-3 mb-4">
               <div className="col-md-6">
-                <label className="form-label">Customer name (optional)</label>
+                <label className="form-label">
+                  Customer name <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Customer"
+                  placeholder="Enter customer name"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    setError(null);
+                  }}
                 />
+                <small className="text-muted">Required for every bill</small>
               </div>
               <div className="col-md-6">
                 <label className="form-label">Note (optional)</label>

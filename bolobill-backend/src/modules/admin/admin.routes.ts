@@ -48,10 +48,13 @@ adminRouter.get('/stats', requireSuperAdmin, asyncHandler(adminController.getSta
 adminRouter.get('/users', requireSuperAdmin, asyncHandler(adminController.listUsers));
 adminRouter.get('/users/:id', requireSuperAdmin, asyncHandler(adminController.getUserById));
 adminRouter.patch('/users/:id/blacklist', requireSuperAdmin, asyncHandler(adminController.setBlacklist));
+adminRouter.put('/store-links', requireSuperAdmin, asyncHandler(adminController.updateStoreLinks));
 
 // Fixed paths for both superadmin and business admin (business sees own data only)
 adminRouter.get('/me', asyncHandler(adminController.getMe));
+adminRouter.get('/store-links', asyncHandler(adminController.getStoreLinks));
 adminRouter.get('/sales-summary', asyncHandler(adminController.getSalesSummary));
+adminRouter.get('/sales-summary/daily', asyncHandler(adminController.getSalesSummaryDaily));
 adminRouter.get('/items-sold', asyncHandler(adminController.getItemsSold));
 adminRouter.get('/invoices', asyncHandler(adminController.listInvoices));
 adminRouter.post('/invoices', asyncHandler(adminController.createInvoice));
