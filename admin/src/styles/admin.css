@@ -97,11 +97,14 @@
   right: 0;
   z-index: 1030;
   transition: background 0.25s ease, box-shadow 0.25s ease;
+  /* Solid bar over hero gradient so nav and trial text stay readable */
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
 }
 
 .landing-header--scrolled {
   background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   box-shadow: 0 1px 16px rgba(0, 0, 0, 0.06);
 }
 
@@ -120,6 +123,12 @@
   gap: 0.25rem;
 }
 
+/* Logo and nav text white when header is over hero (dark tint) */
+.landing-header:not(.landing-header--scrolled) .landing-logo,
+.landing-header:not(.landing-header--scrolled) .landing-logo-text {
+  color: #fff !important;
+}
+
 .landing-logo-img {
   height: 44px;
   width: auto;
@@ -135,20 +144,57 @@
   line-height: 1.2;
 }
 
+/* Solid pill so "2 days free trial" is readable on gradient; matches button style */
 .landing-header-trial {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--bs-primary);
+  color: #1a1a2e;
   text-decoration: none;
-  padding: 0.35rem 0.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: rgba(13, 110, 253, 0.1);
-  transition: background 0.2s ease, color 0.2s ease;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .landing-header-trial:hover {
-  background: rgba(13, 110, 253, 0.18);
-  color: var(--bs-primary);
+  background: #f8f9fa;
+  color: #0d6efd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* When header is scrolled (white bar), trial pill stays solid with border */
+.landing-header--scrolled .landing-header-trial {
+  background: #fff;
+  color: #0d6efd;
+  border: 1px solid rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons over hero: solid look with good contrast on dark header bar */
+.landing-header:not(.landing-header--scrolled) .btn-outline-primary.landing-header-btn {
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #fff;
+  background: transparent;
+}
+
+.landing-header:not(.landing-header--scrolled) .btn-outline-primary.landing-header-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  color: #fff;
+}
+
+.landing-header:not(.landing-header--scrolled) .btn-primary.landing-header-btn {
+  background: #fff;
+  color: #0d6efd;
+  border-color: #fff;
+}
+
+.landing-header:not(.landing-header--scrolled) .btn-primary.landing-header-btn:hover {
+  background: #f0f0f0;
+  color: #0a58ca;
+  border-color: #f0f0f0;
 }
 
 /* Hero: entrance animation */
