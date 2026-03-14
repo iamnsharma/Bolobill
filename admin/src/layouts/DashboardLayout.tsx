@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useMembership } from '../contexts/MembershipContext';
 import ConfirmModal from '../components/ConfirmModal';
 
 const SUPERADMIN_NAV = [
@@ -18,6 +19,7 @@ const BUSINESS_NAV = [
   { to: '/sales', icon: 'ti-chart-bar', label: 'Sales Summary' },
   { to: '/items-sold', icon: 'ti-package', label: 'Items Sold' },
   { to: '/out-of-stock', icon: 'ti-alert-circle', label: 'Out of Stock' },
+  { to: '/memberships', icon: 'ti-crown', label: 'Plans' },
 ];
 
 export default function DashboardLayout() {
@@ -25,6 +27,7 @@ export default function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, isSuperAdmin, logout } = useAuth();
+  const { hasActiveMembership } = useMembership();
   const navigate = useNavigate();
   const navItems = useMemo(() => (isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV), [isSuperAdmin]);
 
@@ -74,7 +77,17 @@ export default function DashboardLayout() {
         >
           <i className="ti ti-layout-sidebar-left-expand" />
         </button>
-        <div className="ms-auto">
+        <div className="ms-auto d-flex align-items-center gap-2">
+          {hasActiveMembership && (
+            <NavLink
+              to="/memberships"
+              className="membership-header-badge text-decoration-none"
+              title="Your membership"
+              aria-label="Your membership"
+            >
+              <i className="ti ti-crown" style={{ fontSize: '1rem' }} />
+            </NavLink>
+          )}
           <div className="dropdown">
             <button
               type="button"

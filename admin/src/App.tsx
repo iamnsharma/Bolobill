@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { MembershipProvider } from './contexts/MembershipContext';
 import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
@@ -34,7 +35,9 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <MembershipProvider>
+              <DashboardLayout />
+            </MembershipProvider>
           </ProtectedRoute>
         }
       >
