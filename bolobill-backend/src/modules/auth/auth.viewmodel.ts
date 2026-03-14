@@ -6,4 +6,5 @@ export const toAuthUserVm = (user: UserDocument) => ({
   businessName: user.businessName,
   phone: user.phone,
   accountType: user.accountType,
+  ...(user.role && {role: user.role}),
 });

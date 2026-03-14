@@ -4,6 +4,6 @@ export const asyncHandler =
   (
     fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>,
   ) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    fn(req, res, next).catch(next);
+  (req: Request, res: Response, next: NextFunction): Promise<unknown> => {
+    return fn(req, res, next).catch(next);
   };

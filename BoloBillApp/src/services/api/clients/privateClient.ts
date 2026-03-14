@@ -4,10 +4,7 @@ import {STORAGE_KEYS} from '../../../utils/storage/keys';
 import {storage} from '../../../utils/storage/mmkv';
 import {logApiError, logApiRequest, logApiResponse} from '../logger';
 
-const DEFAULT_DEV_BASE_URL =
-  Platform.OS === 'android'
-    ? 'http://127.0.0.1:3011/api'
-    : 'http://localhost:3011/api';
+const DEFAULT_DEV_BASE_URL = 'https://api.useaifast.com/api';
 
 const runtimeBaseUrl = storage.getString(STORAGE_KEYS.API_BASE_URL)?.trim();
 const DEV_BASE_URL = runtimeBaseUrl || DEFAULT_DEV_BASE_URL;
