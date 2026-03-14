@@ -22,7 +22,15 @@ export function exportInvoiceAsPdf(params: {
   const doc = new jsPDF();
   const margin = 18;
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   let y = margin;
+
+  // ----- Watermark: BoloBill (behind content) -----
+  doc.setFontSize(72);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(204, 204, 204);
+  doc.text('BoloBill', pageW / 2, pageH / 2 + 8, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
 
   // ----- Header: Bolo Bill branding -----
   doc.setFillColor(230, 98, 57); // primary orange
