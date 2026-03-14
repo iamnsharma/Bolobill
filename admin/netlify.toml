@@ -1,0 +1,10 @@
+# Netlify config for BoloBill Admin (Vite + React SPA)
+# If this site's "Base directory" in Netlify UI is set to "admin", use the same below.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Ensure Node version (optional; Netlify often defaults to 18+)
+[build.environment]
+  NODE_VERSION = "20"
