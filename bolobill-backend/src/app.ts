@@ -13,7 +13,8 @@ import {errorMiddleware} from './middleware/error.middleware';
 export const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ok: true, service: 'bolobill-backend-ts'});
@@ -34,5 +35,6 @@ app.use('/api/payment', paymentRouter);
 
 app.use('/api/files/pdfs', express.static(path.join(process.cwd(), 'storage/pdfs')));
 app.use('/api/files/qr', express.static(path.join(process.cwd(), 'storage/qr')));
+app.use('/api/files/plans', express.static(path.join(process.cwd(), 'storage/plans')));
 
 app.use(errorMiddleware);
