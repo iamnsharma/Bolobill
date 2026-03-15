@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { adminApi, type AdminUser } from "../api/admin";
+import { adminApi, type AdminUser, type UserLimits } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
+import { api } from "../api/client";
 
 function InfoRow({
   icon,
@@ -34,18 +35,28 @@ export default function UserDetail() {
   const { id } = useParams<{ id: string }>();
   const { isSuperAdmin } = useAuth();
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [limits, setLimits] = useState<UserLimits | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showBlacklistConfirm, setShowBlacklistConfirm] = useState(false);
+  
+  // Plan assignment state
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [selectedExpiry, setSelectedExpiry] = useState<string>("");
 
-  useEffect(() => {
+  const fetchUserData = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     adminApi
       .getUserById(id)
-      .then(setUser)
+      .then((res) => {
+        setUser(res.user);
+        setLimits(res.limits);
+      })
       .catch((e: unknown) => {
         setError(
           (e as { response?: { data?: { message?: string } } })?.response?.data
@@ -53,21 +64,42 @@ export default function UserDetail() {
         );
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    if (isSuperAdmin) {
+      api.get('/plans/admin').then(res => setPlans(res.data.plans)).catch(console.error);
+    }
+  }, [id, isSuperAdmin]);
 
   const toggleBlacklist = async () => {
     if (!id || !user) return;
     const newValue = !user.isBlacklisted;
     setActionLoading(true);
     try {
-      const updated = await adminApi.setBlacklist(id, newValue);
-      setUser(updated);
+      const result = await adminApi.setBlacklist(id, newValue);
+      setUser(result);
       setShowBlacklistConfirm(false);
     } catch (e: unknown) {
       alert(
         (e as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ?? "Failed to update",
       );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAssignPlan = async () => {
+    if (!id) return;
+    setActionLoading(true);
+    try {
+      await adminApi.assignPlan(id, selectedPlanId || null, selectedExpiry || undefined);
+      setShowPlanModal(false);
+      fetchUserData(); // reload to get new limits
+    } catch (e: unknown) {
+      alert((e as any)?.response?.data?.message ?? "Failed to assign plan");
     } finally {
       setActionLoading(false);
     }
@@ -185,20 +217,19 @@ export default function UserDetail() {
                       Subscription
                     </p>
                     <p className="small text-muted mb-3">
-                      Plan: — · Expiry: — (backend can be wired later)
+                      Plan: <span className={`badge ${limits?.isActive ? 'bg-primary' : 'bg-secondary'}`}>{limits?.isActive ? 'Active' : 'None/Expired'}</span>
+                      <br/>
+                      <br/>
+                      Invoices used: <strong>{limits?.invoicesUsed ?? 0}</strong> / {(limits?.invoiceLimit ?? 0) || '∞'}
+                      <br/>
+                      Voice used: <strong>{Math.round(limits?.voiceMinutesUsed ?? 0)}</strong> / {(limits?.voiceMinutesLimit ?? 0) || '∞'} min
+                      <br/>
+                      Expiry: {limits?.expiresAt ? new Date(limits.expiresAt).toLocaleDateString() : '—'}
                     </p>
                     <div className="d-flex flex-column gap-2">
-                      <button type="button" className="btn btn-outline-primary btn-sm w-100">
+                      <button type="button" className="btn btn-outline-primary btn-sm w-100" onClick={() => setShowPlanModal(true)}>
                         <i className="ti ti-crown me-1" />
-                        Add subscription
-                      </button>
-                      <button type="button" className="btn btn-outline-secondary btn-sm w-100">
-                        <i className="ti ti-crown-off me-1" />
-                        Remove subscription
-                      </button>
-                      <button type="button" className="btn btn-outline-info btn-sm w-100">
-                        <i className="ti ti-bell me-1" />
-                        Notify about expiry
+                        Manage subscription
                       </button>
                     </div>
                   </div>
@@ -261,6 +292,52 @@ export default function UserDetail() {
         onCancel={() => setShowBlacklistConfirm(false)}
         loading={actionLoading}
       />
+
+      {showPlanModal && (
+        <div className="modal d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg rounded-4">
+              <div className="modal-header border-0 pb-0">
+                <h5 className="modal-title fw-bold">Manage subscription</h5>
+                <button type="button" className="btn-close" onClick={() => setShowPlanModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label fw-medium text-muted small text-uppercase">Select Plan</label>
+                  <select 
+                    className="form-select" 
+                    value={selectedPlanId} 
+                    onChange={e => setSelectedPlanId(e.target.value)}
+                  >
+                    <option value="">None (Remove subscription)</option>
+                    {plans.map(p => (
+                      <option key={p._id} value={p._id}>{p.name} - ₹{p.price}</option>
+                    ))}
+                  </select>
+                </div>
+                {selectedPlanId && (
+                  <div className="mb-3">
+                    <label className="form-label fw-medium text-muted small text-uppercase">Expiry Date</label>
+                    <input 
+                      type="date" 
+                      className="form-control" 
+                      value={selectedExpiry}
+                      onChange={e => setSelectedExpiry(e.target.value)}
+                    />
+                    <div className="form-text">If left blank, defaults to 30 days from now.</div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer border-0 pt-0">
+                <button type="button" className="btn btn-light" onClick={() => setShowPlanModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-primary" onClick={handleAssignPlan} disabled={actionLoading}>
+                  {actionLoading ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

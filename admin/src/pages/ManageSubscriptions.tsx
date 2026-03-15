@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-const SUPERADMIN_PLANS_KEY = 'superadmin_plans';
+import { api } from '../api/client';
 
 export interface SubscriptionPlan {
   id: string;
@@ -14,27 +13,24 @@ export interface SubscriptionPlan {
   icon: string;
 }
 
-const DEFAULT_PLANS: SubscriptionPlan[] = [
-  { id: 'Starter', name: 'Starter', description: 'Best for small kirana, ~20–25 bills per day', price: 399, invoicesLimit: 700, voiceMinutesLimit: 60, icon: '/membership/starter.png' },
-  { id: 'Growth', name: 'Growth', description: 'Typical Indian grocery shop, ~50 bills per day', price: 799, invoicesLimit: 1600, voiceMinutesLimit: 120, icon: '/membership/growth.png' },
-  { id: 'Pro', name: 'Pro', description: 'Busy kirana / medical / wholesale, ~80–90 bills per day', price: 1299, invoicesLimit: 2600, voiceMinutesLimit: 300, icon: '/membership/pro.png' },
-];
+const mapFromApi = (p: any): SubscriptionPlan => ({
+  id: p._id,
+  name: p.name,
+  description: p.features?.[0] || '',
+  price: p.price,
+  invoicesLimit: p.invoiceLimit,
+  voiceMinutesLimit: p.voiceMinutesLimit,
+  icon: p.icon === 'ti-star' ? '' : p.icon,
+});
 
-function loadPlans(): SubscriptionPlan[] {
-  try {
-    const raw = localStorage.getItem(SUPERADMIN_PLANS_KEY);
-    if (!raw) return DEFAULT_PLANS;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length) return parsed.map((p: SubscriptionPlan) => ({ ...p, description: p.description ?? '', price: p.price ?? 0 }));
-  } catch {}
-  return DEFAULT_PLANS;
-}
-
-function savePlans(plans: SubscriptionPlan[]) {
-  try {
-    localStorage.setItem(SUPERADMIN_PLANS_KEY, JSON.stringify(plans));
-  } catch {}
-}
+const mapToApi = (p: SubscriptionPlan) => ({
+  name: p.name,
+  features: p.description ? [p.description] : [],
+  price: p.price || 0,
+  invoiceLimit: p.invoicesLimit || 0,
+  voiceMinutesLimit: p.voiceMinutesLimit || 0,
+  icon: p.icon || 'ti-star',
+});
 
 const EXPIRY_OPTIONS = [
   { value: '7', label: '7 days' },
@@ -45,37 +41,53 @@ const EXPIRY_OPTIONS = [
 
 export default function ManageSubscriptions() {
   const { isSuperAdmin } = useAuth();
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(loadPlans);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [notifyExpiryDays, setNotifyExpiryDays] = useState<string>('7');
   const [notifySent, setNotifySent] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await api.get('/plans/admin');
+      setPlans(res.data.plans.map(mapFromApi));
+    } catch (e) {
+      console.error('Failed to load plans', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setPlans(loadPlans());
-  }, []);
-
-  const persistPlans = useCallback((next: SubscriptionPlan[]) => {
-    setPlans(next);
-    savePlans(next);
-  }, []);
+    if (isSuperAdmin) {
+      fetchPlans();
+    }
+  }, [isSuperAdmin, fetchPlans]);
 
   const updatePlan = useCallback((id: string, patch: Partial<SubscriptionPlan>) => {
-    setPlans((prev) => {
-      const out = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
-      savePlans(out);
-      return out;
-    });
+    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }, []);
 
-  const handleSave = (plan: SubscriptionPlan) => {
+  const handleSave = async (plan: SubscriptionPlan) => {
     setSavingId(plan.id);
-    updatePlan(plan.id, plan);
-    setTimeout(() => {
-      setSavingId(null);
+    try {
+      let res;
+      if (plan.id.startsWith('new_')) {
+        res = await api.post('/plans', mapToApi(plan));
+      } else {
+        res = await api.put(`/plans/${plan.id}`, mapToApi(plan));
+      }
+      setPlans((prev) => prev.map((p) => (p.id === plan.id ? mapFromApi(res.data.plan) : p)));
       setEditingPlanId(null);
-    }, 400);
+    } catch (e) {
+      console.error('Failed to save plan', e);
+      alert('Failed to save plan, see console for details.');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -90,24 +102,32 @@ export default function ManageSubscriptions() {
   };
 
   const addNewMembership = () => {
-    const id = `custom_${Date.now()}`;
+    const id = `new_${Date.now()}`;
     const newPlan: SubscriptionPlan = {
       id,
-      name: 'New plan',
+      name: 'New plan ' + Math.floor(Math.random() * 100),
       description: '',
       price: 0,
       invoicesLimit: 0,
       voiceMinutesLimit: 0,
       icon: '',
     };
-    persistPlans([...plans, newPlan]);
+    setPlans([...plans, newPlan]);
     setEditingPlanId(id);
   };
 
-  const removePlan = (id: string) => {
-    persistPlans(plans.filter((p) => p.id !== id));
-    setDeleteConfirm(null);
-    if (editingPlanId === id) setEditingPlanId(null);
+  const removePlan = async (id: string) => {
+    try {
+      if (!id.startsWith('new_')) {
+        await api.delete(`/plans/${id}`);
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+      setDeleteConfirm(null);
+      if (editingPlanId === id) setEditingPlanId(null);
+    } catch (e) {
+      console.error('Failed to delete plan', e);
+      alert('Failed to delete plan');
+    }
   };
 
   const handleNotifyExpiring = () => {
@@ -119,6 +139,16 @@ export default function ManageSubscriptions() {
     return (
       <div className="mt-6 admin-page">
         <div className="alert alert-warning">Only super admins can manage subscriptions.</div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 admin-page d-flex align-items-center justify-content-center" style={{ minHeight: '50vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading plans...</span>
+        </div>
       </div>
     );
   }

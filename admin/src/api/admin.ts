@@ -75,6 +75,18 @@ export interface OutOfStockItem {
   updatedAt: string;
 }
 
+export interface UserLimits {
+  isActive: boolean;
+  expiresAt?: string;
+  invoiceLimit: number;
+  invoicesUsed: number;
+  invoicesRemaining: number;
+  voiceMinutesLimit: number;
+  voiceMinutesUsed: number;
+  voiceSecondsRemaining: number;
+  features: string[];
+}
+
 export const adminApi = {
   getMe: () =>
     api.get<{ user: AdminUser; isSuperAdmin: boolean }>('/admin/me').then((r) => r.data),
@@ -103,11 +115,16 @@ export const adminApi = {
       .then((r) => r.data),
 
   getUserById: (id: string) =>
-    api.get<{ user: AdminUser }>(`/admin/users/${id}`).then((r) => r.data.user),
+    api.get<{ user: AdminUser; limits: UserLimits }>(`/admin/users/${id}`).then((r) => r.data),
 
   setBlacklist: (userId: string, blacklisted: boolean) =>
     api
       .patch<{ user: AdminUser }>(`/admin/users/${userId}/blacklist`, { blacklisted })
+      .then((r) => r.data.user),
+
+  assignPlan: (userId: string, planId: string | null, expiresAt?: string) =>
+    api
+      .patch<{ user: AdminUser }>(`/admin/users/${userId}/plan`, { planId, expiresAt })
       .then((r) => r.data.user),
 
   getInvoices: (params?: {
@@ -200,4 +217,13 @@ export const adminApi = {
 
   deleteQrCode: () =>
     api.delete('/admin/qr-code').then((r) => r.data),
+
+  createPaymentOrder: (planId: string) =>
+    api.post<{ isFree: boolean; orderId?: string; amount?: number; currency?: string; keyId?: string; message?: string }>('/payment/create-order', { planId }).then(r => r.data),
+
+  verifyPayment: (body: { orderId: string; paymentId: string; signature: string; planId: string }) =>
+    api.post<{ success: boolean; message: string }>('/payment/verify', body).then(r => r.data),
+
+  getPlans: () => 
+    api.get<{ plans: any[] }>('/plans').then(r => r.data.plans),
 };

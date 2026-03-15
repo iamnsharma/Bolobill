@@ -2,6 +2,7 @@ import {Request, Response} from 'express';
 import {ApiError} from '../../common/ApiError';
 import {invoiceService} from './invoice.service';
 import {toInvoiceVm} from './invoice.viewmodel';
+import {userPlanService} from '../plan/userPlan.service';
 import {
   manualInvoiceSchema,
   translateTextSchema,
@@ -22,6 +23,7 @@ const getInvoiceParamId = (req: Request) =>
 export const invoiceController = {
   async translateText(req: Request, res: Response) {
     const userId = getUserId(req);
+    await userPlanService.enforceInvoiceLimit(userId);
     const parsed = translateTextSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
@@ -36,7 +38,8 @@ export const invoiceController = {
   },
 
   async previewVoice(req: Request, res: Response) {
-    getUserId(req);
+    const userId = getUserId(req);
+    await userPlanService.enforceVoiceLimit(userId);
     if (!req.file?.path) {
       throw new ApiError(400, 'audio file is required');
     }
@@ -53,6 +56,7 @@ export const invoiceController = {
 
   async createFromVoicePreview(req: Request, res: Response) {
     const userId = getUserId(req);
+    await userPlanService.enforceInvoiceLimit(userId);
     const parsed = createFromVoicePreviewSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
@@ -79,6 +83,8 @@ export const invoiceController = {
 
   async createVoice(req: Request, res: Response) {
     const userId = getUserId(req);
+    await userPlanService.enforceInvoiceLimit(userId);
+    await userPlanService.enforceVoiceLimit(userId);
     if (!req.file?.path) {
       throw new ApiError(400, 'audio file is required');
     }
@@ -104,6 +110,7 @@ export const invoiceController = {
 
   async createManual(req: Request, res: Response) {
     const userId = getUserId(req);
+    await userPlanService.enforceInvoiceLimit(userId);
     const parsed = manualInvoiceSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');

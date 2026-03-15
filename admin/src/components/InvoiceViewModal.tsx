@@ -105,8 +105,10 @@ export default function InvoiceViewModal({
     ]
       .filter(Boolean)
       .join('\n');
-    const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+    // For desktop Admin panel, web.whatsapp.com is often more reliable than the native app for unsaved numbers.
+    const url = `https://web.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
+
     setShowWhatsAppShare(false);
     setWhatsAppNumber('');
   };

@@ -67,6 +67,7 @@ adminRouter.get('/whisper-usage', requireSuperAdmin, asyncHandler(adminControlle
 adminRouter.get('/users', requireSuperAdmin, asyncHandler(adminController.listUsers));
 adminRouter.get('/users/:id', requireSuperAdmin, asyncHandler(adminController.getUserById));
 adminRouter.patch('/users/:id/blacklist', requireSuperAdmin, asyncHandler(adminController.setBlacklist));
+adminRouter.patch('/users/:id/plan', requireSuperAdmin, asyncHandler(adminController.assignPlan));
 adminRouter.put('/store-links', requireSuperAdmin, asyncHandler(adminController.updateStoreLinks));
 
 // Fixed paths for both superadmin and business admin (business sees own data only)

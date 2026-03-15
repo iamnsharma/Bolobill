@@ -5,7 +5,9 @@ import {authRouter} from './modules/auth/auth.routes';
 import {feedbackRouter} from './modules/feedback/feedback.routes';
 import {invoiceRouter} from './modules/invoice/invoice.routes';
 import {adminRouter} from './modules/admin/admin.routes';
+import {planRouter} from './modules/plan/plan.routes';
 import {outOfStockRouter} from './modules/out-of-stock/outOfStock.routes';
+import {paymentRouter} from './modules/payment/payment.routes';
 import {errorMiddleware} from './middleware/error.middleware';
 
 export const app = express();
@@ -27,6 +29,8 @@ app.use('/api/invoices', invoiceRouter);
 app.use('/api/invoice', invoiceRouter);
 
 app.use('/api/out-of-stock', outOfStockRouter);
+app.use('/api/plans', planRouter);
+app.use('/api/payment', paymentRouter);
 
 app.use('/api/files/pdfs', express.static(path.join(process.cwd(), 'storage/pdfs')));
 app.use('/api/files/qr', express.static(path.join(process.cwd(), 'storage/qr')));

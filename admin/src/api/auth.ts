@@ -28,6 +28,11 @@ export interface AuthUser {
   businessName?: string;
   accountType?: string;
   role?: string;
+  subscription?: {
+    status: string;
+    planId: any;
+    expiresAt?: string;
+  };
 }
 
 export interface LoginResponse {

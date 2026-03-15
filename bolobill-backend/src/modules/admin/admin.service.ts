@@ -31,16 +31,17 @@ function writeStoreLinks(data: { playStoreUrl: string; appStoreUrl: string }) {
 export const adminService = {
   async getStats() {
     const appUserFilter = {role: {$nin: ['admin', 'superadmin']}};
-    const [totalInvoices, totalUsers, blacklistedUsers] = await Promise.all([
+    const [totalInvoices, totalUsers, blacklistedUsers, activeMemberships] = await Promise.all([
       InvoiceModel.countDocuments(),
       UserModel.countDocuments(appUserFilter),
       UserModel.countDocuments({...appUserFilter, isBlacklisted: true}),
+      UserModel.countDocuments({...appUserFilter, 'subscription.status': 'active', 'subscription.expiresAt': {$gt: new Date()}}),
     ]);
     return {
       totalInvoices,
       totalUsers,
       blacklistedUsers,
-      activeMemberships: 0, // Not implemented yet
+      activeMemberships,
     };
   },
 
@@ -120,6 +121,25 @@ export const adminService = {
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
+    return user;
+  },
+
+  async assignPlan(userId: string, planId: string | null, expiresAt?: Date) {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    
+    if (!planId) {
+      user.subscription = { status: 'none', planId: undefined, expiresAt: undefined };
+    } else {
+      user.subscription = {
+        planId: planId as unknown as any,
+        status: 'active',
+        expiresAt: expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      };
+    }
+    await user.save();
     return user;
   },
 

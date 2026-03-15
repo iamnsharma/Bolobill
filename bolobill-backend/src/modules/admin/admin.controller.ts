@@ -6,6 +6,7 @@ import {toAdminUserVm, toAdminInvoiceVm} from './admin.viewmodel';
 import type {AdminContext} from '../../middleware/admin.middleware';
 import {manualInvoiceSchema, updateInvoiceSchema} from '../invoice/invoice.validation';
 import {invoiceService} from '../invoice/invoice.service';
+import {userPlanService} from '../plan/userPlan.service';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & { adminContext?: AdminContext }).adminContext;
@@ -32,9 +33,11 @@ export const adminController = {
   getMe: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
     const user = await adminService.getUserById(ctx.userId);
+    const limits = await userPlanService.getUserLimits(ctx.userId);
     return res.json({
       user: toAdminUserVm(user),
       isSuperAdmin: ctx.isSuperAdmin,
+      limits,
     });
   }),
 
@@ -65,14 +68,23 @@ export const adminController = {
 
   getUserById: asyncHandler(async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const user = await adminService.getUserById(id);
-    return res.json({user: toAdminUserVm(user)});
+    const user = await adminService.getUserById(id as string);
+    const limits = await userPlanService.getUserLimits(id as string);
+    return res.json({user: toAdminUserVm(user), limits});
   }),
 
   setBlacklist: asyncHandler(async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const blacklisted = req.body?.blacklisted === true;
     const user = await adminService.setBlacklist(id, blacklisted);
+    return res.json({user: toAdminUserVm(user)});
+  }),
+
+  assignPlan: asyncHandler(async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const {planId, expiresAt} = req.body;
+    const expiryDate = expiresAt ? new Date(expiresAt) : undefined;
+    const user = await adminService.assignPlan(id as string, planId || null, expiryDate);
     return res.json({user: toAdminUserVm(user)});
   }),
 

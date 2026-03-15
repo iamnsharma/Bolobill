@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema(
       invoiceRequestSuccessCount: {type: Number, default: 0, min: 0},
       voiceToTextSecondsUsed: {type: Number, default: 0, min: 0},
     },
+    subscription: {
+      planId: {type: mongoose.Schema.Types.ObjectId, ref: 'Plan'},
+      status: {type: String, enum: ['active', 'expired', 'cancelled', 'none'], default: 'none'},
+      expiresAt: {type: Date},
+    },
     qrCodePath: {type: String, default: '', trim: true},
   },
   {timestamps: true},

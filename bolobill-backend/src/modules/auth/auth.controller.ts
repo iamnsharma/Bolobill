@@ -2,6 +2,7 @@ import {Request, Response} from 'express';
 import {ApiError} from '../../common/ApiError';
 import {toAuthUserVm} from './auth.viewmodel';
 import {authService} from './auth.service';
+import {userPlanService} from '../plan/userPlan.service';
 import {
   loginSchema,
   registerSchema,
@@ -17,7 +18,8 @@ export const authController = {
       throw new ApiError(401, 'Unauthorized');
     }
     const user = await authService.getUserById(req.user.userId);
-    return res.json({user: toAuthUserVm(user)});
+    const limits = await userPlanService.getUserLimits(req.user.userId);
+    return res.json({user: toAuthUserVm(user), limits});
   },
 
   async register(req: Request, res: Response) {
@@ -27,9 +29,11 @@ export const authController = {
     }
 
     const result = await authService.register(parsed.data);
+    const limits = await userPlanService.getUserLimits(result.user._id.toString());
     return res.status(201).json({
       token: result.token,
       user: toAuthUserVm(result.user),
+      limits,
     });
   },
 
@@ -40,9 +44,11 @@ export const authController = {
     }
 
     const result = await authService.registerWithOtp(parsed.data);
+    const limits = await userPlanService.getUserLimits(result.user._id.toString());
     return res.status(201).json({
       token: result.token,
       user: toAuthUserVm(result.user),
+      limits,
     });
   },
 
@@ -53,9 +59,11 @@ export const authController = {
     }
 
     const result = await authService.login(parsed.data);
+    const limits = await userPlanService.getUserLimits(result.user._id.toString());
     return res.json({
       token: result.token,
       user: toAuthUserVm(result.user),
+      limits,
     });
   },
 
@@ -76,9 +84,11 @@ export const authController = {
     }
 
     const result = await authService.verifyOtp(parsed.data.phone, parsed.data.otp);
+    const limits = await userPlanService.getUserLimits(result.user._id.toString());
     return res.json({
       token: result.token,
       user: toAuthUserVm(result.user),
+      limits,
     });
   },
 
