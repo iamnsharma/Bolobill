@@ -24,6 +24,10 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/admin', adminRouter);
 
 app.use('/api/auth', authRouter);
+// Backward-compatible auth endpoints for older frontend builds
+// (e.g. /auth/send-otp or /send-otp without /api prefix).
+app.use('/auth', authRouter);
+app.use('/', authRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/invoices', invoiceRouter);
 // Backward-compatible endpoint with existing mobile code.
