@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
 
   return {
   plugins: [react()],
-  base: './',
+  // Absolute base so deep links like /bill/:token load /assets/* correctly (not /bill/assets/*).
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { resolveApiBaseUrl } from "../config/deployUrls";
+import { resolveApiBaseUrl, resolveApiFileUrl } from "../config/deployUrls";
 
 type PublicBill = {
   invoiceId: string;
@@ -21,7 +21,13 @@ async function fetchPublicBill(token: string): Promise<PublicBill> {
   if (!res.ok) {
     throw new Error("Bill not found or link expired.");
   }
-  return res.json();
+  const data = (await res.json()) as PublicBill;
+  return {
+    ...data,
+    pdfUrl: data.pdfUrl ? resolveApiFileUrl(data.pdfUrl) : "",
+    qrUrl: data.qrUrl ? resolveApiFileUrl(data.qrUrl) : "",
+    items: Array.isArray(data.items) ? data.items : [],
+  };
 }
 
 function formatMoney(n: number) {
@@ -73,9 +79,12 @@ export default function PublicBill() {
     <div className="public-bill-page min-vh-100 py-4 py-md-5">
       <div className="public-bill-card mx-auto">
         <header className="public-bill-card__head text-center">
-          <p className="public-bill-card__eyebrow mb-1">Digital bill</p>
+          <p className="public-bill-card__eyebrow mb-1">BOLOBILL</p>
           <h1 className="public-bill-card__shop mb-2">{bill.shopName}</h1>
-          <p className="text-muted small mb-0">Thank you for your visit! 🙏</p>
+          <p className="text-muted small mb-1">Thank you for your visit! 🙏</p>
+          {bill.customerName ? (
+            <p className="fw-semibold mb-0">Hi {bill.customerName},</p>
+          ) : null}
         </header>
 
         <div className="public-bill-card__meta row g-2 small">
@@ -126,7 +135,19 @@ export default function PublicBill() {
 
         <div className="public-bill-card__feedback text-center">
           <p className="fw-semibold mb-1">How was your experience?</p>
-          <p className="text-muted small mb-0">Apka anubhav kaisa tha? ✨</p>
+          <p className="text-muted small mb-2">Apka anubhav kaisa tha? ✨</p>
+          <p className="text-muted small mb-0">
+            We&apos;d love your feedback — reply to the shop anytime!
+            {bill.shopPhone ? (
+              <>
+                {" "}
+                <a href={`tel:${bill.shopPhone}`} className="text-decoration-none">
+                  {bill.shopPhone}
+                </a>
+              </>
+            ) : null}
+          </p>
+          <p className="text-muted small mb-0 mt-2">Dhanyavaad, phir milenge! 🛍️</p>
         </div>
 
         {bill.pdfUrl ? (

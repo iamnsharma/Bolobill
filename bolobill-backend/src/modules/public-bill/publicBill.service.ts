@@ -1,18 +1,18 @@
 import path from 'path';
 import crypto from 'crypto';
 import { ApiError } from '../../common/ApiError';
-import { env } from '../../config/env';
 import { InvoiceModel } from '../../models/Invoice.model';
+import { apiFileBaseUrl } from '../../utils/apiFileBaseUrl';
 import { publicBillPageUrl } from '../../utils/publicBillUrl';
 
 const toPdfUrl = (pdfPath: string) => {
   if (!pdfPath) return '';
-  return `${env.BASE_URL}/api/files/pdfs/${path.basename(pdfPath)}`;
+  return `${apiFileBaseUrl()}/api/files/pdfs/${path.basename(pdfPath)}`;
 };
 
 const toQrUrl = (qrCodePath?: string) => {
   if (!qrCodePath) return '';
-  return `${env.BASE_URL}/api/files/qr/${path.basename(qrCodePath)}`;
+  return `${apiFileBaseUrl()}/api/files/qr/${path.basename(qrCodePath)}`;
 };
 
 async function ensurePublicToken(invoice: {

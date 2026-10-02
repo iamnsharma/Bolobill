@@ -8,7 +8,8 @@ export default defineConfig(function (_a) {
     var apiProxyTarget = ((_b = env.VITE_API_URL) === null || _b === void 0 ? void 0 : _b.replace(/\/$/, '')) || 'http://localhost:3011';
     return {
         plugins: [react()],
-        base: './',
+        // Absolute base so deep links like /bill/:token load /assets/* correctly (not /bill/assets/*).
+        base: '/',
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, 'src'),
