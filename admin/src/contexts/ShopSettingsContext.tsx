@@ -29,7 +29,7 @@ export const BOLOBILL_BRAND_COLORS: ShopSettings["colors"] = [
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   storeName: "BoloBill",
   storeTagline: "Voice billing & stock platform",
-  themeColorCount: 2,
+  themeColorCount: 1,
   colors: BOLOBILL_BRAND_COLORS,
 };
 
