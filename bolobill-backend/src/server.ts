@@ -7,6 +7,8 @@ const bootstrap = async () => {
   app.listen(env.PORT, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
     console.log(`BoloBill backend running on http://0.0.0.0:${env.PORT}`);
+    // eslint-disable-next-line no-console
+    console.log(`Public file links use BASE_URL=${env.BASE_URL}`);
   });
 };
 

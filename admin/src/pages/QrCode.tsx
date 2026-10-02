@@ -3,6 +3,7 @@ import { adminApi } from "../api/admin";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
+import { resolveApiFileUrl } from "../config/deployUrls";
 
 export default function QrCode() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export default function QrCode() {
     setLoading(true);
     adminApi
       .getQrCode()
-      .then((data) => setQrUrl(data.url))
+      .then((data) => setQrUrl(data.url ? resolveApiFileUrl(data.url) : null))
       .catch(() => setQrUrl(null))
       .finally(() => setLoading(false));
   };
@@ -46,7 +47,7 @@ export default function QrCode() {
     adminApi
       .uploadQrCode(formData)
       .then((data) => {
-        setQrUrl(data.url);
+        setQrUrl(resolveApiFileUrl(data.url));
         setMessage({ type: "success", text: qrUrl ? "QR code updated. It will appear on new bills." : "QR code added. It will appear on new bills." });
       })
       .catch(() => setMessage({ type: "danger", text: "Upload failed. Try again." }))
@@ -106,6 +107,7 @@ export default function QrCode() {
                 <div>
                   <p className="fw-semibold mb-2">Current QR code</p>
                   <p className="text-muted small mb-3">This image is shown on your invoice PDFs as &quot;Scan to pay&quot;.</p>
+                  <p className="text-muted small mb-3 font-monospace text-break">{qrUrl}</p>
                   <div className="d-flex gap-2 flex-wrap">
                     <label className="btn btn-outline-primary mb-0">
                       Replace (upload new)

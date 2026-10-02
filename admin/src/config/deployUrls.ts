@@ -33,6 +33,23 @@ export function resolveApiBaseUrl(): string {
   return `${resolveApiOrigin()}/api`;
 }
 
+/** PDF/QR static files are served by the API host, never the admin site. */
+export function resolveApiFileUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.pathname.includes("/api/files/")) {
+      return `${resolveApiOrigin()}${parsed.pathname}`;
+    }
+  } catch {
+    if (trimmed.startsWith("/api/files/")) {
+      return `${resolveApiOrigin()}${trimmed}`;
+    }
+  }
+  return trimmed;
+}
+
 /** Where customers open shared bill links (`/bill/:token`). */
 export function resolvePublicBillBaseUrl(): string {
   const fromEnv = trimOrigin(import.meta.env.VITE_PUBLIC_BILL_BASE_URL);

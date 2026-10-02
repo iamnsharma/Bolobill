@@ -1,6 +1,7 @@
-# Deploy BoloBill API (`api.useaifast.com`)
+# Deploy BoloBill API
 
-Admin UI is already on **https://bolobill.useaifast.com**. Point it at this API after deploy (see `admin/src/config/deployUrls.ts`).
+**Live today:** API **https://bolobill.onrender.com** · Admin **https://bolobill.useaifast.com** (Vercel).  
+See **`../PRODUCTION.md`** for env vars. Custom domain `api.useaifast.com` is optional once DNS points to Render.
 
 ## 1. MongoDB Atlas
 
@@ -87,7 +88,7 @@ DNS: **A record** `api` → your VPS public IP.
 ```env
 NODE_ENV=production
 PORT=3011
-BASE_URL=https://api.useaifast.com
+BASE_URL=https://bolobill.onrender.com
 PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<long-random-string-min-8-chars>
@@ -125,11 +126,11 @@ Login on live admin, then change PIN in Settings.
 
 ## 7. Redeploy admin (after API is live)
 
-Admin code defaults to `https://api.useaifast.com` in production builds.
+Admin code defaults to `https://bolobill.onrender.com` in production builds (`admin/src/config/deployUrls.ts`).
 
-1. Push latest `admin/` (includes `deployUrls.ts`).
-2. Vercel → project → **Environment variables** (optional but recommended):
-   - `VITE_API_URL=https://api.useaifast.com`
+1. Push latest `admin/`.
+2. Vercel → **Environment variables** (Production):
+   - `VITE_API_URL=https://bolobill.onrender.com`
    - `VITE_PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com`
 3. **Redeploy** production (env changes require rebuild).
 

@@ -13,6 +13,17 @@ const envSchema = z.object({
   /** Base URL for customer-facing bill pages (admin app), e.g. http://localhost:3000 */
   PUBLIC_BILL_BASE_URL: z.string().url().optional(),
   ALLOW_X_USER_ID_AUTH: z.coerce.boolean().default(true),
+}).superRefine((data, ctx) => {
+  if (data.NODE_ENV !== 'production') return;
+  const base = data.BASE_URL.toLowerCase();
+  if (base.includes('bolobill.useaifast.com')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        'BASE_URL must be the API host (e.g. https://bolobill.onrender.com), not the admin site bolobill.useaifast.com',
+      path: ['BASE_URL'],
+    });
+  }
 });
 
 export const env = envSchema.parse(process.env);

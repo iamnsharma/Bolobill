@@ -4,7 +4,7 @@ import {STORAGE_KEYS} from '../../../utils/storage/keys';
 import {storage} from '../../../utils/storage/mmkv';
 import {logApiError, logApiRequest, logApiResponse} from '../logger';
 
-const DEFAULT_DEV_BASE_URL = 'https://api.useaifast.com/api';
+const DEFAULT_DEV_BASE_URL = 'https://bolobill.onrender.com/api';
 
 const runtimeBaseUrl = storage.getString(STORAGE_KEYS.API_BASE_URL)?.trim();
 const DEV_BASE_URL = runtimeBaseUrl || DEFAULT_DEV_BASE_URL;

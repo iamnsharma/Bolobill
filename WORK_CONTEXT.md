@@ -91,9 +91,9 @@ Competitors (sales talk, verify before quoting): Petpooja ~₹10k+/year/restaura
 |-------|----------------|
 | **Admin UI (live)** | [https://bolobill.useaifast.com/](https://bolobill.useaifast.com/) — likely **Vercel** + DNS `bolobill` → Vercel |
 | **Domain** | **useaifast.com** (owned) |
-| **API (needed)** | **`https://api.useaifast.com`** — **not the same as static site**; deploy `bolobill-backend` on **Railway / Render / VPS** (recommended over Vercel for **PDF/QR on disk** in `storage/`) |
+| **API (live)** | **`https://bolobill.onrender.com`** (Render). Custom **`api.useaifast.com`** when DNS points to Render (not old Railway). |
 | **MongoDB** | Production **Atlas M0** (or Mongo on VPS) — required for live login |
-| **Local admin `.env`** | May still show `VITE_API_URL=http://localhost:3011` — **production Vercel** must set `VITE_API_URL=https://api.useaifast.com`, `VITE_PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com` and **redeploy** |
+| **Local admin `.env`** | Dev uses `localhost:3011`. **Vercel** must set `VITE_API_URL=https://bolobill.onrender.com`, `VITE_PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com` and **redeploy**. See `PRODUCTION.md`. |
 
 ### Production env checklist
 
@@ -101,7 +101,7 @@ Competitors (sales talk, verify before quoting): Petpooja ~₹10k+/year/restaura
 
 ```env
 NODE_ENV=production
-BASE_URL=https://api.useaifast.com
+BASE_URL=https://bolobill.onrender.com
 PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com
 MONGODB_URI=...
 JWT_SECRET=...
@@ -111,7 +111,7 @@ OPENAI_API_KEY=...   # required to boot; ~₹0 if voice unused
 **Vercel (admin build)**
 
 ```env
-VITE_API_URL=https://api.useaifast.com
+VITE_API_URL=https://bolobill.onrender.com
 VITE_PUBLIC_BILL_BASE_URL=https://bolobill.useaifast.com
 VITE_CONTACT_EMAIL=...
 ```
