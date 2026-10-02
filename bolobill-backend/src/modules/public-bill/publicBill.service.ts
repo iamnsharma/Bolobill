@@ -16,13 +16,14 @@ const toQrUrl = (qrCodePath?: string) => {
 };
 
 async function ensurePublicToken(invoice: {
-  publicToken?: string;
+  publicToken?: string | null;
   save: () => Promise<unknown>;
-}) {
+}): Promise<string> {
   if (invoice.publicToken) return invoice.publicToken;
-  invoice.publicToken = crypto.randomUUID();
+  const token = crypto.randomUUID();
+  invoice.publicToken = token;
   await invoice.save();
-  return invoice.publicToken;
+  return token;
 }
 
 export const publicBillService = {

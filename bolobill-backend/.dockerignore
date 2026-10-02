@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.*
+storage/pdfs/*
+storage/qr/*
+.git
+.DS_Store
