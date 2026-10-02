@@ -22,6 +22,7 @@ import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
 import Whisper from "./pages/Whisper";
 import Settings from "./pages/Settings";
+import AddressBook from "./pages/AddressBook";
 import PublicBill from "./pages/PublicBill";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -80,6 +81,14 @@ function AppRoutes() {
           element={
             <BusinessOnlyRoute>
               <Invoices />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="address-book"
+          element={
+            <BusinessOnlyRoute>
+              <AddressBook />
             </BusinessOnlyRoute>
           }
         />

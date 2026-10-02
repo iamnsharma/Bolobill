@@ -17,6 +17,7 @@ const BUSINESS_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
   { to: "/dashboard/invoices/new", icon: "ti-plus", label: "Create Bill" },
   { to: "/dashboard/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
+  { to: "/dashboard/address-book", icon: "ti-address-book", label: "Address book" },
   { to: "/dashboard/sales", icon: "ti-chart-bar", label: "Sales Summary" },
   { to: "/dashboard/items-sold", icon: "ti-package", label: "Items Sold" },
   { to: "/dashboard/stock", icon: "ti-box", label: "Stock" },

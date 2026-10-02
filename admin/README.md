@@ -8,7 +8,7 @@ React admin panel for BoloBill: invoices, users, memberships, and feature manage
    ```bash
    cd bolobill-backend && npm run seed:admin
    ```
-   Admin login: **phone** `6283515870`, **PIN** `870870`.
+   Admin login: **phone** `6283515870`, **PIN** `915870`.
 
 2. **Admin app**:
    ```bash

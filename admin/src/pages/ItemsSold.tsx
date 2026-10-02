@@ -5,6 +5,8 @@ import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
 import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import { ItemsSoldChartsSection } from "../components/ItemsSoldChartsSection";
+import ChartToggleButton from "../components/merchant/ChartToggleButton";
 import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
 import {
   canApplyDateRangeFilter,
@@ -19,6 +21,7 @@ export default function ItemsSold() {
   const [draftFrom, setDraftFrom] = useState("");
   const [draftTo, setDraftTo] = useState("");
   const [appliedFrom, setAppliedFrom] = useState("");
+  const [showGraph, setShowGraph] = useState(false);
   const [appliedTo, setAppliedTo] = useState("");
 
   const dateApplyReady = canApplyDateRangeFilter(
@@ -108,7 +111,25 @@ export default function ItemsSold() {
         </div>
       )}
 
-      <SectionPanel title="Sold items" icon="ti-list" flush bodyClassName="p-0">
+      <SectionPanel
+        title="Sold items"
+        icon="ti-list"
+        flush
+        bodyClassName="p-0"
+        actions={
+          <ChartToggleButton
+            open={showGraph}
+            onToggle={() => setShowGraph((v) => !v)}
+            disabled={loading || items.length === 0}
+            closedLabel="View graph"
+          />
+        }
+      >
+          {showGraph ? (
+            <div className="p-3 p-md-4 border-bottom bg-light bg-opacity-50">
+              <ItemsSoldChartsSection items={items} loading={loading} />
+            </div>
+          ) : null}
           {loading ? (
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />

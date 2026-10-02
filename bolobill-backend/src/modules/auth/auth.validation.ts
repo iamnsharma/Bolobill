@@ -39,10 +39,20 @@ export const resetPinSchema = z.object({
   newPin: z.string().min(4).max(8),
 });
 
-export const changePinSchema = z.object({
-  currentPin: z.string().min(4).max(8),
-  newPin: z.string().min(4).max(8),
-});
+export const changePinSchema = z
+  .object({
+    currentPin: z.string().min(4).max(8),
+    newPin: z.string().min(4).max(8),
+  })
+  .superRefine((data, ctx) => {
+    if (data.currentPin === data.newPin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'New PIN must be different from your current PIN',
+        path: ['newPin'],
+      });
+    }
+  });
 
 export const registerWithOtpSchema = z.object({
   phone: z.string().min(10),

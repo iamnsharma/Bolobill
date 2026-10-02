@@ -2,7 +2,7 @@
  * Seeds the static super admin user (phone + PIN).
  * Run: npx tsx scripts/seed-admin.ts
  *
- * Super admin: phone 6283515870, PIN 870870
+ * Super admin: phone 6283515870, PIN 915870
  * After seeding, log in to the admin app with this phone + PIN to get full
  * super admin UI: Manage users, Manage subscriptions, Store links, Manage features.
  */
@@ -13,10 +13,11 @@ dotenv.config({path: path.join(process.cwd(), '.env')});
 
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import {normalizePhone} from '../src/common/phone';
 import {UserModel} from '../src/models/User.model';
 
-const ADMIN_PHONE = '6283515870';
-const ADMIN_PIN = '870870';
+const ADMIN_PHONE = normalizePhone('6283515870');
+const ADMIN_PIN = '915870';
 const ADMIN_NAME = 'BoloBill Admin';
 
 async function seed() {

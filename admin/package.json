@@ -11,6 +11,8 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@react-pdf/renderer": "^4.1.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
     "@tabler/icons-webfont": "^3.35.0",
     "axios": "^1.7.7",
     "bootstrap": "^5.3.8",
@@ -22,7 +24,8 @@
     "react-razorpay": "^3.0.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^3.8.0",
-    "sass": "^1.77.6"
+    "sass": "^1.77.6",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",

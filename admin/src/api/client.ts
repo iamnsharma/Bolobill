@@ -31,10 +31,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
+    const url = String(err.config?.url ?? '');
+    const skipLogoutOn401 =
+      url.includes('/auth/login') || url.includes('/auth/change-pin');
+    if (err.response?.status === 401 && !skipLogoutOn401) {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      window.location.href = '/login';
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }

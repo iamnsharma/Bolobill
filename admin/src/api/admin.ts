@@ -97,6 +97,13 @@ export interface StockProduct {
   updatedAt?: string;
 }
 
+export interface AddressBookContact {
+  id: string;
+  phone: string;
+  name: string;
+  updatedAt?: string;
+}
+
 export interface UserLimits {
   isActive: boolean;
   expiresAt?: string;
@@ -363,4 +370,28 @@ export const adminApi = {
         timeout: 60000,
       })
       .then(r => r.data),
+
+  lookupAddressBookContact: (phone: string) =>
+    api
+      .get<{ found: boolean; contact?: AddressBookContact }>('/admin/address-book/lookup', {
+        params: { phone },
+      })
+      .then(r => r.data),
+
+  saveAddressBookContact: (body: { phone: string; name: string }) =>
+    api.post<{ contact: AddressBookContact }>('/admin/address-book', body).then(r => r.data.contact),
+
+  listAddressBookContacts: (params?: { q?: string; page?: number; limit?: number }) =>
+    api
+      .get<{
+        contacts: AddressBookContact[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>('/admin/address-book', { params })
+      .then(r => r.data),
+
+  deleteAddressBookContact: (id: string) =>
+    api.delete(`/admin/address-book/${id}`).then(r => r.data),
 };

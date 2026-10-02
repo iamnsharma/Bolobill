@@ -45,10 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (phone: string, pin: string) => {
     const { token, user: u } = await authApi.login({ phone, pin });
     authApi.setStoredAuth(token, u);
-    const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
-    setUser(me);
-    setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
-    authApi.setStoredAuth(token, me);
+    try {
+      const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
+      setUser(me);
+      setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
+      authApi.setStoredAuth(token, me);
+    } catch (meErr: unknown) {
+      authApi.logout();
+      const msg = (meErr as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      throw new Error(msg || 'Signed in but admin profile check failed. Is the API running?');
+    }
   }, []);
 
   const loginWithOtp = useCallback(async (phone: string, otp: string) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ChartToggleButton from "../components/merchant/ChartToggleButton";
 import { adminApi, type SalesSummary as SalesSummaryType } from "../api/admin";
 import { SalesChartsSection } from "../components/SalesChartsSection";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
@@ -18,6 +19,7 @@ export default function Sales() {
   const [draftTo, setDraftTo] = useState("");
   const [appliedFrom, setAppliedFrom] = useState("");
   const [appliedTo, setAppliedTo] = useState("");
+  const [showGraph, setShowGraph] = useState(false);
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -161,9 +163,23 @@ export default function Sales() {
         )}
       </div>
 
-      <SectionPanel title="Charts" icon="ti-chart-area-line" flush bodyClassName="p-3 p-md-4">
-        <SalesChartsSection />
-      </SectionPanel>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <p className="small text-muted mb-0">
+          Totals above; open a graph for day / week / month trends or a custom range.
+        </p>
+        <ChartToggleButton
+          open={showGraph}
+          onToggle={() => setShowGraph((v) => !v)}
+          closedLabel="View sales graph"
+          openLabel="Hide graph"
+        />
+      </div>
+
+      {showGraph ? (
+        <SectionPanel title="Sales trends" icon="ti-chart-area-line" className="mb-4" bodyClassName="p-3 p-md-4">
+          <SalesChartsSection />
+        </SectionPanel>
+      ) : null}
     </PageShell>
   );
 }

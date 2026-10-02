@@ -6,49 +6,61 @@ import feat3 from "../assets/images/features/bb3.png";
 import feat4 from "../assets/images/features/bb4.png";
 import feat7 from "../assets/images/features/bb7-analytics.png";
 import feat9 from "../assets/images/features/bb9-whatsapp-bill-share.png";
+import YouTubeEmbed from "../components/landing/YouTubeEmbed";
+import MarketingBackdrop from "../components/marketing/MarketingBackdrop";
+import MarketingHeader from "../components/marketing/MarketingHeader";
 
 const FEATURES = [
   {
     img: feat1,
     icon: "ti-microphone",
     title: "Voice to invoice",
-    desc: "Just speak items and prices — your bill is ready in seconds. No typing, no register book.",
-  },
-  {
-    img: feat2,
-    icon: "ti-file-invoice",
-    title: "Digital bills & PDF",
-    desc: "Professional invoices every time. Download as PDF or share directly to your customer.",
-  },
-  {
-    img: feat3,
-    icon: "ti-package",
-    title: "Manage stock",
-    desc: "Know what's in and what's out. Out-of-stock lists and restock reminders made easy.",
-  },
-  {
-    img: feat4,
-    icon: "ti-dashboard",
-    title: "One dashboard",
-    desc: "Sales, bills, and reports in one place. No switching between apps or notebooks.",
-  },
-  {
-    img: feat7,
-    icon: "ti-chart-bar",
-    title: "Sales & analytics",
-    desc: "See your day, week, and month at a glance. Track what sells and when.",
+    desc: "Speak item names and prices in Hindi or English — Bolo Bill builds the bill while you serve the next customer.",
+    highlight: true,
+    bullets: ["Hands-free at the counter", "Fewer mistakes than scribbling", "Works alongside typing"],
   },
   {
     img: feat9,
     icon: "ti-brand-whatsapp",
     title: "Share on WhatsApp",
-    desc: "Send the bill to your customer in one tap. They get it on their phone instantly.",
+    desc: "Send a clean bill link or PDF in one tap so customers leave with proof, not a crumpled receipt.",
+    highlight: true,
+    bullets: ["Instant delivery on phone", "Professional look for your shop", "Customers can save & share"],
+  },
+  {
+    img: feat7,
+    icon: "ti-chart-bar",
+    title: "Sales & analytics",
+    desc: "See today, this week, and this month without digging through notebooks — know what sells and when.",
+    highlight: true,
+    bullets: ["Daily totals at a glance", "Spot busy hours", "Plan stock smarter"],
+  },
+  {
+    img: feat2,
+    icon: "ti-file-invoice",
+    title: "Digital bills & PDF",
+    desc: "Every invoice looks consistent — download PDF or share digitally anytime.",
+  },
+  {
+    img: feat3,
+    icon: "ti-package",
+    title: "Manage stock",
+    desc: "Track what is in stock, flag out-of-stock items, and restock before you run dry.",
+  },
+  {
+    img: feat4,
+    icon: "ti-dashboard",
+    title: "One dashboard",
+    desc: "Billing, inventory signals, and reports in one merchant panel — no juggling apps.",
   },
 ];
 
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL?.trim() || "";
 const INSTAGRAM = import.meta.env.VITE_INSTAGRAM_URL?.trim() || "";
 const LINKEDIN = import.meta.env.VITE_LINKEDIN_URL?.trim() || "";
+
+const highlightFeatures = FEATURES.filter((f) => f.highlight);
+const gridFeatures = FEATURES.filter((f) => !f.highlight);
 
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
@@ -80,41 +92,10 @@ export default function Landing() {
 
   return (
     <div className="landing-page" ref={pageRef}>
-      <header
-        className={`landing-header ${scrolled ? "landing-header--scrolled" : ""}`}>
-        <div className="container">
-          <div className="landing-header-inner">
-            <Link
-              to="/"
-              className="landing-logo text-decoration-none text-dark">
-              {/* <img
-                src={bolobillLogo}
-                alt="Bolo Bill"
-                className="landing-logo-img"
-              /> */}
-              <span className="landing-logo-text">Bolo Bill</span>
-            </Link>
-            <nav className="d-flex align-items-center gap-2 gap-md-3">
-              <a href="#landing-contact" className="landing-header-trial text-nowrap">
-                <i className="ti ti-building-store me-1" aria-hidden />
-                For shops
-              </a>
-              <Link
-                to="/login"
-                className="btn btn-outline-primary rounded-3 landing-header-btn">
-                Log in
-              </Link>
-              <Link
-                to="/signup"
-                className="btn btn-primary rounded-3 landing-header-btn">
-                Get access
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <MarketingHeader scrolled={scrolled} />
 
       <section className="landing-hero landing-hero-animate" aria-label="Hero">
+        <MarketingBackdrop intensity="hero" />
         <div className="landing-hero-bg" />
         <div className="container position-relative">
           <div className="row align-items-center min-vh-75 py-5">
@@ -123,11 +104,12 @@ export default function Landing() {
                 Digital billing for every shop
               </span>
               <h1 className="landing-hero-title">
-                Create bills with voice. Share on WhatsApp. Manage stock.
+                Speak the bill. Share on WhatsApp. Run your shop smarter.
               </h1>
               <p className="landing-hero-sub">
-                Bolo Bill helps kirana and small businesses create professional
-                invoices in seconds — no typing, no paper. Run billing from your browser.
+                Bolo Bill is built for kirana and small retailers — voice billing,
+                digital invoices, stock signals, and sales insights in one place.
+                Less register book, more time with customers.
               </p>
               <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mt-4 landing-hero-cta-group">
                 <Link
@@ -135,23 +117,26 @@ export default function Landing() {
                   className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
                   Request shop access
                 </Link>
-                <Link
-                  to="/login"
+                <a
+                  href="#landing-demo"
                   className="btn btn-outline-light btn-lg rounded-3 fw-semibold landing-hero-btn">
-                  Merchant login
-                </Link>
+                  <i className="ti ti-player-play me-1" aria-hidden />
+                  Watch demo
+                </a>
               </div>
             </div>
-            <div className="col-lg-6 mt-5 mt-lg-0 text-center landing-hero-visual-wrap">
-              <div className="landing-hero-visual landing-hero-youtube rounded-4 overflow-hidden shadow-lg">
-                <iframe
-                  src="https://www.youtube.com/embed/IviyiULyjzI?rel=0"
+            <div
+              id="landing-demo"
+              className="col-lg-6 mt-5 mt-lg-0 text-center landing-hero-visual-wrap">
+              <div className="landing-hero-visual landing-hero-youtube-wrap rounded-4 overflow-hidden shadow-lg">
+                <YouTubeEmbed
                   title="Bolo Bill – Voice to bill, Share on WhatsApp"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="landing-hero-youtube-iframe"
+                  className="landing-hero-youtube--inset"
                 />
               </div>
+              <p className="landing-hero-video-caption small mt-3 mb-0">
+                2 min overview — voice billing, WhatsApp share, and merchant dashboard
+              </p>
             </div>
           </div>
         </div>
@@ -186,37 +171,37 @@ export default function Landing() {
         aria-label="Benefits">
         <div className="container py-4">
           <span className="landing-section-badge">For shopkeepers</span>
-          <div className="row align-items-center">
+          <div className="row align-items-center g-4">
             <div className="col-lg-6 mb-4 mb-lg-0">
               <h2 className="landing-section-title">
-                Built for kirana & small shops
+                Your counter moves fast — your billing should too
               </h2>
               <p className="landing-section-sub text-muted mb-4">
-                One app for billing, stock, and sales — so you spend less time
-                on paperwork and more time with customers.
+                Whether you bill by voice or by tap, everything stays in one merchant
+                panel. No duplicate entries, no lost pages in the register.
               </p>
               <ul className="landing-benefits-list">
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>Create bills by voice or by typing — your choice.</span>
+                  <span>Voice or manual billing — switch anytime during rush hour.</span>
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>Send invoice to customer on WhatsApp instantly.</span>
+                  <span>WhatsApp-ready bills customers actually read on their phone.</span>
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>Track out-of-stock items and restock easily.</span>
+                  <span>Out-of-stock lists so you restock before shelves go empty.</span>
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>See daily and monthly sales at a glance.</span>
+                  <span>Daily and monthly sales without end-of-day math.</span>
                 </li>
               </ul>
             </div>
             <div className="col-lg-6 text-center">
               <div className="landing-benefits-visual rounded-4 overflow-hidden shadow-sm">
-                <img src={feat4} alt="Dashboard" className="img-fluid" />
+                <img src={feat4} alt="Bolo Bill merchant dashboard" className="img-fluid" />
               </div>
             </div>
           </div>
@@ -224,23 +209,63 @@ export default function Landing() {
       </section>
 
       <section
-        className={`landing-section landing-features py-5 ${visible.has("features") ? "landing-in-view" : ""}`}
-        data-landing-section="features"
-        aria-label="Features">
+        id="landing-features"
+        className={`landing-section landing-spotlight py-5 ${visible.has("spotlight") ? "landing-in-view" : ""}`}
+        data-landing-section="spotlight"
+        aria-label="Highlighted features">
         <div className="container py-4">
           <div className="text-center mb-5">
-            <span className="landing-section-badge">Features</span>
-            <h2 className="landing-section-title">
-              Everything you need in one app
-            </h2>
+            <span className="landing-section-badge">Core features</span>
+            <h2 className="landing-section-title">What shopkeepers use every day</h2>
             <p className="landing-section-sub text-muted mx-auto">
-              Voice-to-invoice, digital bills, stock lists, and WhatsApp share —
-              no register book, no extra apps.
+              Three workflows that replace the register book — explained simply, built for real counters.
+            </p>
+          </div>
+          <div className="row g-4 landing-bento">
+            {highlightFeatures.map((f, i) => (
+              <div
+                key={f.title}
+                className={`col-lg-4 landing-bento-col landing-bento-col--${i + 1}`}>
+                <article className="landing-bento-card h-100">
+                  <div className="landing-bento-card-head">
+                    <span className="landing-bento-icon">
+                      <i className={`ti ${f.icon}`} aria-hidden />
+                    </span>
+                    <h3 className="landing-bento-title">{f.title}</h3>
+                    <p className="landing-bento-desc">{f.desc}</p>
+                    {f.bullets ? (
+                      <ul className="landing-bento-bullets">
+                        {f.bullets.map((b) => (
+                          <li key={b}>{b}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                  <div className="landing-bento-img-wrap">
+                    <img src={f.img} alt={f.title} className="landing-bento-img" />
+                  </div>
+                </article>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className={`landing-section landing-features py-5 ${visible.has("features") ? "landing-in-view" : ""}`}
+        data-landing-section="features"
+        aria-label="More features">
+        <div className="container py-4">
+          <div className="text-center mb-5">
+            <span className="landing-section-badge">And more</span>
+            <h2 className="landing-section-title">Everything else in one app</h2>
+            <p className="landing-section-sub text-muted mx-auto">
+              PDF invoices, stock tracking, and a single dashboard — no extra subscriptions.
             </p>
           </div>
           <div className="row g-4">
-            {FEATURES.map((f, i) => (
-              <div key={i} className="col-md-6 col-lg-4 landing-feature-col">
+            {gridFeatures.map((f, i) => (
+              <div key={f.title} className="col-md-6 col-lg-4 landing-feature-col">
                 <div
                   className="landing-feature-card card border-0 shadow-sm rounded-4 h-100 overflow-hidden"
                   style={{ animationDelay: `${i * 0.08}s` }}>
@@ -266,43 +291,43 @@ export default function Landing() {
       </section>
 
       <section
-        className={`landing-section landing-how py-5 bg-light ${visible.has("how") ? "landing-in-view" : ""}`}
+        id="landing-how"
+        className={`landing-section landing-how py-5 ${visible.has("how") ? "landing-in-view" : ""}`}
         data-landing-section="how"
         aria-label="How it works">
         <div className="container py-4">
           <div className="text-center mb-5">
             <span className="landing-section-badge">3 steps</span>
-            <h2 className="landing-section-title">Simple from day one</h2>
+            <h2 className="landing-section-title">Live in minutes, not days</h2>
             <p className="landing-section-sub text-muted mx-auto">
-              Sign up, add your business, and start creating bills. No training
-              needed.
+              We onboard your shop, you log in with phone + PIN, and billing starts from the browser.
             </p>
           </div>
-          <div className="row g-4 text-center">
+          <div className="row g-4 text-center landing-how-steps">
             <div className="col-md-4 landing-step-col">
-              <div className="landing-step rounded-3 p-4 h-100 bg-white shadow-sm">
+              <div className="landing-step rounded-4 p-4 h-100">
                 <span className="landing-step-num">1</span>
-                <h3 className="h6 fw-bold mt-2 mb-2">Sign up</h3>
+                <h3 className="h6 fw-bold mt-2 mb-2">Get shop access</h3>
                 <p className="small text-muted mb-0">
-                  Create your account with phone and business name.
+                  Subscribe with BoloBill — we issue merchant credentials after payment.
                 </p>
               </div>
             </div>
             <div className="col-md-4 landing-step-col">
-              <div className="landing-step rounded-3 p-4 h-100 bg-white shadow-sm">
+              <div className="landing-step rounded-4 p-4 h-100">
                 <span className="landing-step-num">2</span>
-                <h3 className="h6 fw-bold mt-2 mb-2">Speak or type</h3>
+                <h3 className="h6 fw-bold mt-2 mb-2">Speak or type items</h3>
                 <p className="small text-muted mb-0">
-                  Create bills by voice or add items manually.
+                  Create bills by voice at the counter or add lines manually when you prefer.
                 </p>
               </div>
             </div>
             <div className="col-md-4 landing-step-col">
-              <div className="landing-step rounded-3 p-4 h-100 bg-white shadow-sm">
+              <div className="landing-step rounded-4 p-4 h-100">
                 <span className="landing-step-num">3</span>
-                <h3 className="h6 fw-bold mt-2 mb-2">Share & grow</h3>
+                <h3 className="h6 fw-bold mt-2 mb-2">Share & track growth</h3>
                 <p className="small text-muted mb-0">
-                  Send PDF to customers on WhatsApp. Track sales.
+                  Send bills on WhatsApp, download PDFs, and watch sales trends build over time.
                 </p>
               </div>
             </div>
@@ -317,7 +342,7 @@ export default function Landing() {
         aria-label="Shop onboarding">
         <div className="container py-3">
           <span className="landing-section-badge d-inline-block mb-3">
-            How it works
+            Onboarding
           </span>
           <div className="landing-trial-card rounded-4 overflow-hidden shadow-lg position-relative">
             <div className="landing-trial-bg" aria-hidden />
@@ -388,7 +413,7 @@ export default function Landing() {
       </section>
 
       <section
-        className={`landing-section landing-contact py-5 bg-light ${visible.has("contact") ? "landing-in-view" : ""}`}
+        className={`landing-section landing-contact py-5 ${visible.has("contact") ? "landing-in-view" : ""}`}
         data-landing-section="contact"
         aria-label="Contact">
         <div className="container py-4 text-center">

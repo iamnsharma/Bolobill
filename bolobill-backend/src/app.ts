@@ -9,6 +9,7 @@ import {planRouter} from './modules/plan/plan.routes';
 import {outOfStockRouter} from './modules/out-of-stock/outOfStock.routes';
 import {paymentRouter} from './modules/payment/payment.routes';
 import {stockRouter} from './modules/stock/stock.routes';
+import {addressBookRouter} from './modules/address-book/addressBook.routes';
 import {publicBillRouter} from './modules/public-bill/publicBill.routes';
 import {errorMiddleware} from './middleware/error.middleware';
 
@@ -25,6 +26,7 @@ app.get('/api/health', (_req, res) => {
 // Admin routes first (must be before other /api/* to avoid any conflict)
 app.use('/api/admin', adminRouter);
 app.use('/api/admin/stock', stockRouter);
+app.use('/api/admin/address-book', addressBookRouter);
 
 app.use('/api/auth', authRouter);
 // Backward-compatible auth endpoints for older frontend builds

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import {ApiError} from '../../common/ApiError';
+import {normalizePhone} from '../../common/phone';
 import {signAuthToken} from '../../common/jwt';
 import {UserModel} from '../../models/User.model';
 
@@ -40,13 +41,16 @@ export const authService = {
   },
 
   async login(input: {phone: string; pin: string}) {
-    const phone = String(input.phone).trim();
+    const phone = normalizePhone(input.phone);
+    if (phone.length < 10) {
+      throw new ApiError(400, 'Invalid phone number');
+    }
     const user = await UserModel.findOne({phone});
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
 
-    const isPinValid = await bcrypt.compare(input.pin, user.pinHash);
+    const isPinValid = await bcrypt.compare(String(input.pin).trim(), user.pinHash);
     if (!isPinValid) {
       throw new ApiError(401, 'Invalid PIN');
     }
@@ -124,7 +128,7 @@ export const authService = {
     const user = await UserModel.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');
     const ok = await bcrypt.compare(currentPin, user.pinHash);
-    if (!ok) throw new ApiError(401, 'Current PIN is incorrect');
+    if (!ok) throw new ApiError(400, 'Current PIN is incorrect');
     if (newPin.length < 4 || newPin.length > 8) {
       throw new ApiError(400, 'PIN must be 4–8 characters');
     }

@@ -51,20 +51,33 @@ export default function Settings() {
     setDraftTagline(DEFAULT_SHOP_SETTINGS.storeTagline);
   };
 
+  const pinLengthOk = (p: string) => p.length >= 4 && p.length <= 8;
+
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
     setPinMessage(null);
-    if (newPin.length < 4) {
-      setPinMessage({ type: "danger", text: "New PIN must be at least 4 characters." });
+    const cur = currentPin.trim();
+    const next = newPin.trim();
+    const confirm = confirmPin.trim();
+    if (!pinLengthOk(cur)) {
+      setPinMessage({ type: "danger", text: "Enter your current PIN (4–8 digits)." });
       return;
     }
-    if (newPin !== confirmPin) {
+    if (!pinLengthOk(next)) {
+      setPinMessage({ type: "danger", text: "New PIN must be 4–8 characters." });
+      return;
+    }
+    if (next !== confirm) {
       setPinMessage({ type: "danger", text: "New PIN and confirmation do not match." });
+      return;
+    }
+    if (cur === next) {
+      setPinMessage({ type: "danger", text: "New PIN must be different from your current PIN." });
       return;
     }
     setPinSaving(true);
     try {
-      await authApi.changePin({ currentPin, newPin });
+      await authApi.changePin({ currentPin: cur, newPin: next });
       setPinMessage({ type: "success", text: "PIN updated. Use the new PIN next time you sign in." });
       setCurrentPin("");
       setNewPin("");
@@ -129,7 +142,16 @@ export default function Settings() {
                 autoComplete="new-password"
                 maxLength={8}
               />
-              <button type="submit" className="btn btn-primary btn-sm" disabled={pinSaving || !currentPin || !newPin}>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                disabled={
+                  pinSaving ||
+                  !pinLengthOk(currentPin.trim()) ||
+                  !pinLengthOk(newPin.trim()) ||
+                  newPin.trim() !== confirmPin.trim()
+                }
+              >
                 {pinSaving ? <span className="spinner-border spinner-border-sm me-1" /> : null}
                 Update PIN
               </button>
