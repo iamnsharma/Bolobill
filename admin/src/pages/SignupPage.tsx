@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import AuthScreenLayout from "../components/AuthScreenLayout";
-
-const contactEmail = import.meta.env.VITE_CONTACT_EMAIL?.trim() || "";
+import { BOLOBILL_CONTACT_EMAIL } from "../config/contact";
 
 const STEPS = [
   {
@@ -22,9 +21,7 @@ const STEPS = [
 ];
 
 export default function SignupPage() {
-  const mailHref = contactEmail
-    ? `mailto:${contactEmail}?subject=${encodeURIComponent("BoloBill shop access")}`
-    : undefined;
+  const mailHref = `mailto:${BOLOBILL_CONTACT_EMAIL}?subject=${encodeURIComponent("BoloBill shop access")}`;
 
   return (
     <AuthScreenLayout
@@ -49,19 +46,13 @@ export default function SignupPage() {
         ))}
       </div>
 
-      {contactEmail ? (
-        <a
-          href={mailHref}
-          className="btn w-100 marketing-submit-btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2">
-          <i className="ti ti-mail" aria-hidden />
-          Email {contactEmail}
-        </a>
-      ) : (
-        <div className="marketing-info-box small">
-          Set <code>VITE_CONTACT_EMAIL</code> in your deployment env, or use the contact
-          section on the home page.
-        </div>
-      )}
+      <a
+        href={mailHref}
+        className="btn w-100 marketing-submit-btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
+      >
+        <i className="ti ti-mail" aria-hidden />
+        Email {BOLOBILL_CONTACT_EMAIL}
+      </a>
 
       <p className="text-center small marketing-muted mt-4 mb-0">
         Already have credentials?{" "}

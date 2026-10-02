@@ -9,6 +9,7 @@ import feat9 from "../assets/images/features/bb9-whatsapp-bill-share.png";
 import YouTubeEmbed from "../components/landing/YouTubeEmbed";
 import MarketingBackdrop from "../components/marketing/MarketingBackdrop";
 import MarketingHeader from "../components/marketing/MarketingHeader";
+import { BOLOBILL_CONTACT_EMAIL } from "../config/contact";
 
 const FEATURES = [
   {
@@ -55,7 +56,6 @@ const FEATURES = [
   },
 ];
 
-const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL?.trim() || "";
 const INSTAGRAM = import.meta.env.VITE_INSTAGRAM_URL?.trim() || "";
 const LINKEDIN = import.meta.env.VITE_LINKEDIN_URL?.trim() || "";
 
@@ -425,14 +425,13 @@ export default function Landing() {
             Questions or feedback? We’d love to hear from you.
           </p>
           <div className="d-flex flex-wrap justify-content-center gap-4 align-items-center">
-            {CONTACT_EMAIL ? (
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="text-decoration-none text-dark d-flex align-items-center gap-2">
-                <i className="ti ti-mail fs-4 text-primary" />
-                <span>{CONTACT_EMAIL}</span>
-              </a>
-            ) : null}
+            <a
+              href={`mailto:${BOLOBILL_CONTACT_EMAIL}`}
+              className="text-decoration-none text-dark d-flex align-items-center gap-2"
+            >
+              <i className="ti ti-mail fs-4 text-primary" />
+              <span>{BOLOBILL_CONTACT_EMAIL}</span>
+            </a>
             {INSTAGRAM ? (
               <a
                 href={INSTAGRAM}
