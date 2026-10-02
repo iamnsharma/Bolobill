@@ -4,7 +4,8 @@
  * - VITE_PUBLIC_BILL_BASE_URL
  */
 
-export const PROD_API_ORIGIN = "https://api.useaifast.com";
+/** Live API on Render until api.useaifast.com DNS points to Render. */
+export const PROD_API_ORIGIN = "https://bolobill.onrender.com";
 export const PROD_ADMIN_ORIGIN = "https://bolobill.useaifast.com";
 
 function trimOrigin(url: string | undefined): string | undefined {

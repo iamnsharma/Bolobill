@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import AuthScreenLayout from "../components/AuthScreenLayout";
 import PlatformAdminLogin from "../components/auth/PlatformAdminLogin";
 import { useEasterEggUnlock } from "../hooks/useEasterEggUnlock";
+import { resolveApiOrigin } from "../config/deployUrls";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -44,8 +45,11 @@ export default function LoginPage() {
       const status = ax.response?.status;
       const msg = ax.response?.data?.message;
       if (!ax.response) {
+        const api = resolveApiOrigin();
         setError(
-          "Cannot reach the API. Start bolobill-backend on port 3011, then try again.",
+          import.meta.env.DEV
+            ? "Cannot reach the API. Start bolobill-backend on port 3011, then try again."
+            : `Cannot reach the API at ${api}. Wait ~1 min if Render was sleeping, then try again. On Vercel set VITE_API_URL and redeploy.`,
         );
       } else if (status === 403) {
         setError("This account cannot access the business dashboard.");

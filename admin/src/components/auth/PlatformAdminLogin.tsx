@@ -33,7 +33,11 @@ export default function PlatformAdminLogin() {
       const status = ax.response?.status;
       const msg = ax.response?.data?.message;
       if (!ax.response) {
-        setError("Cannot reach the API. Is bolobill-backend running on port 3011?");
+        setError(
+          import.meta.env.DEV
+            ? "Cannot reach the API. Is bolobill-backend running on port 3011?"
+            : "Cannot reach the API. Check VITE_API_URL on Vercel (https://bolobill.onrender.com) and redeploy.",
+        );
       } else if (status === 403) {
         setError("This account cannot access the admin dashboard.");
       } else if (status === 404) {
