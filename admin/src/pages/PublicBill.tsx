@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { resolveApiBaseUrl } from "../config/deployUrls";
 
 type PublicBill = {
   invoiceId: string;
@@ -15,11 +16,7 @@ type PublicBill = {
 };
 
 async function fetchPublicBill(token: string): Promise<PublicBill> {
-  const envApi = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
-  const apiBase =
-    import.meta.env.DEV && (!envApi || envApi === "https://api.useaifast.com")
-      ? "/api"
-      : `${envApi || "https://api.useaifast.com"}/api`;
+  const apiBase = resolveApiBaseUrl();
   const res = await fetch(`${apiBase}/public/bills/${encodeURIComponent(token)}`);
   if (!res.ok) {
     throw new Error("Bill not found or link expired.");

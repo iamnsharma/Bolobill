@@ -1,17 +1,5 @@
 import axios from 'axios';
-
-const envApiHost = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
-
-/** In dev, use Vite `/api` proxy (localhost:3011) unless a custom backend URL is set. */
-function resolveApiBaseUrl(): string {
-  if (import.meta.env.DEV) {
-    if (envApiHost && envApiHost !== 'https://api.useaifast.com') {
-      return `${envApiHost}/api`;
-    }
-    return '/api';
-  }
-  return `${envApiHost || 'https://api.useaifast.com'}/api`;
-}
+import { resolveApiBaseUrl } from '../config/deployUrls';
 
 export const api = axios.create({
   baseURL: resolveApiBaseUrl(),
