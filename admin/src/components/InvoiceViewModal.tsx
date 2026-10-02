@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { adminApi, type AdminInvoice } from '../api/admin';
 import { exportInvoiceWithReactPdf } from '../utils/exportInvoiceWithReactPdf';
+import { useFinancePrivacy } from '../contexts/FinancePrivacyContext';
+import { loadMerchantQrDataUrl } from '../utils/loadMerchantQrDataUrl';
+import { shareQrOnWhatsApp, buildBillWhatsAppMessageFromInvoice, shareBillWhatsAppHint } from '../utils/shareQrOnWhatsApp';
+import { useShopSettings } from '../contexts/ShopSettingsContext';
+import { normalizePhoneForWhatsApp } from '../utils/normalizePhoneForWhatsApp';
 
 type InvoiceData = Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string };
-
-/** Normalize to digits only for wa.me (e.g. 919876543210). Add 91 if user entered 10 digits (India). */
-function normalizePhoneForWhatsApp(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length === 10 && !value.trim().startsWith('91')) return '91' + digits;
-  return digits;
-}
 
 export default function InvoiceViewModal({
   invoiceId,
@@ -18,12 +16,16 @@ export default function InvoiceViewModal({
   invoiceId: string | null;
   onClose: () => void;
 }) {
+  const { formatFinance, formatMoney } = useFinancePrivacy();
+  const { displayStoreName } = useShopSettings();
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWhatsAppShare, setShowWhatsAppShare] = useState(false);
   const [whatsAppNumber, setWhatsAppNumber] = useState('');
   const [whatsAppError, setWhatsAppError] = useState('');
+  const [whatsAppSharing, setWhatsAppSharing] = useState(false);
+  const [whatsAppShareHint, setWhatsAppShareHint] = useState('');
 
   useEffect(() => {
     if (!invoiceId) {
@@ -61,20 +63,7 @@ export default function InvoiceViewModal({
       : undefined;
     let qrImageDataUrl: string | undefined;
     try {
-      const { url } = await adminApi.getQrCode();
-      if (url) {
-        const res = await fetch(url, { credentials: 'include', mode: 'cors' });
-        if (res.ok) {
-          const blob = await res.blob();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(r.result as string);
-            r.onerror = reject;
-            r.readAsDataURL(blob);
-          });
-          qrImageDataUrl = dataUrl;
-        }
-      }
+      qrImageDataUrl = await loadMerchantQrDataUrl();
     } catch {
       // ignore; export without QR
     }
@@ -90,7 +79,7 @@ export default function InvoiceViewModal({
     });
   };
 
-  const handleShareOnWhatsApp = () => {
+  const handleShareOnWhatsApp = async () => {
     if (!invoice) return;
     setWhatsAppError('');
     const digits = normalizePhoneForWhatsApp(whatsAppNumber);
@@ -98,19 +87,19 @@ export default function InvoiceViewModal({
       setWhatsAppError('Enter at least 10 digits (e.g. 9876543210 or 919876543210)');
       return;
     }
-    const message = [
-      `Bolo Bill – ${invoice.invoiceId}`,
-      `Customer: ${invoice.customerName} | Total: ₹${invoice.total}`,
-      invoice.pdfUrl ? invoice.pdfUrl : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-    // For desktop Admin panel, web.whatsapp.com is often more reliable than the native app for unsaved numbers.
-    const url = `https://web.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-
-    setShowWhatsAppShare(false);
-    setWhatsAppNumber('');
+    setWhatsAppSharing(true);
+    setWhatsAppShareHint('');
+    try {
+      const result = await shareQrOnWhatsApp(
+        digits,
+        buildBillWhatsAppMessageFromInvoice(invoice, formatMoney, displayStoreName),
+      );
+      setWhatsAppShareHint(shareBillWhatsAppHint(result));
+    } catch (err: unknown) {
+      setWhatsAppError(err instanceof Error ? err.message : 'Could not share on WhatsApp');
+    } finally {
+      setWhatsAppSharing(false);
+    }
   };
 
   if (!invoiceId) return null;
@@ -194,14 +183,14 @@ export default function InvoiceViewModal({
                       <tr key={i}>
                         <td>{item.name}</td>
                         <td className="text-end">{item.quantity}</td>
-                        <td className="text-end">₹{item.totalPrice}</td>
+                        <td className="text-end">{formatFinance(item.totalPrice)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 <div className="d-flex justify-content-end border-top pt-4">
                   <p className="mb-0 fw-bold fs-5">
-                    Total: <span className="text-primary">₹{invoice.total}</span>
+                    Total: <span className="text-primary">{formatFinance(invoice.total)}</span>
                   </p>
                 </div>
                 {invoice.pdfUrl && (
@@ -232,7 +221,8 @@ export default function InvoiceViewModal({
                 <div className="w-100 d-flex flex-column gap-2">
                   <label className="form-label small mb-0 fw-bold">Send bill to WhatsApp number</label>
                   <p className="small text-muted mb-0">
-                    Enter the customer&apos;s number. You don&apos;t need to save the contact — WhatsApp will open a chat with this number (new or existing). For India, 10 digits (e.g. 9876543210) are enough; we add 91 automatically.
+                    Customer gets a message with bill total and a link to view the bill and scan your
+                    QR — like Ezo Bill.
                   </p>
                   <div className="d-flex gap-2 flex-wrap align-items-center">
                     <input
@@ -251,9 +241,19 @@ export default function InvoiceViewModal({
                       type="button"
                       className="btn btn-success d-flex align-items-center gap-1"
                       onClick={handleShareOnWhatsApp}
+                      disabled={whatsAppSharing}
                     >
-                      <i className="ti ti-brand-whatsapp" />
-                      Open chat &amp; send
+                      {whatsAppSharing ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm" role="status" />
+                          Preparing…
+                        </>
+                      ) : (
+                        <>
+                          <i className="ti ti-brand-whatsapp" />
+                          Send QR on WhatsApp
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -268,6 +268,9 @@ export default function InvoiceViewModal({
                     </button>
                   </div>
                   {whatsAppError && <div className="small text-danger">{whatsAppError}</div>}
+                  {whatsAppShareHint && (
+                    <div className="small text-info">{whatsAppShareHint}</div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -289,7 +292,7 @@ export default function InvoiceViewModal({
                     onClick={() => setShowWhatsAppShare(true)}
                   >
                     <i className="ti ti-brand-whatsapp" />
-                    Share bill PDF on WhatsApp
+                    Share on WhatsApp
                   </button>
                 </>
               )}

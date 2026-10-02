@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@popperjs/core": "^2.11.8",
     "@react-pdf/renderer": "^4.1.2",
     "@tabler/icons-webfont": "^3.35.0",
     "axios": "^1.7.7",

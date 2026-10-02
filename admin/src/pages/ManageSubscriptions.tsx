@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
+import PageShell from '../components/merchant/PageShell';
+import PageHeader from '../components/merchant/PageHeader';
+import SectionPanel from '../components/merchant/SectionPanel';
+import MetricTile from '../components/merchant/MetricTile';
 
 export interface SubscriptionPlan {
   id: string;
@@ -137,118 +141,104 @@ export default function ManageSubscriptions() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="mt-6 admin-page">
+      <PageShell>
         <div className="alert alert-warning">Only super admins can manage subscriptions.</div>
-      </div>
+      </PageShell>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="mt-6 admin-page d-flex align-items-center justify-content-center" style={{ minHeight: '50vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading plans...</span>
+      <PageShell>
+        <div className="d-flex align-items-center justify-content-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading plans...</span>
+          </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="mt-6 admin-page manage-subscriptions-page">
-      <div className="manage-subscriptions-hero rounded-4 overflow-hidden mb-4">
-        <div className="manage-subscriptions-hero-inner">
-          <span className="manage-subscriptions-hero-badge">Super admin</span>
-          <h1 className="manage-subscriptions-hero-title">Manage subscriptions</h1>
-          <p className="manage-subscriptions-hero-sub mb-0">
-            Set invoice and voice limits per plan. Add custom plans, upload icons, and notify users when their subscription is expiring.
-          </p>
-        </div>
-      </div>
+    <PageShell className="manage-subscriptions-page">
+      <PageHeader
+        title="Manage subscriptions"
+        icon="ti-crown"
+        subtitle="Set invoice and voice limits per plan. Upload icons and notify users when subscriptions are expiring."
+        actions={
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={addNewMembership}
+          >
+            <i className="ti ti-plus me-1" />
+            New plan
+          </button>
+        }
+      />
 
       <div className="row g-3 mb-4">
         <div className="col-md-6 col-lg-3">
-          <div className="card border-0 shadow-sm rounded-3 h-100 manage-subscriptions-quick-card">
-            <div className="card-body p-3">
-              <div className="d-flex align-items-center gap-2 mb-2">
-                <span className="manage-subscriptions-quick-icon rounded-2 d-flex align-items-center justify-content-center">
-                  <i className="ti ti-file-invoice text-primary" />
-                </span>
-                <span className="fw-bold small">Plans</span>
-              </div>
-              <p className="h4 mb-0 fw-bold">{plans.length}</p>
-              <p className="small text-muted mb-0">Active plans</p>
-            </div>
-          </div>
+          <MetricTile
+            label="Active plans"
+            value={plans.length}
+            icon="ti-file-invoice"
+            tone="primary"
+          />
         </div>
         <div className="col-md-6 col-lg-3">
-          <div className="card border-0 shadow-sm rounded-3 h-100 manage-subscriptions-quick-card">
-            <div className="card-body p-3">
-              <h3 className="h6 fw-bold mb-2">
-                <i className="ti ti-bell me-2 text-warning" />
-                Notify expiring
-              </h3>
-              <div className="d-flex flex-wrap align-items-center gap-2">
-                <select
-                  className="form-select form-select-sm"
-                  value={notifyExpiryDays}
-                  onChange={(e) => setNotifyExpiryDays(e.target.value)}
-                >
-                  {EXPIRY_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="btn btn-warning btn-sm"
-                  onClick={handleNotifyExpiring}
-                  disabled={notifySent}
-                >
-                  {notifySent ? 'Sent' : 'Notify'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="card border-0 shadow-sm rounded-3 h-100 manage-subscriptions-quick-card">
-            <div className="card-body p-3 d-flex align-items-center gap-3">
-              <span className="manage-subscriptions-quick-icon rounded-2 d-flex align-items-center justify-content-center">
-                <i className="ti ti-users text-info" />
-              </span>
-              <div>
-                <p className="fw-bold small mb-0">Users &amp; plans</p>
-                <p className="small text-muted mb-0">Assign plans per user</p>
-                <Link to="/dashboard/users" className="btn btn-outline-primary btn-sm mt-1">Open</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="card border-0 shadow-sm rounded-3 h-100 manage-subscriptions-quick-card manage-subscriptions-quick-card--cta">
-            <div className="card-body p-3 d-flex flex-column justify-content-center">
-              <p className="small fw-bold mb-1">Add a new plan</p>
-              <p className="small text-muted mb-2">Custom limits &amp; icon</p>
+          <SectionPanel className="h-100 mb-0" bodyClassName="p-3">
+            <h3 className="h6 fw-bold mb-2">
+              <i className="ti ti-bell me-2 text-warning" />
+              Notify expiring
+            </h3>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <select
+                className="form-select form-select-sm"
+                value={notifyExpiryDays}
+                onChange={(e) => setNotifyExpiryDays(e.target.value)}
+              >
+                {EXPIRY_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
-                className="btn btn-primary btn-sm rounded-3 w-100"
-                onClick={addNewMembership}
+                className="btn btn-warning btn-sm"
+                onClick={handleNotifyExpiring}
+                disabled={notifySent}
               >
-                <i className="ti ti-plus me-1" />
-                New membership
+                {notifySent ? "Sent" : "Notify"}
               </button>
             </div>
-          </div>
+          </SectionPanel>
+        </div>
+        <div className="col-md-6 col-lg-3">
+          <SectionPanel className="h-100 mb-0" bodyClassName="p-3 d-flex align-items-center">
+            <div className="d-flex align-items-center gap-3 w-100">
+              <span className="manage-subscriptions-quick-icon rounded-2 d-flex align-items-center justify-content-center flex-shrink-0">
+                <i className="ti ti-users text-info" />
+              </span>
+              <div className="min-width-0">
+                <p className="fw-bold small mb-0">Users &amp; plans</p>
+                <p className="small text-muted mb-2">Assign plans per user</p>
+                <Link to="/dashboard/users" className="btn btn-outline-primary btn-sm">
+                  Open users
+                </Link>
+              </div>
+            </div>
+          </SectionPanel>
         </div>
       </div>
 
-      <div className="d-flex align-items-center gap-2 mb-3">
-        <h2 className="h5 fw-bold mb-0">Plan limits &amp; features</h2>
-        <span className="badge bg-light text-dark border">{plans.length} plans</span>
-      </div>
-      <p className="text-muted small mb-4">
-        Click <i className="ti ti-pencil ms-1 me-1" /> to edit limits, icon, description and price. Click <i className="ti ti-trash ms-1 me-1" /> to remove a plan.
-      </p>
-
+      <SectionPanel
+        title="Plan limits & features"
+        icon="ti-list-details"
+        subtitle="Edit limits, icon, description and price. Remove plans users no longer need."
+        className="mb-4"
+      >
       <div className="row g-4">
         {plans.map((plan) => {
           const isEditing = editingPlanId === plan.id;
@@ -424,6 +414,7 @@ export default function ManageSubscriptions() {
           );
         })}
       </div>
+      </SectionPanel>
 
       {deleteConfirm && (() => {
         const plan = plans.find((p) => p.id === deleteConfirm);
@@ -450,6 +441,6 @@ export default function ManageSubscriptions() {
           </div>
         );
       })()}
-    </div>
+    </PageShell>
   );
 }

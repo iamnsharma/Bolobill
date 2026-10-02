@@ -1,23 +1,31 @@
 import { useState, useEffect } from "react";
 import { adminApi, type SalesSummary as SalesSummaryType } from "../api/admin";
 import { SalesChartsSection } from "../components/SalesChartsSection";
-
-const formatMoney = (n: number) => `₹${Number(n).toLocaleString()}`;
+import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
+import MetricTile from "../components/merchant/MetricTile";
+import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import { canApplyDateRangeFilter, isDateRangeComplete } from "../utils/dateRangeFilters";
 
 export default function Sales() {
+  const { formatFinance } = useFinancePrivacy();
   const [summary, setSummary] = useState<SalesSummaryType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const [appliedFrom, setAppliedFrom] = useState("");
+  const [appliedTo, setAppliedTo] = useState("");
 
   const fetchSummary = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await adminApi.getSalesSummary({
-        from: dateFrom || undefined,
-        to: dateTo || undefined,
+        from: appliedFrom || undefined,
+        to: appliedTo || undefined,
       });
       setSummary(data);
     } catch (e: unknown) {
@@ -33,19 +41,36 @@ export default function Sales() {
 
   useEffect(() => {
     fetchSummary();
-  }, [dateFrom, dateTo]);
+  }, [appliedFrom, appliedTo]);
+
+  const dateApplyReady = canApplyDateRangeFilter(
+    draftFrom,
+    draftTo,
+    appliedFrom,
+    appliedTo,
+  );
+  const showFilteredTile = isDateRangeComplete(appliedFrom, appliedTo);
+
+  const onApplyDates = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dateApplyReady) return;
+    setAppliedFrom(draftFrom);
+    setAppliedTo(draftTo);
+  };
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Sales Summary</h1>
-      <p className="text-muted mb-4">
-        View your total sales for today, week, month, and year. Use the date
-        filter for a custom range. Turn on &quot;Use sample data&quot; in the charts section to preview with dummy data.
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Sales Summary"
+        icon="ti-chart-bar"
+        subtitle="Revenue for today, week, month, and year. Use dates for a custom range."
+      />
 
-      <div className="card border-0 shadow-sm rounded-3 mb-4">
-        <div className="card-body p-4">
-          <div className="d-flex flex-wrap gap-3 align-items-end">
+      <SectionPanel title="Date range" icon="ti-calendar" className="mb-4">
+          <form
+            className="d-flex flex-wrap gap-3 align-items-end"
+            onSubmit={onApplyDates}
+          >
             <div>
               <label className="form-label small text-muted mb-1">
                 From date
@@ -53,8 +78,8 @@ export default function Sales() {
               <input
                 type="date"
                 className="form-control"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
               />
             </div>
             <div>
@@ -64,13 +89,16 @@ export default function Sales() {
               <input
                 type="date"
                 className="form-control"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                value={draftTo}
+                onChange={(e) => setDraftTo(e.target.value)}
               />
             </div>
-          </div>
-        </div>
-      </div>
+            <FilterApplyButton loading={loading} disabled={!dateApplyReady} />
+          </form>
+          <p className="small text-muted mb-0 mt-2">
+            Pick both dates to filter, or clear both and Apply to show all-time totals again.
+          </p>
+      </SectionPanel>
 
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -78,86 +106,64 @@ export default function Sales() {
         </div>
       )}
 
-      <div className="row g-3">
+      <div className="row g-3 mb-4">
         <div className="col-md-6 col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 h-100 p-4 bg-primary bg-opacity-10 border-start border-4 border-primary">
-            <h3 className="fs-6 text-muted mb-1">Today</h3>
-            <p className="fs-4 fw-bold mb-0">
-              {loading
-                ? "…"
-                : summary != null
-                  ? formatMoney(summary.today)
-                  : "—"}
-            </p>
-          </div>
+          <MetricTile
+            label="Today"
+            value={loading ? "…" : summary != null ? formatFinance(summary.today) : "—"}
+            icon="ti-sun"
+            tone="primary"
+          />
         </div>
         <div className="col-md-6 col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 h-100 p-4 bg-success bg-opacity-10 border-start border-4 border-success">
-            <h3 className="fs-6 text-muted mb-1">This week</h3>
-            <p className="fs-4 fw-bold mb-0">
-              {loading
-                ? "…"
-                : summary != null
-                  ? formatMoney(summary.thisWeek)
-                  : "—"}
-            </p>
-          </div>
+          <MetricTile
+            label="This week"
+            value={loading ? "…" : summary != null ? formatFinance(summary.thisWeek) : "—"}
+            icon="ti-calendar-week"
+            tone="success"
+          />
         </div>
         <div className="col-md-6 col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 h-100 p-4 bg-info bg-opacity-10 border-start border-4 border-info">
-            <h3 className="fs-6 text-muted mb-1">This month</h3>
-            <p className="fs-4 fw-bold mb-0">
-              {loading
-                ? "…"
-                : summary != null
-                  ? formatMoney(summary.thisMonth)
-                  : "—"}
-            </p>
-          </div>
+          <MetricTile
+            label="This month"
+            value={loading ? "…" : summary != null ? formatFinance(summary.thisMonth) : "—"}
+            icon="ti-calendar-month"
+            tone="info"
+          />
         </div>
         <div className="col-md-6 col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 h-100 p-4 bg-warning bg-opacity-10 border-start border-4 border-warning">
-            <h3 className="fs-6 text-muted mb-1">This year</h3>
-            <p className="fs-4 fw-bold mb-0">
-              {loading
-                ? "…"
-                : summary != null
-                  ? formatMoney(summary.thisYear)
-                  : "—"}
-            </p>
-          </div>
+          <MetricTile
+            label="This year"
+            value={loading ? "…" : summary != null ? formatFinance(summary.thisYear) : "—"}
+            icon="ti-calendar-year"
+            tone="warning"
+          />
         </div>
         <div className="col-md-6 col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 h-100 p-4 bg-secondary bg-opacity-10 border-start border-4 border-secondary">
-            <h3 className="fs-6 text-muted mb-1">All time total</h3>
-            <p className="fs-4 fw-bold mb-0">
-              {loading
-                ? "…"
-                : summary != null
-                  ? formatMoney(summary.total)
-                  : "—"}
-            </p>
-          </div>
+          <MetricTile
+            label="All time"
+            value={loading ? "…" : summary != null ? formatFinance(summary.total) : "—"}
+            icon="ti-infinity"
+            tone="primary"
+          />
         </div>
-        {(dateFrom || dateTo) && (
+        {showFilteredTile && (
           <div className="col-md-6 col-lg-4">
-            <div className="card border-0 shadow-sm rounded-3 h-100 p-4 border">
-              <h3 className="fs-6 text-muted mb-1">Filtered range total</h3>
-              <p className="fs-4 fw-bold mb-0 text-primary">
-                {loading
-                  ? "…"
-                  : summary != null
-                    ? formatMoney(summary.filteredTotal)
-                    : "—"}
-              </p>
-            </div>
+            <MetricTile
+              label="Filtered range"
+              value={
+                loading ? "…" : summary != null ? formatFinance(summary.filteredTotal) : "—"
+              }
+              icon="ti-filter"
+              tone="success"
+            />
           </div>
         )}
       </div>
 
-      <div className="mt-4">
+      <SectionPanel title="Charts" icon="ti-chart-area-line" flush bodyClassName="p-3 p-md-4">
         <SalesChartsSection />
-      </div>
-    </div>
+      </SectionPanel>
+    </PageShell>
   );
 }

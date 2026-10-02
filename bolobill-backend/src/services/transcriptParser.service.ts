@@ -2,6 +2,8 @@ export type InvoiceItemInput = {
   name: string;
   quantity: string;
   totalPrice: number;
+  productId?: string;
+  quantityNumeric?: number;
 };
 
 const PRICE_AT_END_REGEX = /(\d+(?:\.\d+)?)\s*(?:rs|rupees|inr|₹)?\s*$/i;

@@ -1,41 +1,39 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useMembership } from "../contexts/MembershipContext";
+import { FinancePrivacyProvider, useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import { ShopSettingsProvider, useShopSettings } from "../contexts/ShopSettingsContext";
 import ConfirmModal from "../components/ConfirmModal";
 
-// Standard order: overview → users → subscriptions → tools → config
 const SUPERADMIN_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
   { to: "/dashboard/users", icon: "ti-users", label: "Manage users" },
   { to: "/dashboard/subscriptions", icon: "ti-crown", label: "Manage subscriptions" },
   { to: "/dashboard/whisper", icon: "ti-microphone", label: "Whisper" },
-  { to: "/dashboard/store-links", icon: "ti-link", label: "Store links" },
+  { to: "/dashboard/settings", icon: "ti-settings", label: "Settings" },
 ];
 
-// Standard order: overview → primary action → list → reports → operations → settings → account
 const BUSINESS_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
   { to: "/dashboard/invoices/new", icon: "ti-plus", label: "Create Bill" },
   { to: "/dashboard/invoices", icon: "ti-receipt", label: "Bills & Invoices" },
   { to: "/dashboard/sales", icon: "ti-chart-bar", label: "Sales Summary" },
   { to: "/dashboard/items-sold", icon: "ti-package", label: "Items Sold" },
+  { to: "/dashboard/stock", icon: "ti-box", label: "Stock" },
   { to: "/dashboard/out-of-stock", icon: "ti-alert-circle", label: "Out of Stock" },
   { to: "/dashboard/qr-code", icon: "ti-qrcode", label: "QR Code" },
-  { to: "/dashboard/memberships", icon: "ti-crown", label: "Plans" },
+  { to: "/dashboard/settings", icon: "ti-settings", label: "Settings" },
 ];
 
-export default function DashboardLayout() {
+function DashboardLayoutInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, isSuperAdmin, logout } = useAuth();
-  const { hasActiveMembership } = useMembership();
+  const { hideFinance, setHideFinance } = useFinancePrivacy();
+  const { displayStoreName, settings } = useShopSettings();
   const navigate = useNavigate();
-  const navItems = useMemo(
-    () => (isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV),
-    [isSuperAdmin],
-  );
+  const navItems = isSuperAdmin ? SUPERADMIN_NAV : BUSINESS_NAV;
 
   const toggleSidebar = () => {
     setSidebarCollapsed((s) => !s);
@@ -59,6 +57,8 @@ export default function DashboardLayout() {
     navigate("/login", { replace: true });
   };
 
+  const storeInitial = displayStoreName.charAt(0).toUpperCase() || "S";
+
   return (
     <>
       <div
@@ -66,7 +66,7 @@ export default function DashboardLayout() {
         onClick={closeMobile}
         aria-hidden
       />
-      <nav className="navbar bg-white border-bottom fixed-top topbar px-3">
+      <nav className="navbar bg-white border-bottom fixed-top topbar px-3 merchant-topbar">
         <button
           type="button"
           className="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm"
@@ -81,16 +81,42 @@ export default function DashboardLayout() {
           aria-label="Open menu">
           <i className="ti ti-layout-sidebar-left-expand" />
         </button>
+        <NavLink to="/dashboard" className="merchant-topbar-brand d-lg-none text-decoration-none">
+          <span className="merchant-topbar-brand__mark">{storeInitial}</span>
+          <span className="merchant-topbar-brand__name">{displayStoreName}</span>
+        </NavLink>
         <div className="ms-auto d-flex align-items-center gap-2">
-          {hasActiveMembership && (
-            <NavLink
-              to="/dashboard/memberships"
-              className="membership-header-badge text-decoration-none"
-              title="Your membership"
-              aria-label="Your membership">
-              <i className="ti ti-crown" style={{ fontSize: "1rem" }} />
-            </NavLink>
-          )}
+          <div
+            className={`finance-privacy-toggle${hideFinance ? " is-active" : ""}`}
+            title={
+              hideFinance
+                ? "Revenue & report totals are hidden — tap to show"
+                : "Hide revenue, sales totals & inventory value from prying eyes"
+            }>
+            <button
+              type="button"
+              className="finance-privacy-toggle__btn"
+              onClick={() => setHideFinance(!hideFinance)}
+              aria-pressed={hideFinance}
+              aria-label={hideFinance ? "Show revenue totals" : "Hide revenue totals"}>
+              <span className="finance-privacy-toggle__icon" aria-hidden>
+                <i className={`ti ${hideFinance ? "ti-eye-off" : "ti-currency-rupee"}`} />
+              </span>
+              <span className="finance-privacy-toggle__text">
+                <span className="finance-privacy-toggle__label">
+                  {hideFinance ? "Revenue hidden" : "Hide revenue"}
+                </span>
+                <span className="finance-privacy-toggle__hint d-none d-lg-inline">
+                  {hideFinance ? "Tap to show" : "Reports only"}
+                </span>
+              </span>
+              <span
+                className={`finance-privacy-toggle__switch${hideFinance ? " on" : ""}`}
+                aria-hidden>
+                <span className="finance-privacy-toggle__knob" />
+              </span>
+            </button>
+          </div>
           <div className="dropdown">
             <button
               type="button"
@@ -111,6 +137,12 @@ export default function DashboardLayout() {
                 </span>
               </li>
               <li>
+                <NavLink to="/dashboard/settings" className="dropdown-item">
+                  <i className="ti ti-settings me-2" />
+                  Settings
+                </NavLink>
+              </li>
+              <li>
                 <hr className="dropdown-divider" />
               </li>
               <li>
@@ -129,20 +161,24 @@ export default function DashboardLayout() {
 
       <aside
         id="sidebar"
-        className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-show" : ""}`}>
-        <div className="logo-area">
+        className={`sidebar merchant-sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-show" : ""}`}>
+        <div className="logo-area merchant-logo-area">
           <NavLink
             to="/dashboard"
-            className="d-inline-flex align-items-center text-dark text-decoration-none">
-            <span className="icon-shape icon-sm bg-primary text-white rounded-2 d-flex align-items-center justify-content-center">
-              <i className="ti ti-receipt" />
+            className="merchant-logo-link text-decoration-none"
+            onClick={closeMobile}>
+            <span className="merchant-logo-mark">{storeInitial}</span>
+            <span className="merchant-logo-text">
+              <span className="merchant-logo-name">{displayStoreName}</span>
+              {settings.storeTagline ? (
+                <span className="merchant-logo-tagline">{settings.storeTagline}</span>
+              ) : null}
             </span>
-            <span className="logo-text ms-2 fw-bold">BoloBill</span>
           </NavLink>
         </div>
-        <ul className="nav flex-column">
+        <ul className="nav flex-column merchant-nav">
           <li className="px-4 py-2">
-            <small className="nav-text">Main</small>
+            <small className="nav-text merchant-nav-label">Menu</small>
           </li>
           {navItems.map(({ to, icon, label }) => (
             <li key={to}>
@@ -150,7 +186,7 @@ export default function DashboardLayout() {
                 to={to}
                 end={to === "/dashboard"}
                 className={({ isActive }) =>
-                  `nav-link ${isActive ? "active" : ""}`
+                  `nav-link merchant-nav-link ${isActive ? "active" : ""}`
                 }
                 onClick={closeMobile}>
                 <i className={`ti ${icon}`} />
@@ -159,12 +195,12 @@ export default function DashboardLayout() {
             </li>
           ))}
           <li className="px-4 pt-4 pb-2">
-            <small className="nav-text">Account</small>
+            <small className="nav-text merchant-nav-label">Account</small>
           </li>
           <li>
             <button
               type="button"
-              className="nav-link border-0 bg-transparent w-100 text-start text-danger"
+              className="nav-link merchant-nav-link border-0 bg-transparent w-100 text-start text-danger"
               onClick={handleLogoutClick}>
               <i className="ti ti-logout" />
               <span className="nav-text">Log out</span>
@@ -186,11 +222,21 @@ export default function DashboardLayout() {
 
       <main
         id="content"
-        className={`content py-4 ${sidebarCollapsed ? "full" : ""}`}>
+        className={`content pb-4 merchant-content ${sidebarCollapsed ? "full" : ""}`}>
         <div className="container-fluid">
           <Outlet />
         </div>
       </main>
     </>
+  );
+}
+
+export default function DashboardLayout() {
+  return (
+    <ShopSettingsProvider>
+      <FinancePrivacyProvider>
+        <DashboardLayoutInner />
+      </FinancePrivacyProvider>
+    </ShopSettingsProvider>
   );
 }

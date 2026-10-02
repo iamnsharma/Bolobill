@@ -21,6 +21,8 @@ export interface AdminInvoice {
   total: number;
   voiceTranscript: string;
   pdfUrl: string;
+  publicToken?: string;
+  publicBillUrl?: string;
   source: string;
   createdAt: string;
   updatedAt: string;
@@ -75,6 +77,26 @@ export interface OutOfStockItem {
   updatedAt: string;
 }
 
+export interface StockCategory {
+  _id: string;
+  name: string;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StockProduct {
+  _id: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantityOnHand: number;
+  lowStockThreshold?: number | null;
+  categoryId?: { _id: string; name: string } | string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface UserLimits {
   isActive: boolean;
   expiresAt?: string;
@@ -106,13 +128,35 @@ export const adminApi = {
   getItemsSold: (params?: { userId?: string; from?: string; to?: string }) =>
     api.get<{ items: ItemSold[] }>('/admin/items-sold', { params: params ?? {} }).then((r) => r.data),
 
-  getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
+  getUsers: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    createdFrom?: string;
+    createdTo?: string;
+  }) =>
     api
       .get<{ users: AdminUser[]; total: number; page: number; limit: number; totalPages: number }>(
         '/admin/users',
-        { params: { page: params?.page ?? 1, limit: params?.limit ?? 20, search: params?.search } }
+        {
+          params: {
+            page: params?.page ?? 1,
+            limit: params?.limit ?? 20,
+            search: params?.search,
+            createdFrom: params?.createdFrom,
+            createdTo: params?.createdTo,
+          },
+        },
       )
       .then((r) => r.data),
+
+  createMerchant: (body: {
+    name: string;
+    businessName: string;
+    phone: string;
+    pin: string;
+  }) =>
+    api.post<{ user: AdminUser }>('/admin/users/merchants', body).then((r) => r.data.user),
 
   getUserById: (id: string) =>
     api.get<{ user: AdminUser; limits: UserLimits }>(`/admin/users/${id}`).then((r) => r.data),
@@ -154,7 +198,17 @@ export const adminApi = {
       })
       .then((r) => r.data),
 
-  createInvoice: (body: { customerName?: string; items: Array<{ name: string; quantity: string | number; totalPrice: number }>; note?: string }) =>
+  createInvoice: (body: {
+    customerName?: string;
+    items: Array<{
+      name: string;
+      quantity: string | number;
+      totalPrice: number;
+      productId?: string;
+      quantityNumeric?: number;
+    }>;
+    note?: string;
+  }) =>
     api.post<{ invoice: AdminInvoice }>('/admin/invoices', body).then((r) => r.data.invoice),
 
   /** Speech-to-text: create bill from voice recording (same API as app). */
@@ -174,7 +228,13 @@ export const adminApi = {
   /** Create invoice from reviewed voice data (after user edits in review screen). */
   createFromVoicePreview: (body: {
     customerName: string;
-    items: Array<{ name: string; quantity: string | number; totalPrice: number }>;
+    items: Array<{
+      name: string;
+      quantity: string | number;
+      totalPrice: number;
+      productId?: string;
+      quantityNumeric?: number;
+    }>;
     transcript?: string;
     durationSec?: number;
   }) =>
@@ -203,12 +263,6 @@ export const adminApi = {
       .get<{ invoice: Omit<AdminInvoice, 'pdfUrl'> & { pdfUrl?: string } }>(`/admin/invoices/${id}`)
       .then((r) => r.data.invoice),
 
-  getStoreLinks: () =>
-    api.get<{ playStoreUrl: string; appStoreUrl: string }>('/admin/store-links').then((r) => r.data),
-
-  updateStoreLinks: (body: { playStoreUrl?: string; appStoreUrl?: string }) =>
-    api.put<{ playStoreUrl: string; appStoreUrl: string }>('/admin/store-links', body).then((r) => r.data),
-
   getQrCode: () =>
     api.get<{ url: string | null }>('/admin/qr-code').then((r) => r.data),
 
@@ -226,4 +280,87 @@ export const adminApi = {
 
   getPlans: () => 
     api.get<{ plans: any[] }>('/plans').then(r => r.data.plans),
+
+  getStockSummary: () =>
+    api
+      .get<{
+        totalProducts: number;
+        totalCategories: number;
+        inventoryValue: number;
+        lowStockCount: number;
+      }>('/admin/stock/summary')
+      .then(r => r.data),
+
+  listStockCategories: () =>
+    api.get<{ categories: StockCategory[] }>('/admin/stock/categories').then(r => r.data.categories),
+
+  createStockCategory: (body: { name: string; sortOrder?: number }) =>
+    api.post<{ category: StockCategory }>('/admin/stock/categories', body).then(r => r.data.category),
+
+  updateStockCategory: (id: string, body: { name?: string; sortOrder?: number }) =>
+    api.put<{ category: StockCategory }>(`/admin/stock/categories/${id}`, body).then(r => r.data.category),
+
+  deleteStockCategory: (id: string) =>
+    api.delete(`/admin/stock/categories/${id}`).then(r => r.data),
+
+  listStockProducts: (params?: { q?: string; categoryId?: string; page?: number; limit?: number }) =>
+    api
+      .get<{
+        products: StockProduct[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>('/admin/stock/products', { params })
+      .then(r => r.data),
+
+  createStockProduct: (body: {
+    categoryId?: string;
+    categoryName?: string;
+    name: string;
+    unit: string;
+    unitPrice: number;
+    quantityOnHand: number;
+    lowStockThreshold?: number;
+  }) => api.post<{ product: StockProduct }>('/admin/stock/products', body).then(r => r.data.product),
+
+  bulkCreateStockProducts: (body: {
+    products: {
+      categoryId?: string;
+      categoryName?: string;
+      name: string;
+      unit: string;
+      unitPrice: number;
+      quantityOnHand: number;
+      lowStockThreshold?: number;
+    }[];
+  }) =>
+    api
+      .post<{ products: StockProduct[] }>('/admin/stock/products/bulk', body)
+      .then((r) => r.data.products),
+
+  updateStockProduct: (
+    id: string,
+    body: {
+      categoryId?: string;
+      categoryName?: string;
+      name?: string;
+      unit?: string;
+      unitPrice?: number;
+      quantityOnHand?: number;
+      lowStockThreshold?: number | null;
+    },
+  ) => api.put<{ product: StockProduct }>(`/admin/stock/products/${id}`, body).then(r => r.data.product),
+
+  deleteStockProduct: (id: string) => api.delete(`/admin/stock/products/${id}`).then(r => r.data),
+
+  adjustStockProduct: (body: { productId: string; delta: number; note?: string }) =>
+    api.post<{ product: StockProduct }>('/admin/stock/products/adjust', body).then(r => r.data.product),
+
+  intakeStockFromVoice: (formData: FormData) =>
+    api
+      .post<{ transcript: string; products: StockProduct[] }>('/admin/stock/products/voice', formData, {
+        timeout: 60000,
+      })
+      .then(r => r.data),
 };

@@ -1,6 +1,7 @@
 import path from 'path';
 import {env} from '../../config/env';
 import type {UserDocument} from '../../models/User.model';
+import {publicBillPageUrl} from '../../utils/publicBillUrl';
 
 const toPdfUrl = (pdfPath: string) => {
   if (!pdfPath) return '';
@@ -34,12 +35,14 @@ export const toAdminInvoiceVm = (invoice: {
   total: number;
   voiceTranscript: string;
   pdfPath: string;
+  publicToken?: string;
   source: string;
   createdAt: Date;
   updatedAt: Date;
   userId?: {_id: unknown; name?: string; phone?: string; businessName?: string} | unknown;
 }) => {
   const userId = invoice.userId as {_id: unknown; name?: string; phone?: string; businessName?: string} | undefined;
+  const publicToken = invoice.publicToken ?? '';
   return {
     id: invoice._id.toString(),
     invoiceId: invoice.invoiceId,
@@ -48,6 +51,8 @@ export const toAdminInvoiceVm = (invoice: {
     total: invoice.total,
     voiceTranscript: invoice.voiceTranscript,
     pdfUrl: toPdfUrl(invoice.pdfPath),
+    publicToken,
+    publicBillUrl: publicToken ? publicBillPageUrl(publicToken) : '',
     source: invoice.source,
     createdAt: invoice.createdAt,
     updatedAt: invoice.updatedAt,

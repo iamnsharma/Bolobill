@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { MembershipProvider } from "./contexts/MembershipContext";
 import BusinessOnlyRoute from "./components/BusinessOnlyRoute";
 import SuperAdminOnlyRoute from "./components/SuperAdminOnlyRoute";
 import GuestOnlyRoute from "./components/GuestOnlyRoute";
@@ -14,15 +13,16 @@ import Dashboard from "./pages/Dashboard";
 import Invoices from "./pages/Invoices";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
-import Memberships from "./pages/Memberships";
-import StoreLinks from "./pages/StoreLinks";
 import Sales from "./pages/Sales";
 import ItemsSold from "./pages/ItemsSold";
 import OutOfStock from "./pages/OutOfStock";
+import Stock from "./pages/Stock";
 import QrCode from "./pages/QrCode";
 import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
 import Whisper from "./pages/Whisper";
+import Settings from "./pages/Settings";
+import PublicBill from "./pages/PublicBill";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -66,13 +66,12 @@ function AppRoutes() {
       />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsConditions />} />
+      <Route path="/bill/:token" element={<PublicBill />} />
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <MembershipProvider>
-              <DashboardLayout />
-            </MembershipProvider>
+            <DashboardLayout />
           </ProtectedRoute>
         }>
         <Route index element={<Dashboard />} />
@@ -109,6 +108,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="stock"
+          element={
+            <BusinessOnlyRoute>
+              <Stock />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
           path="out-of-stock"
           element={
             <BusinessOnlyRoute>
@@ -116,6 +123,7 @@ function AppRoutes() {
             </BusinessOnlyRoute>
           }
         />
+        <Route path="settings" element={<Settings />} />
         <Route
           path="qr-code"
           element={
@@ -126,14 +134,6 @@ function AppRoutes() {
         />
         <Route path="users" element={<Users />} />
         <Route path="users/:id" element={<UserDetail />} />
-        <Route
-          path="memberships"
-          element={
-            <BusinessOnlyRoute>
-              <Memberships />
-            </BusinessOnlyRoute>
-          }
-        />
         <Route
           path="subscriptions"
           element={
@@ -147,14 +147,6 @@ function AppRoutes() {
           element={
             <SuperAdminOnlyRoute>
               <Whisper />
-            </SuperAdminOnlyRoute>
-          }
-        />
-        <Route
-          path="store-links"
-          element={
-            <SuperAdminOnlyRoute>
-              <StoreLinks />
             </SuperAdminOnlyRoute>
           }
         />

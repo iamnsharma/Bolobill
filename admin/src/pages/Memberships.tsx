@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRazorpay } from "react-razorpay";
 import { adminApi } from "../api/admin";
 import { useAuth } from "../contexts/AuthContext";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
 
 export default function Memberships() {
   const { Razorpay } = useRazorpay();
@@ -78,25 +81,23 @@ export default function Memberships() {
     }
   }, [Razorpay, user, processingId]);
 
-  if (loading) return <div className="mt-6 admin-page p-4 text-center">Loading plans...</div>;
+  if (loading) {
+    return (
+      <PageShell>
+        <div className="p-5 text-center text-muted">Loading plans…</div>
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="mt-6 admin-page membership-page">
-      {/* Hero */}
-      <div className="membership-hero rounded-4 overflow-hidden mb-5">
-        <div className="membership-hero-inner">
-          <span className="membership-hero-badge">Plans</span>
-          <h1 className="membership-hero-title">Choose your growth plan</h1>
-          <p className="membership-hero-sub">
-            Bill limits reset on your renewal date each month. Upgrade or change
-            plan anytime.
-          </p>
-        </div>
-      </div>
+    <PageShell className="membership-page">
+      <PageHeader
+        title="Memberships"
+        icon="ti-crown"
+        subtitle="Bill limits reset on your renewal date each month. Upgrade or change plan anytime."
+      />
 
-      {/* My membership – current plan & manage */}
-      <div className="card border-0 shadow-sm rounded-4 mb-5 membership-current-card">
-        <div className="card-body p-4 p-lg-5">
+      <SectionPanel title="Your plan" icon="ti-badge" className="mb-4">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">
               <div className="membership-current-icon-wrap rounded-3 d-flex align-items-center justify-content-center">
@@ -142,16 +143,14 @@ export default function Memberships() {
               </p>
             </div>
           )}
-        </div>
-      </div>
+      </SectionPanel>
 
-      {/* All plans */}
-      <h2 className="h5 fw-bold mb-3">All plans</h2>
-      <p className="text-muted small mb-4">
-        Compare and choose. You can upgrade or switch plan anytime.
-      </p>
-
-      <div className="row g-4 mb-5">
+      <SectionPanel
+        title="All plans"
+        icon="ti-layout-grid"
+        subtitle="Compare and choose. You can upgrade or switch anytime."
+      >
+      <div className="row g-4">
         {plans.map((plan) => {
           const isCurrent = currentPlanId === plan._id;
           return (
@@ -222,12 +221,10 @@ export default function Memberships() {
           );
         })}
       </div>
-      
       {plans.length === 0 && (
-         <div className="card border-0 bg-light rounded-4 p-5 text-center">
-         <p className="text-muted mb-0">No plans available at the moment.</p>
-       </div>
+        <p className="text-muted text-center py-4 mb-0">No plans available at the moment.</p>
       )}
-    </div>
+      </SectionPanel>
+    </PageShell>
   );
 }

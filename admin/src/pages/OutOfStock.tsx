@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { adminApi, type OutOfStockItem } from "../api/admin";
-import { VoiceRecorder, type RecordingResult } from "../components/VoiceRecorder";
+import { VoiceRecorder, type RecordingResult, MicIconButton } from "../components/VoiceRecorder";
+import AppModal from "../components/AppModal";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
+import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
 import { exportOutOfStockPdf } from "../utils/exportOutOfStockPdf";
-
-type AddMode = "voice" | "manual";
 
 export default function OutOfStock() {
   const [items, setItems] = useState<OutOfStockItem[]>([]);
@@ -15,7 +18,7 @@ export default function OutOfStock() {
   const [formQuantity, setFormQuantity] = useState("");
   const [formNote, setFormNote] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [addMode, setAddMode] = useState<AddMode>("manual");
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState<RecordingResult | null>(null);
   const [voiceLoading, setVoiceLoading] = useState(false);
 
@@ -117,6 +120,7 @@ export default function OutOfStock() {
       formData.append("language", "en");
       await adminApi.createOutOfStockFromVoice(formData);
       setVoiceRecording(null);
+      setShowVoiceModal(false);
       fetchItems();
     } catch (err: unknown) {
       setError(
@@ -129,12 +133,15 @@ export default function OutOfStock() {
   };
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Out of Stock</h1>
-      <p className="text-muted mb-4">
-        Add items you need to restock. Use voice or manual entry. Share the list as a PDF with your
-        supplier (e.g. via WhatsApp or email).
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Out of Stock"
+        icon="ti-alert-circle"
+        subtitle="Items to reorder. Share the list as PDF with your supplier."
+        actions={
+          <MicIconButton title="Speak items" onClick={() => setShowVoiceModal(true)} />
+        }
+      />
 
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -142,95 +149,19 @@ export default function OutOfStock() {
         </div>
       )}
 
-      {/* Voice | Manual selector */}
-      <div className="d-flex gap-2 mb-4">
-        <button
-          type="button"
-          className={`btn flex-grow-1 py-3 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2 ${
-            addMode === "voice" ? "btn-primary" : "btn-outline-primary"
-          }`}
-          onClick={() => setAddMode("voice")}>
-          <i className="ti ti-microphone fs-5" />
-          Voice
-        </button>
-        <button
-          type="button"
-          className={`btn flex-grow-1 py-3 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2 ${
-            addMode === "manual" ? "btn-secondary" : "btn-outline-secondary"
-          }`}
-          onClick={() => setAddMode("manual")}>
-          <i className="ti ti-edit fs-5" />
-          Manual
-        </button>
-      </div>
+      <SectionPanel title="Add or edit" icon="ti-plus" className="mb-4">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}>
+            <i className="ti ti-plus" />
+            Add item
+          </button>
 
-      <div className="card border-0 shadow-sm rounded-3 mb-4">
-        <div className="card-body p-4">
-          {addMode === "voice" && (
-            <>
-              <p className="small text-muted mb-3">
-                Record your out-of-stock items. Say them clearly, e.g. &quot;rice, salt, oil, 2 kg dal&quot;.
-              </p>
-              <VoiceRecorder
-                onRecorded={(result) => {
-                  setVoiceRecording(result);
-                  setError(null);
-                }}
-                onError={setError}
-              />
-              {voiceRecording && (
-                <div className="mt-4 p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
-                  <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <i className="ti ti-check text-success fs-5" />
-                    <span className="fw-semibold">Recorded {voiceRecording.durationSec}s</span>
-                  </div>
-                  <div className="d-flex gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      className="btn btn-success"
-                      onClick={handleCreateFromVoice}
-                      disabled={voiceLoading}>
-                      {voiceLoading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" />
-                          Adding…
-                        </>
-                      ) : (
-                        <>
-                          <i className="ti ti-check me-1" />
-                          Add to list from recording
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => setVoiceRecording(null)}
-                      disabled={voiceLoading}>
-                      Discard
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {addMode === "manual" && (
-            <>
-              <div className="d-flex flex-wrap gap-2 align-items-center">
-                <button
-                  type="button"
-                  className="btn btn-primary d-inline-flex align-items-center gap-1"
-                  onClick={() => {
-                    resetForm();
-                    setShowForm(true);
-                  }}>
-                  <i className="ti ti-plus" />
-                  Add item
-                </button>
-              </div>
-
-              {showForm && (
+          {showForm && (
                 <form
                   onSubmit={handleSubmit}
                   className="mt-4 p-3 bg-light rounded-2">
@@ -281,40 +212,79 @@ export default function OutOfStock() {
                   </div>
                 </form>
               )}
-            </>
-          )}
-        </div>
-      </div>
+      </SectionPanel>
 
-      <div className="d-flex justify-content-end mb-2">
-        <button
-          type="button"
-          className="btn btn-outline-secondary d-inline-flex align-items-center gap-1"
-          onClick={handleExportPdf}
-          disabled={items.length === 0}>
-          <i className="ti ti-file-export" />
-          Export as PDF
-        </button>
-      </div>
+      <AppModal
+        show={showVoiceModal}
+        title="Speak out-of-stock items"
+        onClose={() => {
+          setShowVoiceModal(false);
+          setVoiceRecording(null);
+        }}
+      >
+        <VoiceRecorder
+          onRecorded={(result) => {
+            setVoiceRecording(result);
+            setError(null);
+          }}
+          onError={setError}
+        />
+        {voiceRecording && (
+          <div className="d-flex gap-2 mt-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleCreateFromVoice}
+              disabled={voiceLoading}
+            >
+              {voiceLoading ? "Adding…" : "Add to list"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => setVoiceRecording(null)}
+              disabled={voiceLoading}
+            >
+              Discard
+            </button>
+          </div>
+        )}
+      </AppModal>
 
-      <div className="card border-0 shadow-sm rounded-3">
-        <div className="card-body p-0">
+      <SectionPanel
+        title="Restock list"
+        icon="ti-list"
+        flush
+        bodyClassName="p-0"
+        actions={
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={handleExportPdf}
+            disabled={items.length === 0}>
+            <i className="ti ti-file-export me-1" />
+            Export PDF
+          </button>
+        }
+      >
           {loading ? (
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
+            <MerchantDataTable>
                 <thead className="bg-light">
                   <tr>
-                    <th>
-                      <i className="ti ti-package me-1" />
-                      Item
+                    <th scope="col">
+                      <MerchantTableHeadLabel>Item</MerchantTableHeadLabel>
                     </th>
-                    <th>Quantity</th>
-                    <th>Note</th>
-                    <th style={{ width: 120 }}></th>
+                    <th scope="col">
+                      <MerchantTableHeadLabel>Quantity</MerchantTableHeadLabel>
+                    </th>
+                    <th scope="col">
+                      <MerchantTableHeadLabel>Note</MerchantTableHeadLabel>
+                    </th>
+                    <th scope="col" className="merchant-data-table__num" aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody>
@@ -331,7 +301,7 @@ export default function OutOfStock() {
                         <td className="fw-medium">{item.name}</td>
                         <td>{item.quantity || "—"}</td>
                         <td className="small text-muted">{item.note || "—"}</td>
-                        <td>
+                        <td className="merchant-data-table__num text-nowrap">
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-primary me-1"
@@ -349,11 +319,9 @@ export default function OutOfStock() {
                     ))
                   )}
                 </tbody>
-              </table>
-            </div>
+            </MerchantDataTable>
           )}
-        </div>
-      </div>
-    </div>
+      </SectionPanel>
+    </PageShell>
   );
 }

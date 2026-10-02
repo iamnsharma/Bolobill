@@ -46,11 +46,9 @@ const FEATURES = [
   },
 ];
 
-const CONTACT_EMAIL = "useaifasthere@gmail.com";
-const INSTAGRAM = "https://instagram.com";
-const LINKEDIN = "https://linkedin.com";
-const DEFAULT_PLAY = "https://play.google.com/store/apps";
-const DEFAULT_APPLE = "https://apps.apple.com/app";
+const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL?.trim() || "";
+const INSTAGRAM = import.meta.env.VITE_INSTAGRAM_URL?.trim() || "";
+const LINKEDIN = import.meta.env.VITE_LINKEDIN_URL?.trim() || "";
 
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
@@ -97,10 +95,9 @@ export default function Landing() {
               <span className="landing-logo-text">Bolo Bill</span>
             </Link>
             <nav className="d-flex align-items-center gap-2 gap-md-3">
-              <a
-                href="#landing-trial"
-                className="landing-header-trial text-nowrap">
-                <i className="ti ti-gift me-1" aria-hidden />2 days free trial
+              <a href="#landing-contact" className="landing-header-trial text-nowrap">
+                <i className="ti ti-building-store me-1" aria-hidden />
+                For shops
               </a>
               <Link
                 to="/login"
@@ -110,7 +107,7 @@ export default function Landing() {
               <Link
                 to="/signup"
                 className="btn btn-primary rounded-3 landing-header-btn">
-                Sign up
+                Get access
               </Link>
             </nav>
           </div>
@@ -130,19 +127,18 @@ export default function Landing() {
               </h1>
               <p className="landing-hero-sub">
                 Bolo Bill helps kirana and small businesses create professional
-                invoices in seconds — no typing, no paper. Get your shop on one
-                app.
+                invoices in seconds — no typing, no paper. Run billing from your browser.
               </p>
               <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mt-4 landing-hero-cta-group">
                 <Link
                   to="/signup"
                   className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
-                  Get started free
+                  Request shop access
                 </Link>
                 <Link
                   to="/login"
                   className="btn btn-outline-light btn-lg rounded-3 fw-semibold landing-hero-btn">
-                  Log in
+                  Merchant login
                 </Link>
               </div>
             </div>
@@ -173,8 +169,8 @@ export default function Landing() {
               WhatsApp bills
             </span>
             <span className="landing-trust-pill">
-              <i className="ti ti-credit-card-off me-2" aria-hidden />
-              No card for trial
+              <i className="ti ti-lock me-2" aria-hidden />
+              Secure merchant login
             </span>
             <span className="landing-trust-pill">
               <i className="ti ti-bolt me-2" aria-hidden />
@@ -315,110 +311,51 @@ export default function Landing() {
       </section>
 
       <section
-        id="landing-trial"
-        className={`landing-section landing-trial py-5 ${visible.has("trial") ? "landing-in-view" : ""}`}
-        data-landing-section="trial"
-        aria-label="Free trial">
+        id="landing-contact"
+        className={`landing-section landing-trial py-5 ${visible.has("onboard") ? "landing-in-view" : ""}`}
+        data-landing-section="onboard"
+        aria-label="Shop onboarding">
         <div className="container py-3">
           <span className="landing-section-badge d-inline-block mb-3">
-            Try free
+            How it works
           </span>
           <div className="landing-trial-card rounded-4 overflow-hidden shadow-lg position-relative">
             <div className="landing-trial-bg" aria-hidden />
             <div className="landing-trial-inner position-relative py-4 py-md-5 px-3 px-md-4">
               <div className="row align-items-center">
                 <div className="col-lg-7 text-center text-lg-start mb-4 mb-lg-0">
-                  <span className="landing-trial-badge">No card required</span>
+                  <span className="landing-trial-badge">B2B onboarding</span>
                   <h2 className="landing-trial-title">
-                    Start with a 2-day free trial
+                    We set up your shop account for you
                   </h2>
                   <p className="landing-trial-sub text-white opacity-90 mb-4">
-                    Try Bolo Bill free. Create invoices and use voice billing —
-                    no commitment.
+                    Subscribe with BoloBill, get phone + PIN credentials, then bill from the merchant web panel.
+                    Change your PIN anytime in Settings.
                   </p>
-                  <div className="landing-trial-limits d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start align-items-center">
-                    <span className="landing-trial-limit">
-                      <i className="ti ti-receipt me-2" aria-hidden />
-                      <strong>30 invoices</strong>
-                    </span>
-                    <span className="landing-trial-limit-divider d-none d-sm-inline text-white opacity-50">
-                      or
-                    </span>
-                    <span className="landing-trial-limit">
-                      <i className="ti ti-microphone me-2" aria-hidden />
-                      <strong>15 min voice</strong>
-                    </span>
-                  </div>
+                  <ul className="landing-trial-limits list-unstyled text-white opacity-90 mb-0 small">
+                    <li className="mb-2">
+                      <i className="ti ti-check me-2" aria-hidden />
+                      No OTP signup — credentials issued after payment
+                    </li>
+                    <li>
+                      <i className="ti ti-check me-2" aria-hidden />
+                      WhatsApp bill links for customers (Meta API coming later)
+                    </li>
+                  </ul>
                 </div>
                 <div className="col-lg-5 text-center text-lg-end">
                   <Link
                     to="/signup"
                     className="landing-trial-cta btn btn-light btn-lg rounded-3 px-4 py-3 fw-semibold shadow d-inline-flex align-items-center gap-2">
-                    <i className="ti ti-rocket" aria-hidden />
-                    Start free trial
+                    <i className="ti ti-mail" aria-hidden />
+                    Contact for access
                   </Link>
                   <p className="landing-trial-note text-white opacity-75 small mt-3 mb-0">
-                    Sign up in 30 seconds · No payment now
+                    Already onboarded?{" "}
+                    <Link to="/login" className="text-white fw-semibold">
+                      Log in
+                    </Link>
                   </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* <div className="landing-trial-explain mt-4">
-            <h3 className="h6 fw-bold mb-3">How the 2-day free trial works</h3>
-            <ul className="landing-trial-explain-list">
-              <li><strong>2 days free</strong> — Full access to create bills, use voice billing, and share on WhatsApp.</li>
-              <li><strong>30 invoices or 15 minutes voice</strong> — Trial limit: use up to 30 invoices or 15 minutes of voice-to-bill (whichever you hit first).</li>
-              <li><strong>No card required</strong> — Sign up with your phone and business name. No payment details needed to start.</li>
-              <li><strong>Avail anytime</strong> — Click “Start free trial” or “Sign up” to begin. After trial, choose a plan to continue.</li>
-            </ul>
-          </div> */}
-        </div>
-      </section>
-
-      <section
-        className={`landing-section landing-app py-5 ${visible.has("app") ? "landing-in-view" : ""}`}
-        data-landing-section="app"
-        aria-label="Download app">
-        <div className="container py-4">
-          <span className="landing-section-badge d-inline-block mb-3">
-            Get the app
-          </span>
-          <div className="landing-app-card rounded-4 overflow-hidden shadow-lg position-relative">
-            <div className="landing-app-bg" />
-            <div className="row align-items-center position-relative py-5 px-4">
-              <div className="col-lg-6 text-center text-lg-start text-white mb-4 mb-lg-0">
-                <h2 className="landing-app-title mb-2">Bolo Bill on mobile</h2>
-                <p className="landing-app-text opacity-90 mb-4">
-                  Create bills with voice, share invoices on WhatsApp, and
-                  manage out-of-stock lists — all from your phone.
-                </p>
-                <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
-                  <a
-                    href={DEFAULT_PLAY}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-light btn-lg rounded-3 px-4 d-inline-flex align-items-center gap-2">
-                    <i className="ti ti-brand-android fs-4" />
-                    Get on Android
-                  </a>
-                  <a
-                    href={DEFAULT_APPLE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline-light btn-lg rounded-3 px-4 d-inline-flex align-items-center gap-2">
-                    <i className="ti ti-brand-apple fs-4" />
-                    Get on iOS
-                  </a>
-                </div>
-              </div>
-              <div className="col-lg-6 text-center">
-                <div className="landing-app-phone rounded-4 overflow-hidden d-inline-block shadow">
-                  <img
-                    src={feat4}
-                    alt="App"
-                    style={{ maxWidth: 280, width: "100%" }}
-                  />
                 </div>
               </div>
             </div>
@@ -431,15 +368,22 @@ export default function Landing() {
         data-landing-section="cta"
         aria-label="Get started">
         <div className="container py-4 text-center">
-          <h2 className="landing-cta-final-title">Ready to try Bolo Bill?</h2>
+          <h2 className="landing-cta-final-title">Ready for digital billing?</h2>
           <p className="landing-cta-final-sub text-muted mb-4">
-            Join shopkeepers who bill faster with voice and WhatsApp.
+            Talk to us to onboard your shop, or log in if you already have credentials.
           </p>
-          <Link
-            to="/signup"
-            className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn landing-cta-final-btn">
-            Get started free
-          </Link>
+          <div className="d-flex flex-wrap gap-3 justify-content-center">
+            <Link
+              to="/signup"
+              className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn landing-cta-final-btn">
+              Request access
+            </Link>
+            <Link
+              to="/login"
+              className="btn btn-outline-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
+              Log in
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -456,30 +400,36 @@ export default function Landing() {
             Questions or feedback? We’d love to hear from you.
           </p>
           <div className="d-flex flex-wrap justify-content-center gap-4 align-items-center">
-            <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              className="text-decoration-none text-dark d-flex align-items-center gap-2">
-              <i className="ti ti-mail fs-4 text-primary" />
-              <span>{CONTACT_EMAIL}</span>
-            </a>
-            <a
-              href={INSTAGRAM}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-decoration-none text-dark d-flex align-items-center gap-2"
-              aria-label="Instagram">
-              <i className="ti ti-brand-instagram fs-4 text-primary" />
-              <span>Instagram</span>
-            </a>
-            <a
-              href={LINKEDIN}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-decoration-none text-dark d-flex align-items-center gap-2"
-              aria-label="LinkedIn">
-              <i className="ti ti-brand-linkedin fs-4 text-primary" />
-              <span>LinkedIn</span>
-            </a>
+            {CONTACT_EMAIL ? (
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="text-decoration-none text-dark d-flex align-items-center gap-2">
+                <i className="ti ti-mail fs-4 text-primary" />
+                <span>{CONTACT_EMAIL}</span>
+              </a>
+            ) : null}
+            {INSTAGRAM ? (
+              <a
+                href={INSTAGRAM}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-decoration-none text-dark d-flex align-items-center gap-2"
+                aria-label="Instagram">
+                <i className="ti ti-brand-instagram fs-4 text-primary" />
+                <span>Instagram</span>
+              </a>
+            ) : null}
+            {LINKEDIN ? (
+              <a
+                href={LINKEDIN}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-decoration-none text-dark d-flex align-items-center gap-2"
+                aria-label="LinkedIn">
+                <i className="ti ti-brand-linkedin fs-4 text-primary" />
+                <span>LinkedIn</span>
+              </a>
+            ) : null}
           </div>
         </div>
       </section>

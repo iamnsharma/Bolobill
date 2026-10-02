@@ -74,6 +74,11 @@ export const authApi = {
     return data;
   },
 
+  changePin: async (body: { currentPin: string; newPin: string }): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>('/auth/change-pin', body);
+    return data;
+  },
+
   logout: () => {
     localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER);

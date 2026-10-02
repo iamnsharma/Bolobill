@@ -119,4 +119,17 @@ export const authService = {
     await user.save();
     return {message: 'PIN reset successful'};
   },
+
+  async changePin(userId: string, currentPin: string, newPin: string) {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new ApiError(404, 'User not found');
+    const ok = await bcrypt.compare(currentPin, user.pinHash);
+    if (!ok) throw new ApiError(401, 'Current PIN is incorrect');
+    if (newPin.length < 4 || newPin.length > 8) {
+      throw new ApiError(400, 'PIN must be 4–8 characters');
+    }
+    user.pinHash = await bcrypt.hash(newPin, 10);
+    await user.save();
+    return {message: 'PIN updated'};
+  },
 };

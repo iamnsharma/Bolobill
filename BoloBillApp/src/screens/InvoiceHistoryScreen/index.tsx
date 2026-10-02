@@ -19,8 +19,6 @@ import { getStyles } from './style';
 import { T } from '../../lang/constants';
 import {createInvoicePdfForDownload} from '../../utils/invoice/pdf';
 import {buildInvoiceFileName} from '../../utils/invoice/fileName';
-import {mockInvoices} from '../../utils/mockInvoices';
-import {CreateInvoiceFromVoiceResponse} from '../../services/api/types/invoice.types';
 
 type Props = {
   navigation: {
@@ -35,21 +33,6 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
   const isGuest = useAuthStore(s => s.isGuest);
   const styles = useMemo(() => getStyles(theme), [theme]);
   const invoicesQuery = useInvoices(!isGuest);
-  const guestInvoices = useMemo<CreateInvoiceFromVoiceResponse[]>(
-    () =>
-      mockInvoices.map((item, index) => ({
-        id: item.id,
-        invoiceId: item.id,
-        customerName: item.customerName,
-        items: [{name: 'Sample Item', quantity: '1', totalPrice: item.amount}],
-        total: item.amount,
-        voiceTranscript: '',
-        pdfUrl: '',
-        source: 'manual',
-        createdAt: new Date(Date.now() - index * 3600000).toISOString(),
-      })),
-    [],
-  );
   const deleteInvoiceMutation = useDeleteInvoiceById();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<
@@ -58,7 +41,7 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
 
   const filteredInvoices = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    const invoices = isGuest ? guestInvoices : invoicesQuery.data?.invoices ?? [];
+    const invoices = isGuest ? [] : invoicesQuery.data?.invoices ?? [];
     const now = new Date();
     const startToday = new Date(
       now.getFullYear(),
@@ -89,7 +72,7 @@ export const InvoiceHistoryScreen = ({navigation}: Props) => {
       } ${invoice.customerName} ${buildInvoiceFileName(invoice)}`.toLowerCase();
       return matchesDate && searchable.includes(normalizedQuery);
     });
-  }, [dateFilter, guestInvoices, invoicesQuery.data?.invoices, isGuest, searchQuery]);
+  }, [dateFilter, invoicesQuery.data?.invoices, isGuest, searchQuery]);
 
   const onDownloadInvoice = async (invoice: (typeof filteredInvoices)[number]) => {
     if (isGuest) {

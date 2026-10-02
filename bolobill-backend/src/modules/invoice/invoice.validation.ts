@@ -4,6 +4,8 @@ const itemSchema = z.object({
   name: z.string().min(1),
   quantity: z.union([z.string(), z.number()]).transform((v) => String(v)),
   totalPrice: z.number().min(0),
+  productId: z.string().min(1).optional(),
+  quantityNumeric: z.number().positive().optional(),
 });
 
 export const manualInvoiceSchema = z.object({

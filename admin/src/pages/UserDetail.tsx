@@ -3,6 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminUser, type UserLimits } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
+import AppModal from "../components/AppModal";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
 import { api } from "../api/client";
 
 function InfoRow({
@@ -106,15 +110,25 @@ export default function UserDetail() {
   };
 
   return (
-    <div className="mt-6 admin-page">
-      <Link
-        to="/dashboard/users"
-        className="btn btn-link btn-sm text-muted text-decoration-none mb-3 d-inline-flex align-items-center">
-        <i className="ti ti-arrow-left me-1" />
-        Back to {isSuperAdmin ? "Manage users" : "Users"}
-      </Link>
-      <h1 className="fs-3 mb-1 fw-bold">User details</h1>
-      <p className="text-muted mb-4">View and manage this user.</p>
+    <PageShell>
+      <PageHeader
+        title={user?.name ?? "User details"}
+        icon="ti-user"
+        subtitle={
+          user
+            ? [user.phone, user.businessName].filter(Boolean).join(" · ") || "View and manage this user."
+            : "View and manage this user."
+        }
+        actions={
+          <Link
+            to="/dashboard/users"
+            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+          >
+            <i className="ti ti-arrow-left" />
+            Back to {isSuperAdmin ? "users" : "list"}
+          </Link>
+        }
+      />
 
       {error && (
         <div
@@ -130,11 +144,9 @@ export default function UserDetail() {
           <div className="spinner-border text-primary" role="status" />
         </div>
       ) : user ? (
-        <>
-          <div className="row g-4">
+        <div className="row g-4">
             <div className="col-lg-8">
-              <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-                <div className="card-body p-4 p-lg-5">
+              <SectionPanel title="Profile" icon="ti-id">
                   <InfoRow icon="ti-user" label="Name" value={user.name} />
                   <InfoRow icon="ti-phone" label="Phone" value={user.phone} />
                   <InfoRow
@@ -188,15 +200,10 @@ export default function UserDetail() {
                         : "—"
                     }
                   />
-                </div>
-              </div>
+                </SectionPanel>
             </div>
             <div className="col-lg-4">
-              <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-                <div className="card-body p-4">
-                  <p className="small text-muted text-uppercase fw-semibold mb-2">
-                    Status
-                  </p>
+              <SectionPanel title="Status" icon="ti-circle-check" className="mb-4">
                   {user.isBlacklisted ? (
                     <span className="badge bg-danger fs-6 px-3 py-2">
                       <i className="ti ti-user-off me-1" />
@@ -208,14 +215,9 @@ export default function UserDetail() {
                       Active
                     </span>
                   )}
-                </div>
-              </div>
+              </SectionPanel>
               {isSuperAdmin && (
-                <div className="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
-                  <div className="card-body p-4">
-                    <p className="small text-muted text-uppercase fw-semibold mb-2">
-                      Subscription
-                    </p>
+                <SectionPanel title="Subscription" icon="ti-crown" className="mb-4">
                     <p className="small text-muted mb-3">
                       Plan: <span className={`badge ${limits?.isActive ? 'bg-primary' : 'bg-secondary'}`}>{limits?.isActive ? 'Active' : 'None/Expired'}</span>
                       <br/>
@@ -232,14 +234,9 @@ export default function UserDetail() {
                         Manage subscription
                       </button>
                     </div>
-                  </div>
-                </div>
+                </SectionPanel>
               )}
-              <div className="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
-                <div className="card-body p-4">
-                  <p className="small text-muted text-uppercase fw-semibold mb-3">
-                    Actions
-                  </p>
+              <SectionPanel title="Actions" icon="ti-click">
                   <div className="d-flex flex-column gap-2">
                     <button
                       type="button"
@@ -266,11 +263,9 @@ export default function UserDetail() {
                       </Link>
                     )}
                   </div>
-                </div>
-              </div>
+              </SectionPanel>
             </div>
           </div>
-        </>
       ) : null}
 
       <ConfirmModal
@@ -294,50 +289,56 @@ export default function UserDetail() {
       />
 
       {showPlanModal && (
-        <div className="modal d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg rounded-4">
-              <div className="modal-header border-0 pb-0">
-                <h5 className="modal-title fw-bold">Manage subscription</h5>
-                <button type="button" className="btn-close" onClick={() => setShowPlanModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label fw-medium text-muted small text-uppercase">Select Plan</label>
-                  <select 
-                    className="form-select" 
-                    value={selectedPlanId} 
-                    onChange={e => setSelectedPlanId(e.target.value)}
-                  >
-                    <option value="">None (Remove subscription)</option>
-                    {plans.map(p => (
-                      <option key={p._id} value={p._id}>{p.name} - ₹{p.price}</option>
-                    ))}
-                  </select>
-                </div>
-                {selectedPlanId && (
-                  <div className="mb-3">
-                    <label className="form-label fw-medium text-muted small text-uppercase">Expiry Date</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={selectedExpiry}
-                      onChange={e => setSelectedExpiry(e.target.value)}
-                    />
-                    <div className="form-text">If left blank, defaults to 30 days from now.</div>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer border-0 pt-0">
-                <button type="button" className="btn btn-light" onClick={() => setShowPlanModal(false)}>Cancel</button>
-                <button type="button" className="btn btn-primary" onClick={handleAssignPlan} disabled={actionLoading}>
-                  {actionLoading ? "Saving..." : "Save changes"}
-                </button>
-              </div>
-            </div>
+        <AppModal
+          show={showPlanModal}
+          title="Manage subscription"
+          onClose={() => setShowPlanModal(false)}
+          size="md"
+          footer={
+            <>
+              <button type="button" className="btn btn-light" onClick={() => setShowPlanModal(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAssignPlan}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Saving..." : "Save changes"}
+              </button>
+            </>
+          }
+        >
+          <div className="mb-3">
+            <label className="form-label fw-medium text-muted small text-uppercase">Select plan</label>
+            <select
+              className="form-select"
+              value={selectedPlanId}
+              onChange={(e) => setSelectedPlanId(e.target.value)}
+            >
+              <option value="">None (Remove subscription)</option>
+              {plans.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} - ₹{p.price}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+          {selectedPlanId && (
+            <div className="mb-0">
+              <label className="form-label fw-medium text-muted small text-uppercase">Expiry date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={selectedExpiry}
+                onChange={(e) => setSelectedExpiry(e.target.value)}
+              />
+              <div className="form-text">If left blank, defaults to 30 days from now.</div>
+            </div>
+          )}
+        </AppModal>
       )}
-    </div>
+    </PageShell>
   );
 }

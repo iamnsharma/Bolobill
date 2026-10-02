@@ -65,6 +65,7 @@ adminRouter.use((req: Request, res: Response, next: NextFunction) =>
 adminRouter.get('/stats', requireSuperAdmin, asyncHandler(adminController.getStats));
 adminRouter.get('/whisper-usage', requireSuperAdmin, asyncHandler(adminController.getWhisperUsage));
 adminRouter.get('/users', requireSuperAdmin, asyncHandler(adminController.listUsers));
+adminRouter.post('/users/merchants', requireSuperAdmin, asyncHandler(adminController.createMerchant));
 adminRouter.get('/users/:id', requireSuperAdmin, asyncHandler(adminController.getUserById));
 adminRouter.patch('/users/:id/blacklist', requireSuperAdmin, asyncHandler(adminController.setBlacklist));
 adminRouter.patch('/users/:id/plan', requireSuperAdmin, asyncHandler(adminController.assignPlan));

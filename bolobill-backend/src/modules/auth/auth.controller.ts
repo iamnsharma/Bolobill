@@ -8,8 +8,9 @@ import {
   registerSchema,
   registerWithOtpSchema,
   requestOtpSchema,
-  resetPinSchema,
   verifyOtpSchema,
+  resetPinSchema,
+  changePinSchema,
 } from './auth.validation';
 
 export const authController = {
@@ -99,6 +100,20 @@ export const authController = {
     }
 
     const result = await authService.resetPin(parsed.data);
+    return res.json(result);
+  },
+
+  async changePin(req: Request, res: Response) {
+    if (!req.user?.userId) throw new ApiError(401, 'Unauthorized');
+    const parsed = changePinSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await authService.changePin(
+      req.user.userId,
+      parsed.data.currentPin,
+      parsed.data.newPin,
+    );
     return res.json(result);
   },
 };

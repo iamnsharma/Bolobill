@@ -150,3 +150,69 @@ export const extractInvoiceItemsFromTranscript = async (
     return null;
   }
 };
+
+export type StockItemExtract = {
+  name: string;
+  unitPrice: number;
+  quantityNumeric: number;
+  unit?: string;
+};
+
+export const extractStockItemsFromTranscript = async (
+  transcript: string,
+): Promise<StockItemExtract[] | null> => {
+  const cleanedTranscript = transcript.trim();
+  if (!cleanedTranscript) {
+    return null;
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      response_format: {type: 'json_object'},
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Extract store stock intake lines from spoken transcript. Return ONLY JSON: {"items":[{"name":"...", "unitPrice":50, "quantityNumeric":10, "unit":"kg"}]}. unitPrice and quantityNumeric must be numbers. unit is optional (kg, pcs, ltr, packet).',
+        },
+        {role: 'user', content: cleanedTranscript},
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content ?? '';
+    const parsed = safeParseJson(content) as
+      | {
+          items?: Array<{
+            name?: string;
+            unitPrice?: unknown;
+            quantityNumeric?: unknown;
+            unit?: string;
+          }>;
+        }
+      | null;
+
+    const items = parsed?.items ?? [];
+    const normalizedItems = items
+      .map(item => {
+        const name = String(item.name ?? '').trim();
+        const unitPrice = Number(item.unitPrice);
+        const quantityNumeric = Number(item.quantityNumeric);
+        const unit = String(item.unit ?? 'pcs').trim() || 'pcs';
+        if (!name || Number.isNaN(unitPrice) || unitPrice < 0) {
+          return null;
+        }
+        if (Number.isNaN(quantityNumeric) || quantityNumeric <= 0) {
+          return null;
+        }
+        const row: StockItemExtract = {name, unitPrice, quantityNumeric, unit};
+        return row;
+      })
+      .filter((item): item is StockItemExtract => item !== null);
+
+    return normalizedItems.length ? normalizedItems : null;
+  } catch {
+    return null;
+  }
+};

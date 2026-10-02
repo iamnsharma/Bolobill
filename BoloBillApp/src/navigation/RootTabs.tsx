@@ -9,7 +9,7 @@ import { T } from '../lang/constants';
 import { useThemeStore } from '../stores';
 import homeIcon from '../assets/icons/home.png';
 import voiceIcon from '../assets/icons/voice.png';
-import settingsIcon from '../assets/icons/settings.png';
+import { showVoiceComingSoon } from '../utils/voiceComingSoon';
 
 const Tab = createBottomTabNavigator();
 const TAB_ICON_SIZE = 22;
@@ -65,6 +65,12 @@ export const RootTabs = () => {
         name="Voice"
         component={VoiceInvoiceScreen}
         options={{ title: t(T.VOICE_TITLE) }}
+        listeners={{
+          tabPress: e => {
+            e.preventDefault();
+            showVoiceComingSoon();
+          },
+        }}
       />
       <Tab.Screen
         name="Settings"

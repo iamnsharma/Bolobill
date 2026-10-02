@@ -66,6 +66,8 @@ export const invoiceController = {
       name: it.name,
       quantity: String(it.quantity),
       totalPrice: it.totalPrice,
+      productId: it.productId,
+      quantityNumeric: it.quantityNumeric,
     }));
     const invoice = await invoiceService.createInvoiceFromVoicePreview({
       userId,
@@ -119,7 +121,13 @@ export const invoiceController = {
     const invoice = await invoiceService.createManualInvoice({
       userId,
       customerName: parsed.data.customerName,
-      items: parsed.data.items,
+      items: parsed.data.items.map(it => ({
+        name: it.name,
+        quantity: String(it.quantity),
+        totalPrice: it.totalPrice,
+        productId: it.productId,
+        quantityNumeric: it.quantityNumeric,
+      })),
       note: parsed.data.note,
     });
     await invoiceService.incrementUserUsage(userId, {invoiceRequestSuccessCount: 1});

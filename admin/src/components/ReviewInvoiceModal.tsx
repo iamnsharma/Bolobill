@@ -1,9 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import AppModal from "./AppModal";
+import BillCartPanel from "./pos/BillCartPanel";
+import type { PosCartLine } from "./pos/CartLineStepper";
+import SectionPanel from "./merchant/SectionPanel";
+import { exceedsAvailableStock } from "./stock/StockStatusBadge";
 
 export type ReviewInvoiceItem = {
   name: string;
   quantity: string;
   totalPrice: number;
+  productId?: string;
+  quantityNumeric?: number;
+  unitPrice?: number;
+  unit?: string;
+  stockOnHand?: number;
 };
 
 export type ReviewInvoiceData = {
@@ -15,7 +26,75 @@ export type ReviewInvoiceData = {
   source: "voice" | "manual";
 };
 
-const defaultItem: ReviewInvoiceItem = { name: "", quantity: "1", totalPrice: 0 };
+const defaultItem: ReviewInvoiceItem = {
+  name: "",
+  quantity: "1 pcs",
+  totalPrice: 0,
+  quantityNumeric: 1,
+  unit: "pcs",
+};
+
+function splitQuantityString(q: string): { numeric: number; unit: string } {
+  const s = q.trim();
+  const m = s.match(/^([\d.]+)\s*(.*)$/);
+  if (m) {
+    const n = parseFloat(m[1]);
+    const unit = m[2].trim() || "pcs";
+    return { numeric: Number.isFinite(n) && n > 0 ? n : 1, unit };
+  }
+  const n = parseFloat(s);
+  return { numeric: Number.isFinite(n) && n > 0 ? n : 1, unit: "pcs" };
+}
+
+function normalizeItem(item: ReviewInvoiceItem): ReviewInvoiceItem {
+  const parsed = splitQuantityString(item.quantity || "1");
+  const qty = item.quantityNumeric ?? parsed.numeric;
+  const unit = item.unit ?? parsed.unit;
+  let unitPrice = item.unitPrice;
+  if (unitPrice == null && qty > 0 && item.totalPrice > 0) {
+    unitPrice = Math.round((item.totalPrice / qty) * 100) / 100;
+  }
+  const qtyStr =
+    qty % 1 === 0 ? String(qty) : String(Math.round(qty * 1000) / 1000);
+  return {
+    ...item,
+    quantityNumeric: qty,
+    unit,
+    unitPrice,
+    quantity: `${qtyStr} ${unit}`,
+  };
+}
+
+function applyQty(item: ReviewInvoiceItem, qty: number): ReviewInvoiceItem {
+  const row = normalizeItem(item);
+  const safeQty = qty > 0 ? qty : 1;
+  const unit = row.unit ?? "pcs";
+  const unitPrice = row.unitPrice ?? 0;
+  const qtyStr =
+    safeQty % 1 === 0 ? String(safeQty) : String(Math.round(safeQty * 1000) / 1000);
+  const totalPrice =
+    unitPrice > 0
+      ? Math.round(unitPrice * safeQty * 100) / 100
+      : row.totalPrice;
+  return {
+    ...row,
+    quantityNumeric: safeQty,
+    quantity: `${qtyStr} ${unit}`,
+    totalPrice,
+  };
+}
+
+function toPosLine(item: ReviewInvoiceItem): PosCartLine {
+  const row = normalizeItem(item);
+  return {
+    name: row.name,
+    productId: row.productId,
+    quantityNumeric: row.quantityNumeric,
+    unit: row.unit,
+    totalPrice: String(row.totalPrice),
+    quantityOnHand: row.stockOnHand,
+  };
+}
 
 export default function ReviewInvoiceModal({
   open,
@@ -30,6 +109,7 @@ export default function ReviewInvoiceModal({
   onConfirm: (data: ReviewInvoiceData) => void;
   loading?: boolean;
 }) {
+  const { formatMoney } = useFinancePrivacy();
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<ReviewInvoiceItem[]>([]);
   const [transcript, setTranscript] = useState("");
@@ -40,36 +120,72 @@ export default function ReviewInvoiceModal({
     setCustomerName(initialData.customerName);
     setItems(
       initialData.items.length
-        ? initialData.items.map((i) => ({
-            name: i.name,
-            quantity: typeof i.quantity === "number" ? String(i.quantity) : (i.quantity ?? ""),
-            totalPrice: Number(i.totalPrice) || 0,
-          }))
-        : [{ ...defaultItem }]
+        ? initialData.items.map((i) => normalizeItem(i))
+        : [{ ...defaultItem }],
     );
     setTranscript(initialData.transcript ?? "");
     setNote(initialData.note ?? "");
   }, [initialData]);
 
-  if (!open) return null;
+  const isVoice = initialData?.source === "voice";
 
+  const posLines = items.map(toPosLine);
   const total = items.reduce((sum, i) => sum + (Number(i.totalPrice) || 0), 0);
   const validItems = items.filter((i) => (i.name ?? "").trim());
-  const canSubmit =
-    customerName.trim() && validItems.length > 0;
+  const hasStockConflict = items.some((item) => {
+    if (!item.productId) return false;
+    const row = normalizeItem(item);
+    return exceedsAvailableStock(row.quantityNumeric ?? 1, row.stockOnHand);
+  });
+  const canSubmit = customerName.trim() && validItems.length > 0 && !hasStockConflict;
+
+  const setItemAt = useCallback((index: number, next: ReviewInvoiceItem) => {
+    setItems((prev) => prev.map((row, i) => (i === index ? next : row)));
+  }, []);
+
+  const decrement = (index: number) => {
+    const row = items[index];
+    if (!row) return;
+    const qty = row.quantityNumeric ?? 1;
+    if (qty <= 1) return;
+    setItemAt(index, applyQty(row, qty - 1));
+  };
+
+  const increment = (index: number) => {
+    const row = items[index];
+    if (!row) return;
+    const normalized = normalizeItem(row);
+    const qty = normalized.quantityNumeric ?? 1;
+    const onHand = normalized.stockOnHand;
+    if (onHand != null && qty + 1 > onHand) return;
+    setItemAt(index, applyQty(row, qty + 1));
+  };
+
+  const remove = (index: number) => {
+    if (items.length <= 1) return;
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const addRow = () => setItems((p) => [...p, { ...defaultItem }]);
-  const removeRow = (index: number) => {
-    if (items.length <= 1) return;
-    setItems((p) => p.filter((_, i) => i !== index));
+
+  const handleNameChange = (index: number, name: string) => {
+    const row = items[index];
+    if (!row) return;
+    setItemAt(index, { ...row, name });
   };
-  const updateRow = (index: number, field: keyof ReviewInvoiceItem, value: string | number) => {
-    setItems((p) => {
-      const next = [...p];
-      (next[index] as Record<string, string | number>)[field] = value;
-      return next;
+
+  const handleTotalChange = (index: number, totalPrice: number) => {
+    const row = normalizeItem(items[index]);
+    if (!row) return;
+    const qty = row.quantityNumeric ?? 1;
+    setItemAt(index, {
+      ...row,
+      totalPrice,
+      unitPrice: qty > 0 ? Math.round((totalPrice / qty) * 100) / 100 : row.unitPrice,
     });
   };
+
+  const getStockOnHand = (line: PosCartLine) => line.quantityOnHand;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,11 +193,18 @@ export default function ReviewInvoiceModal({
     const payload: ReviewInvoiceData = {
       ...initialData,
       customerName: customerName.trim(),
-      items: validItems.map((i) => ({
-        name: i.name.trim(),
-        quantity: i.quantity,
-        totalPrice: Number(i.totalPrice) || 0,
-      })),
+      items: validItems.map((i) => {
+        const row = normalizeItem(i);
+        return {
+          name: row.name.trim(),
+          quantity: row.quantity,
+          totalPrice: Number(row.totalPrice) || 0,
+          productId: row.productId,
+          quantityNumeric: row.quantityNumeric,
+          unitPrice: row.unitPrice,
+          unit: row.unit,
+        };
+      }),
       transcript: initialData.source === "voice" ? transcript : undefined,
       note: initialData.source === "manual" ? note : undefined,
     };
@@ -89,159 +212,118 @@ export default function ReviewInvoiceModal({
   };
 
   return (
-    <div
-      className="modal d-block bg-dark bg-opacity-50"
-      tabIndex={-1}
-      role="dialog"
-      aria-modal="true"
-      style={{ zIndex: 1050 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <AppModal
+      show={open}
+      title="Review bill before creating"
+      onClose={onClose}
+      size="lg"
+      footer={
+        <>
+          <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+            Back
+          </button>
+          <button
+            type="submit"
+            form="review-invoice-form"
+            className="btn btn-primary"
+            disabled={!canSubmit || loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Creating…
+              </>
+            ) : (
+              <>
+                <i className="ti ti-check me-1" />
+                Create bill
+              </>
+            )}
+          </button>
+        </>
+      }
     >
-      <div
-        className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-content shadow">
-          <div className="modal-header border-bottom bg-light px-4 py-3">
-            <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
-              <i className="ti ti-clipboard-check text-primary" />
-              Review bill before creating
-            </h5>
-            <button type="button" className="btn-close" onClick={onClose} aria-label="Close" />
+      <form id="review-invoice-form" onSubmit={handleSubmit}>
+        <p className="small text-muted mb-3">
+          Same cart as Create Bill—adjust quantities here. This is what goes on the PDF.
+        </p>
+
+        <div className="row g-2 mb-3">
+          <div className="col-md-6">
+            <label className="form-label fw-semibold small mb-1">
+              Customer name <span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Customer name"
+            />
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body px-4 py-4">
-              <p className="small text-muted mb-3">
-                Edit any field below. This is exactly what will appear on the generated bill PDF.
-              </p>
-              <div className="row g-3 mb-3">
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Customer name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Customer name"
-                  />
-                </div>
-                {initialData?.source === "manual" && (
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">Note (optional)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Note"
-                    />
-                  </div>
-                )}
-              </div>
-              <label className="form-label fw-semibold">Items</label>
-              <div className="table-responsive mb-3">
-                <table className="table table-bordered align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: "40%" }}>Item</th>
-                      <th style={{ width: "15%" }}>Qty</th>
-                      <th style={{ width: "25%" }}>Total price (₹)</th>
-                      <th style={{ width: "60px" }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((row, i) => (
-                      <tr key={i}>
-                        <td>
-                          <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={row.name}
-                            onChange={(e) => updateRow(i, "name", e.target.value)}
-                            placeholder="Item name"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={row.quantity}
-                            onChange={(e) => updateRow(i, "quantity", e.target.value)}
-                            placeholder="1"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="form-control form-control-sm"
-                            value={row.totalPrice || ""}
-                            onChange={(e) => updateRow(i, "totalPrice", e.target.value ? parseFloat(e.target.value) : 0)}
-                            placeholder="0"
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => removeRow(i)}
-                            disabled={items.length <= 1}
-                            aria-label="Remove row"
-                          >
-                            <i className="ti ti-trash" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={addRow}>
-                  <i className="ti ti-plus me-1" />
-                  Add row
-                </button>
-                <p className="mb-0 fw-bold">Total: ₹{total.toFixed(2)}</p>
-              </div>
-              {initialData?.source === "voice" && (
-                <div className="mt-3">
-                  <label className="form-label fw-semibold">Transcript (optional, shown on PDF)</label>
-                  <textarea
-                    className="form-control form-control-sm"
-                    rows={2}
-                    value={transcript}
-                    onChange={(e) => setTranscript(e.target.value)}
-                    placeholder="Voice transcript"
-                  />
-                </div>
-              )}
+          {initialData?.source === "manual" && (
+            <div className="col-md-6">
+              <label className="form-label small mb-1">Note (optional)</label>
+              <input
+                type="text"
+                className="form-control"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Note on bill"
+              />
             </div>
-            <div className="modal-footer border-top bg-light px-4 py-3">
-              <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
-                Back
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={!canSubmit || loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Creating…
-                  </>
-                ) : (
-                  <>
-                    <i className="ti ti-check me-1" />
-                    Create bill
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+          )}
         </div>
-      </div>
-    </div>
+
+        <SectionPanel title="Cart" icon="ti-shopping-cart" flush bodyClassName="p-0">
+          <div className="p-3">
+            <BillCartPanel
+              lines={posLines}
+              formatMoney={formatMoney}
+              getStockOnHand={getStockOnHand}
+              onDecrement={decrement}
+              onIncrement={increment}
+              onRemove={remove}
+              total={total}
+              onReview={() => undefined}
+              showActions={false}
+              compact
+              editableName={isVoice}
+              onNameChange={isVoice ? handleNameChange : undefined}
+              editableLineTotal={isVoice}
+              onLineTotalChange={isVoice ? handleTotalChange : undefined}
+            />
+          </div>
+        </SectionPanel>
+
+        {hasStockConflict ? (
+          <div className="alert alert-danger py-2 small mt-3 mb-0" role="alert">
+            One or more items exceed available stock. Lower quantities before creating the bill.
+          </div>
+        ) : null}
+
+        {isVoice && (
+          <div className="mt-3 d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={addRow}>
+              <i className="ti ti-plus me-1" />
+              Add item
+            </button>
+          </div>
+        )}
+
+        {initialData?.source === "voice" && (
+          <div className="mt-3">
+            <label className="form-label fw-semibold small">Transcript (optional, on PDF)</label>
+            <textarea
+              className="form-control form-control-sm"
+              rows={2}
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              placeholder="Voice transcript"
+            />
+          </div>
+        )}
+      </form>
+    </AppModal>
   );
 }

@@ -12,8 +12,7 @@ import shareIcon from '../../assets/icons/share.png';
 import {useInvoices} from '../../hooks/apiHooks';
 import {createInvoicePdfForDownload, createInvoicePdfForShare} from '../../utils/invoice/pdf';
 import {buildInvoiceFileName} from '../../utils/invoice/fileName';
-import {mockInvoices} from '../../utils/mockInvoices';
-import {CreateInvoiceFromVoiceResponse} from '../../services/api/types/invoice.types';
+import {showVoiceComingSoon} from '../../utils/voiceComingSoon';
 
 type Props = {
   navigation: {
@@ -28,35 +27,20 @@ export const HomeScreen = ({navigation}: Props) => {
   const user = useAuthStore(s => s.user);
   const isGuest = useAuthStore(s => s.isGuest);
   const invoicesQuery = useInvoices(!isGuest);
-  const guestInvoices = useMemo<CreateInvoiceFromVoiceResponse[]>(
-    () =>
-      mockInvoices.slice(0, 5).map((item, index) => ({
-        id: item.id,
-        invoiceId: item.id,
-        customerName: item.customerName,
-        items: [{name: 'Sample Item', quantity: '1', totalPrice: item.amount}],
-        total: item.amount,
-        voiceTranscript: '',
-        pdfUrl: '',
-        source: 'manual',
-        createdAt: new Date(Date.now() - index * 3600000).toISOString(),
-      })),
-    [],
-  );
   const recentInvoices = useMemo(
-    () => (isGuest ? guestInvoices : (invoicesQuery.data?.invoices ?? []).slice(0, 5)),
-    [guestInvoices, invoicesQuery.data?.invoices, isGuest],
+    () => (isGuest ? [] : (invoicesQuery.data?.invoices ?? []).slice(0, 5)),
+    [invoicesQuery.data?.invoices, isGuest],
   );
   const thisMonthCount = useMemo(() => {
     if (isGuest) {
-      return guestInvoices.length;
+      return 0;
     }
     const now = new Date();
     return (invoicesQuery.data?.invoices ?? []).filter(invoice => {
       const created = new Date(invoice.createdAt);
       return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
     }).length;
-  }, [guestInvoices.length, invoicesQuery.data?.invoices, isGuest]);
+  }, [invoicesQuery.data?.invoices, isGuest]);
 
   const showGuestAlert = () => {
     Alert.alert('BoloBill', 'Guest mode is explore-only. Please login to use invoice actions.');
@@ -209,7 +193,7 @@ export const HomeScreen = ({navigation}: Props) => {
 
         <BaseButton
           title={t(T.HOME_CREATE_INVOICE)}
-          onPress={() => (isGuest ? showGuestAlert() : navigation.navigate('Voice'))}
+          onPress={() => (isGuest ? showGuestAlert() : showVoiceComingSoon())}
         />
         <View style={styles.recentHeaderRow}>
           <BaseText style={styles.sectionTitle}>{t(T.HOME_RECENT_INVOICES)}</BaseText>

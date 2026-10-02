@@ -22,13 +22,10 @@ React admin panel for BoloBill: invoices, users, memberships, and feature manage
 ## Features
 
 - **Login**: Phone + PIN only (no signup; admin user is seeded in DB).
-- **Dashboard**: Overview placeholders (stats require backend admin APIs).
-- **Invoices**: Placeholder; needs `GET /api/admin/invoices`.
-- **Users**: List and user detail placeholders; need `GET /api/admin/users`, user by id, and blacklist (no delete).
-- **Memberships**: Placeholder; needs admin membership APIs.
-- **Manage features**: Placeholder; needs feature-flag APIs.
-
-Where an API is not implemented yet, the UI shows: **"Need to implement APIs in backend yet"**.
+- **Dashboard**: Sales, stock, and platform stats from the backend API.
+- **Invoices / bills**: List, search, and create bills (merchant) or platform-wide (super admin).
+- **Users**: Search, blacklist, subscriptions (super admin).
+- **Stock, sales, items sold**: Merchant inventory and reporting.
 
 ## Build
 

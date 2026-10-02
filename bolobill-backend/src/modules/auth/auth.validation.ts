@@ -39,6 +39,11 @@ export const resetPinSchema = z.object({
   newPin: z.string().min(4).max(8),
 });
 
+export const changePinSchema = z.object({
+  currentPin: z.string().min(4).max(8),
+  newPin: z.string().min(4).max(8),
+});
+
 export const registerWithOtpSchema = z.object({
   phone: z.string().min(10),
   otp: z.string().length(6),

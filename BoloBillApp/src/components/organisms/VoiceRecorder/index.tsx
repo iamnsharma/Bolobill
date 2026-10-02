@@ -19,7 +19,7 @@ import { T } from '../../../lang/constants';
 import { getStyles } from './style';
 import pauseButtonIcon from '../../../assets/icons/pause-button.png';
 import recordingGif from '../../../assets/gifs/recording.gif';
-import aiMicrophoneIcon from '../../../assets/icons/ai-microphone.png';
+import { showVoiceComingSoon, VOICE_MIC_FEATURE_ENABLED } from '../../utils/voiceComingSoon';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
@@ -137,6 +137,11 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
       return;
     }
 
+    if (!VOICE_MIC_FEATURE_ENABLED) {
+      showVoiceComingSoon();
+      return;
+    }
+
     const granted = await askPermission();
     if (!granted) {
       return;
@@ -212,7 +217,9 @@ export const VoiceRecorder = ({ onRecorded }: Props) => {
       return t(T.VOICE_PAUSED_AT, { seconds: elapsedSec });
     }
 
-    return t(T.VOICE_TAP_TO_RECORD);
+    return VOICE_MIC_FEATURE_ENABLED
+      ? t(T.VOICE_TAP_TO_RECORD)
+      : 'Voice billing — coming soon';
   };
 
   return (

@@ -1,25 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminUser } from "../api/admin";
-
-type GainedFilter = "all" | "1d" | "7d" | "30d" | "1y" | "custom";
-
-function filterUsersByGained(users: AdminUser[], filter: GainedFilter, customFrom?: string, customTo?: string): AdminUser[] {
-  if (filter === "all") return users;
-  const now = new Date();
-  let start = new Date(now);
-  if (filter === "1d") start.setDate(start.getDate() - 1);
-  else if (filter === "7d") start.setDate(start.getDate() - 7);
-  else if (filter === "30d") start.setMonth(start.getMonth() - 1);
-  else if (filter === "1y") start.setFullYear(start.getFullYear() - 1);
-  else if (filter === "custom" && customFrom) start = new Date(customFrom);
-  const end = filter === "custom" && customTo ? new Date(customTo) : now;
-  return users.filter((u) => {
-    const t = u.createdAt ? new Date(u.createdAt).getTime() : 0;
-    return t >= start.getTime() && t <= end.getTime();
-  });
-}
+import AppModal from "../components/AppModal";
+import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
+import { canApplyDateRangeFilter } from "../utils/dateRangeFilters";
+import {
+  gainedFilterToCreatedRange,
+  type GainedFilter,
+} from "../utils/gainedUserFilter";
 
 export default function Users() {
   const { isSuperAdmin } = useAuth();
@@ -33,19 +25,40 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [gainedFilter, setGainedFilter] = useState<GainedFilter>("all");
-  const [gainedFrom, setGainedFrom] = useState("");
-  const [gainedTo, setGainedTo] = useState("");
+  const [draftSearch, setDraftSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [draftGainedFilter, setDraftGainedFilter] = useState<GainedFilter>("all");
+  const [draftGainedFrom, setDraftGainedFrom] = useState("");
+  const [draftGainedTo, setDraftGainedTo] = useState("");
+  const [appliedGainedFilter, setAppliedGainedFilter] = useState<GainedFilter>("all");
+  const [appliedGainedFrom, setAppliedGainedFrom] = useState("");
+  const [appliedGainedTo, setAppliedGainedTo] = useState("");
+
+  const [showCreateMerchant, setShowCreateMerchant] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createBusiness, setCreateBusiness] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
+  const [createPin, setCreatePin] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createdMerchant, setCreatedMerchant] = useState<AdminUser | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
+    const gainedRange = isSuperAdmin
+      ? gainedFilterToCreatedRange(
+          appliedGainedFilter,
+          appliedGainedFrom || undefined,
+          appliedGainedTo || undefined,
+        )
+      : {};
     try {
       const res = await adminApi.getUsers({
         page,
         limit: 20,
-        search: search || undefined,
+        search: appliedSearch || undefined,
+        ...gainedRange,
       });
       setData({
         users: res.users,
@@ -67,60 +80,131 @@ export default function Users() {
 
   useEffect(() => {
     fetchUsers();
-  }, [page]);
+  }, [page, appliedSearch, appliedGainedFilter, appliedGainedFrom, appliedGainedTo, isSuperAdmin]);
 
-  const onSearch = (e: React.FormEvent) => {
+  const hasFilterChanges =
+    draftSearch.trim() !== appliedSearch.trim() ||
+    draftGainedFilter !== appliedGainedFilter ||
+    draftGainedFrom !== appliedGainedFrom ||
+    draftGainedTo !== appliedGainedTo;
+
+  const gainedDatesOk =
+    draftGainedFilter !== "custom" ||
+    canApplyDateRangeFilter(
+      draftGainedFrom,
+      draftGainedTo,
+      appliedGainedFrom,
+      appliedGainedTo,
+    );
+
+  const filtersApplyReady = hasFilterChanges && gainedDatesOk;
+
+  const onApplyFilters = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!filtersApplyReady) return;
     setPage(1);
-    fetchUsers();
+    setAppliedSearch(draftSearch);
+    setAppliedGainedFilter(draftGainedFilter);
+    setAppliedGainedFrom(draftGainedFrom);
+    setAppliedGainedTo(draftGainedTo);
   };
 
-  const displayedUsers = useMemo(() => {
-    if (!data?.users) return [];
-    if (!isSuperAdmin) return data.users;
-    return filterUsersByGained(data.users, gainedFilter, gainedFrom || undefined, gainedTo || undefined);
-  }, [data?.users, isSuperAdmin, gainedFilter, gainedFrom, gainedTo]);
+  const users = data?.users ?? [];
+
+  const resetCreateForm = () => {
+    setCreateName("");
+    setCreateBusiness("");
+    setCreatePhone("");
+    setCreatePin("");
+    setCreateError(null);
+    setCreatedMerchant(null);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateMerchant(false);
+    resetCreateForm();
+  };
+
+  const handleCreateMerchant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    if (createPhone.replace(/\D/g, "").length < 10) {
+      setCreateError("Enter a valid 10-digit phone.");
+      return;
+    }
+    if (createPin.length < 4) {
+      setCreateError("Temporary PIN must be at least 4 characters.");
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      const user = await adminApi.createMerchant({
+        name: createName.trim(),
+        businessName: createBusiness.trim(),
+        phone: createPhone.replace(/\D/g, "").slice(-10),
+        pin: createPin,
+      });
+      setCreatedMerchant(user);
+      await fetchUsers();
+    } catch (err: unknown) {
+      setCreateError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Could not create merchant",
+      );
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">{isSuperAdmin ? "Manage users" : "Users"}</h1>
-      <p className="text-muted mb-4">
-        {isSuperAdmin
-          ? "View all app users. Search, filter by signup date, open a user to add/remove subscription or blacklist."
-          : "View all app users (shopkeepers and personal). Search by name, phone, or business. You can blacklist a user to revoke access; data is not deleted."}
-      </p>
+    <PageShell>
+      <PageHeader
+        title={isSuperAdmin ? "Manage users" : "Users"}
+        icon="ti-users"
+        subtitle={
+          isSuperAdmin
+            ? "Onboard shops after payment, search users, and open detail for blacklist or plans."
+            : "Search by name, phone, or business. Blacklist revokes access without deleting data."
+        }
+        actions={
+          isSuperAdmin ? (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                resetCreateForm();
+                setShowCreateMerchant(true);
+              }}
+            >
+              <i className="ti ti-plus me-1" aria-hidden />
+              Add shop
+            </button>
+          ) : undefined
+        }
+      />
 
-      <div className="card border-0 shadow-sm rounded-3 mb-4">
-        <div className="card-body p-4">
-          <form
-            className="d-flex gap-2 flex-wrap align-items-center"
-            onSubmit={onSearch}>
-            <span className="d-flex align-items-center text-muted me-1">
-              <i className="ti ti-search" />
-            </span>
+      <SectionPanel title="Filters" icon="ti-filter" className="mb-4">
+        <form className="d-flex gap-2 flex-wrap align-items-end" onSubmit={onApplyFilters}>
+          <div>
+            <label className="form-label small text-muted mb-1">Search</label>
             <input
               type="search"
               className="form-control"
               style={{ maxWidth: 280 }}
               placeholder="Name, phone, or business"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={draftSearch}
+              onChange={(e) => setDraftSearch(e.target.value)}
             />
-            <button
-              type="submit"
-              className="btn btn-primary d-flex align-items-center gap-1">
-              <i className="ti ti-search" />
-              Search
-            </button>
-            {isSuperAdmin && (
-              <>
-                <span className="text-muted ms-2 me-1">·</span>
-                <span className="small text-muted me-1">Gained:</span>
+          </div>
+          {isSuperAdmin && (
+            <>
+              <div>
+                <label className="form-label small text-muted mb-1">Gained</label>
                 <select
-                  className="form-select form-select-sm"
-                  style={{ width: "auto" }}
-                  value={gainedFilter}
-                  onChange={(e) => setGainedFilter(e.target.value as GainedFilter)}
+                  className="form-select"
+                  style={{ width: "auto", minWidth: 140 }}
+                  value={draftGainedFilter}
+                  onChange={(e) => setDraftGainedFilter(e.target.value as GainedFilter)}
                 >
                   <option value="all">All</option>
                   <option value="1d">Last 24h</option>
@@ -129,31 +213,34 @@ export default function Users() {
                   <option value="1y">Last year</option>
                   <option value="custom">Custom range</option>
                 </select>
-                {gainedFilter === "custom" && (
-                  <>
+              </div>
+              {draftGainedFilter === "custom" && (
+                <>
+                  <div>
+                    <label className="form-label small text-muted mb-1">From</label>
                     <input
                       type="date"
-                      className="form-control form-control-sm"
-                      style={{ width: 140 }}
-                      value={gainedFrom}
-                      onChange={(e) => setGainedFrom(e.target.value)}
-                      placeholder="From"
+                      className="form-control"
+                      value={draftGainedFrom}
+                      onChange={(e) => setDraftGainedFrom(e.target.value)}
                     />
+                  </div>
+                  <div>
+                    <label className="form-label small text-muted mb-1">To</label>
                     <input
                       type="date"
-                      className="form-control form-control-sm"
-                      style={{ width: 140 }}
-                      value={gainedTo}
-                      onChange={(e) => setGainedTo(e.target.value)}
-                      placeholder="To"
+                      className="form-control"
+                      value={draftGainedTo}
+                      onChange={(e) => setDraftGainedTo(e.target.value)}
                     />
-                  </>
-                )}
-              </>
-            )}
-          </form>
-        </div>
-      </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          <FilterApplyButton loading={loading} disabled={!filtersApplyReady} />
+        </form>
+      </SectionPanel>
 
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -161,123 +248,187 @@ export default function Users() {
         </div>
       )}
 
-      <div className="card border-0 shadow-sm rounded-3">
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="p-5 text-center">
-              <div className="spinner-border text-primary" role="status" />
+      <SectionPanel flush bodyClassName="p-0">
+        {loading ? (
+          <div className="p-5 text-center">
+            <div className="spinner-border text-primary" role="status" />
+          </div>
+        ) : (
+          <>
+            <div className="table-responsive merchant-data-table">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="bg-light">
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Business</th>
+                    <th scope="col" className="merchant-data-table__num">
+                      Bills
+                    </th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Created</th>
+                    <th scope="col" className="merchant-data-table__num" aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-4">
+                        {error
+                          ? "Could not load users. Check your connection."
+                          : "No users match these filters."}
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.id}>
+                        <td className="fw-medium">{u.name}</td>
+                        <td>{u.phone}</td>
+                        <td>{u.businessName || "—"}</td>
+                        <td className="merchant-data-table__num">
+                          {u.usage?.invoiceRequestSuccessCount ?? 0}
+                        </td>
+                        <td>
+                          {u.isBlacklisted ? (
+                            <span className="badge bg-danger">Blacklisted</span>
+                          ) : (
+                            <span className="badge bg-success">Active</span>
+                          )}
+                        </td>
+                        <td className="small text-muted">
+                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="merchant-data-table__num">
+                          <Link
+                            to={`/dashboard/users/${u.id}`}
+                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                          >
+                            <i className="ti ti-eye" />
+                            Detail
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
+            {data && data.totalPages > 1 ? (
+              <div className="d-flex justify-content-between align-items-center merchant-data-table__footer border-top">
+                <small className="text-muted">
+                  {data.total} total · page {data.page} of {data.totalPages}
+                </small>
+                <div className="btn-group btn-group-sm">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={data.page <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={data.page >= data.totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
+      </SectionPanel>
+
+      <AppModal
+        show={showCreateMerchant}
+        title={createdMerchant ? "Shop created" : "Onboard new shop"}
+        onClose={closeCreateModal}
+        size="md"
+        footer={
+          createdMerchant ? (
+            <button type="button" className="btn btn-primary" onClick={closeCreateModal}>
+              Done
+            </button>
           ) : (
             <>
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="bg-light">
-                    <tr>
-                      <th>
-                        <i className="ti ti-user me-1" />
-                        Name
-                      </th>
-                      <th>
-                        <i className="ti ti-phone me-1" />
-                        Phone
-                      </th>
-                      <th>
-                        <i className="ti ti-building-store me-1" />
-                        Business
-                      </th>
-                      <th>
-                        <i className="ti ti-receipt me-1" />
-                        Bills
-                      </th>
-                      <th>
-                        <i className="ti ti-circle-check me-1" />
-                        Status
-                      </th>
-                      <th>
-                        <i className="ti ti-calendar me-1" />
-                        Created
-                      </th>
-                      <th style={{ width: 100 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!data || data.users.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center text-muted py-4">
-                          {error
-                            ? "API unavailable or error. Check backend."
-                            : "No users found."}
-                        </td>
-                      </tr>
-                    ) : displayedUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center text-muted py-4">
-                          No users in selected period. Try &quot;All&quot; or another range.
-                        </td>
-                      </tr>
-                    ) : (
-                      displayedUsers.map((u) => (
-                        <tr key={u.id}>
-                          <td className="fw-medium">{u.name}</td>
-                          <td>{u.phone}</td>
-                          <td>{u.businessName || "—"}</td>
-                          <td>{u.usage?.invoiceRequestSuccessCount ?? 0}</td>
-                          <td>
-                            {u.isBlacklisted ? (
-                              <span className="badge bg-danger">
-                                Blacklisted
-                              </span>
-                            ) : (
-                              <span className="badge bg-success">Active</span>
-                            )}
-                          </td>
-                          <td className="small text-muted">
-                            {u.createdAt
-                              ? new Date(u.createdAt).toLocaleDateString()
-                              : "—"}
-                          </td>
-                          <td>
-                            <Link
-                              to={`/dashboard/users/${u.id}`}
-                              className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
-                              <i className="ti ti-eye" />
-                              Detail
-                            </Link>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {data && data.totalPages > 1 ? (
-                <div className="d-flex justify-content-between align-items-center px-4 py-3 border-top">
-                  <small className="text-muted">
-                    {data?.total} total · page {data?.page} of{" "}
-                    {data?.totalPages}
-                  </small>
-                  <div className="btn-group btn-group-sm">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      disabled={(data?.page ?? 1) <= 1}
-                      onClick={() => setPage((p) => p - 1)}>
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      disabled={(data?.page ?? 1) >= (data?.totalPages ?? 0)}
-                      onClick={() => setPage((p) => p + 1)}>
-                      Next
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+              <button type="button" className="btn btn-outline-secondary" onClick={closeCreateModal}>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="create-merchant-form"
+                className="btn btn-primary"
+                disabled={createLoading}
+              >
+                {createLoading ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                Create account
+              </button>
             </>
-          )}
-        </div>
-      </div>
-    </div>
+          )
+        }
+      >
+        {createdMerchant ? (
+          <div className="small">
+            <p className="mb-2">Share these credentials securely with the shop owner:</p>
+            <ul className="list-unstyled mb-0">
+              <li>
+                <strong>Phone:</strong> {createdMerchant.phone}
+              </li>
+              <li>
+                <strong>Business:</strong> {createdMerchant.businessName || "—"}
+              </li>
+              <li>
+                <strong>Temporary PIN:</strong> {createPin}
+              </li>
+            </ul>
+            <p className="text-muted mt-3 mb-0">They can change PIN under Settings after first login.</p>
+          </div>
+        ) : (
+          <>
+            {createError ? <div className="alert alert-danger py-2 small">{createError}</div> : null}
+            <form id="create-merchant-form" onSubmit={handleCreateMerchant}>
+              <label className="form-label small fw-semibold">Owner name</label>
+              <input
+                className="form-control mb-3"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                required
+                minLength={2}
+              />
+              <label className="form-label small fw-semibold">Business / branch name</label>
+              <input
+                className="form-control mb-3"
+                value={createBusiness}
+                onChange={(e) => setCreateBusiness(e.target.value)}
+                required
+                minLength={2}
+              />
+              <label className="form-label small fw-semibold">Phone (10 digits)</label>
+              <input
+                className="form-control mb-3"
+                type="tel"
+                value={createPhone}
+                onChange={(e) => setCreatePhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                required
+                maxLength={10}
+              />
+              <label className="form-label small fw-semibold">Temporary PIN</label>
+              <input
+                className="form-control mb-0"
+                type="text"
+                value={createPin}
+                onChange={(e) => setCreatePin(e.target.value.slice(0, 8))}
+                required
+                minLength={4}
+                autoComplete="off"
+              />
+            </form>
+          </>
+        )}
+      </AppModal>
+    </PageShell>
   );
 }

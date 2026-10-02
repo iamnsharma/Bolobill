@@ -1,11 +1,13 @@
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import {ApiError} from '../../common/ApiError';
 import {InvoiceModel} from '../../models/Invoice.model';
 import {UserModel} from '../../models/User.model';
 import type {UserDocument} from '../../models/User.model';
 import {invoiceService} from '../invoice/invoice.service';
 import {outOfStockService} from '../out-of-stock/outOfStock.service';
+import {authService} from '../auth/auth.service';
 
 const STORE_LINKS_PATH = path.join(process.cwd(), 'storage', 'store-links.json');
 
@@ -71,7 +73,13 @@ export const adminService = {
     };
   },
 
-  async listUsers(params: { page?: number; limit?: number; search?: string }) {
+  async listUsers(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    createdFrom?: Date;
+    createdTo?: Date;
+  }) {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(100, Math.max(1, params.limit ?? 20));
     const skip = (page - 1) * limit;
@@ -84,6 +92,12 @@ export const adminService = {
         {phone: new RegExp(s, 'i')},
         {businessName: new RegExp(s, 'i')},
       ];
+    }
+    if (params.createdFrom || params.createdTo) {
+      const createdAt: Record<string, Date> = {};
+      if (params.createdFrom) createdAt.$gte = params.createdFrom;
+      if (params.createdTo) createdAt.$lte = params.createdTo;
+      filter.createdAt = createdAt;
     }
 
     const [users, total] = await Promise.all([
@@ -193,11 +207,16 @@ export const adminService = {
   async getInvoiceById(id: string, scopeUserId?: string) {
     const filter: Record<string, unknown> = {_id: id};
     if (scopeUserId) filter.userId = scopeUserId;
-    const invoice = await InvoiceModel.findOne(filter)
-      .populate('userId', 'name phone businessName')
-      .lean();
+    const invoice = await InvoiceModel.findOne(filter).populate(
+      'userId',
+      'name phone businessName',
+    );
     if (!invoice) {
       throw new ApiError(404, 'Invoice not found');
+    }
+    if (!invoice.publicToken) {
+      invoice.publicToken = crypto.randomUUID();
+      await invoice.save();
     }
     return invoice;
   },
@@ -216,13 +235,21 @@ export const adminService = {
 
   async createInvoice(userId: string, payload: {
     customerName: string;
-    items: { name: string; quantity: string | number; totalPrice: number }[];
+    items: {
+      name: string;
+      quantity: string | number;
+      totalPrice: number;
+      productId?: string;
+      quantityNumeric?: number;
+    }[];
     note?: string;
   }) {
     const items = payload.items.map((it) => ({
       name: it.name,
       quantity: typeof it.quantity === 'number' ? String(it.quantity) : it.quantity,
       totalPrice: it.totalPrice,
+      productId: it.productId,
+      quantityNumeric: it.quantityNumeric,
     }));
     return invoiceService.createManualInvoice({
       userId,
@@ -337,5 +364,22 @@ export const adminService = {
     };
     writeStoreLinks(next);
     return next;
+  },
+
+  /** Super admin: onboard a shop (phone + PIN). No OTP. */
+  async createMerchantAccount(input: {
+    name: string;
+    businessName: string;
+    phone: string;
+    pin: string;
+  }) {
+    const result = await authService.register({
+      name: input.name.trim(),
+      businessName: input.businessName.trim(),
+      phone: input.phone.trim(),
+      pin: input.pin,
+      accountType: 'business',
+    });
+    return result.user;
   },
 };

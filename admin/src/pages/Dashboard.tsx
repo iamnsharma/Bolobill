@@ -1,55 +1,25 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminStats, type SalesSummary } from "../api/admin";
+import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import MetricTile from "../components/merchant/MetricTile";
+import QuickActionStrip from "../components/merchant/QuickActionStrip";
+import SectionPanel from "../components/merchant/SectionPanel";
 
-const PLACEHOLDER = "—";
-const NEED_API = "Need backend API";
-
-function StatCard({
-  title,
-  value,
-  sub,
-  icon,
-  color,
-  href,
-}: {
-  title: string;
-  value: string | number;
-  sub: string;
-  icon: string;
-  color: "primary" | "success" | "info" | "warning";
-  href?: string;
-}) {
-  const content = (
-    <div
-      className={`card border-0 shadow-sm rounded-3 h-100 p-4 bg-${color} bg-opacity-10 border-start border-4 border-${color}`}>
-      <div className="d-flex gap-3 align-items-center">
-        <div className={`icon-shape icon-md bg-${color} text-white rounded-2`}>
-          <i className={`ti ${icon} fs-4`} />
-        </div>
-        <div>
-          <h2 className="fs-6 text-muted mb-1">{title}</h2>
-          <h3 className="fw-bold mb-0">{value}</h3>
-          <small className={`text-${color}`}>{sub}</small>
-        </div>
-      </div>
-    </div>
-  );
-  if (href) {
-    return (
-      <Link to={href} className="text-decoration-none text-dark">
-        {content}
-      </Link>
-    );
-  }
-  return content;
-}
+const EMPTY = "—";
 
 export default function Dashboard() {
   const { isSuperAdmin } = useAuth();
+  const { formatFinance } = useFinancePrivacy();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
+  const [stockSummary, setStockSummary] = useState<{
+    inventoryValue: number;
+    lowStockCount: number;
+    totalProducts: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiAvailable, setApiAvailable] = useState(false);
 
@@ -67,188 +37,233 @@ export default function Dashboard() {
         })
         .finally(() => setLoading(false));
     } else {
-      adminApi
-        .getSalesSummary()
-        .then((data) => {
-          setSalesSummary(data);
+      Promise.all([adminApi.getSalesSummary(), adminApi.getStockSummary()])
+        .then(([sales, stock]) => {
+          setSalesSummary(sales);
+          setStockSummary(stock);
           setApiAvailable(true);
         })
         .catch(() => {
           setSalesSummary(null);
+          setStockSummary(null);
           setApiAvailable(false);
         })
         .finally(() => setLoading(false));
     }
   }, [isSuperAdmin]);
 
-  const formatMoney = (n: number) =>
-    n != null ? `₹${Number(n).toLocaleString()}` : PLACEHOLDER;
+  const formatAmount = (n: number) =>
+    n != null ? formatFinance(n) : EMPTY;
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Dashboard</h1>
-      <p className="text-muted mb-4">
-        {isSuperAdmin
-          ? "Platform overview. Manage users, subscriptions, store links, and features from the sidebar."
-          : "Your sales at a glance. View bills, sales summary, items sold, and out-of-stock list from the sidebar."}
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Dashboard"
+        icon="ti-layout-dashboard"
+        subtitle={
+          isSuperAdmin
+            ? "Platform overview and admin tools."
+            : "Today’s numbers and shortcuts—like your shop command center."
+        }
+      />
 
-      <div className="mb-4">{/* <DownloadAppSection /> */}</div>
+      {!isSuperAdmin && (
+        <SectionPanel flush bodyClassName="p-3">
+          <QuickActionStrip
+            actions={[
+              {
+                to: "/dashboard/invoices/new",
+                label: "New bill",
+                icon: "ti-plus",
+                emphasis: true,
+              },
+              { to: "/dashboard/stock", label: "Stock", icon: "ti-box" },
+              { to: "/dashboard/invoices", label: "Bills", icon: "ti-receipt" },
+              { to: "/dashboard/sales", label: "Sales", icon: "ti-chart-bar" },
+              { to: "/dashboard/out-of-stock", label: "Restock list", icon: "ti-alert-circle" },
+            ]}
+          />
+        </SectionPanel>
+      )}
+
+      {!loading && !apiAvailable && (
+        <div className="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
+          <i className="ti ti-plug-connected-x mt-1" aria-hidden />
+          <div>
+            <strong>Could not reach the server.</strong>
+            <span className="d-block small">
+              Start the backend or check VITE_API_URL in admin/.env, then refresh.
+            </span>
+          </div>
+        </div>
+      )}
 
       {isSuperAdmin ? (
         <>
-          <div className="row g-3 mb-4">
+          <div className="row g-3 mb-4 mt-1">
             <div className="col-lg-3 col-md-6">
-              <StatCard
-                title="Total Invoices"
+              <MetricTile
+                label="Total invoices"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && stats
                       ? stats.totalInvoices
-                      : PLACEHOLDER
+                      : EMPTY
                 }
-                sub={apiAvailable ? "Platform total" : NEED_API}
+                hint={apiAvailable ? "Platform total" : ""}
                 icon="ti-receipt"
-                color="primary"
+                tone="primary"
               />
             </div>
             <div className="col-lg-3 col-md-6">
-              <StatCard
-                title="Total Users"
+              <MetricTile
+                label="Total users"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && stats
                       ? stats.totalUsers
-                      : PLACEHOLDER
+                      : EMPTY
                 }
-                sub={apiAvailable ? "" : NEED_API}
                 icon="ti-users"
-                color="success"
-                href="/users"
+                tone="success"
+                href="/dashboard/users"
               />
             </div>
             <div className="col-lg-3 col-md-6">
-              <StatCard
-                title="Active Memberships"
+              <MetricTile
+                label="Active memberships"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && stats != null
                       ? stats.activeMemberships
-                      : PLACEHOLDER
+                      : EMPTY
                 }
-                sub={
-                  apiAvailable && stats?.activeMemberships === 0
-                    ? "Not implemented yet"
-                    : !apiAvailable
-                      ? NEED_API
-                      : ""
-                }
+                hint=""
                 icon="ti-crown"
-                color="info"
+                tone="info"
               />
             </div>
             <div className="col-lg-3 col-md-6">
-              <StatCard
-                title="Blacklisted Users"
+              <MetricTile
+                label="Blacklisted users"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && stats
                       ? stats.blacklistedUsers
-                      : PLACEHOLDER
+                      : EMPTY
                 }
-                sub={apiAvailable ? "" : NEED_API}
                 icon="ti-user-off"
-                color="warning"
+                tone="warning"
               />
             </div>
           </div>
-          <div className="card border-0 shadow-sm rounded-3">
-            <div className="card-body p-4">
-              <h3 className="h5 mb-3">Quick actions</h3>
-              <p className="text-muted small mb-0">
-                <strong>Manage users</strong> — view all users, filter by
-                signup, blacklist. <strong>Manage subscriptions</strong> — set
-                plan limits, notify expiring, add/remove plans per user.{" "}
-                <strong>Store links</strong> — set App Store &amp; Play Store
-                URLs.
-              </p>
-            </div>
-          </div>
+          <SectionPanel title="Quick guide" icon="ti-info-circle">
+            <p className="text-muted small mb-0">
+              <strong>Manage users</strong> — view all users, filter by signup, blacklist.{" "}
+              <strong>Manage subscriptions</strong> — set plan limits and notify expiring users.
+            </p>
+          </SectionPanel>
         </>
       ) : (
         <>
-          <div className="row g-3 mb-4">
+          <div className="row g-3 mb-4 mt-1">
             <div className="col-lg-3 col-6">
-              <StatCard
-                title="Today"
+              <MetricTile
+                label="Today"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && salesSummary != null
-                      ? formatMoney(salesSummary.today)
-                      : PLACEHOLDER
+                      ? formatAmount(salesSummary.today)
+                      : EMPTY
                 }
-                sub="Sales today"
+                hint="Sales today"
                 icon="ti-calendar"
-                color="primary"
-                href="/sales"
+                tone="primary"
+                href="/dashboard/sales"
               />
             </div>
             <div className="col-lg-3 col-6">
-              <StatCard
-                title="This week"
+              <MetricTile
+                label="This week"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && salesSummary != null
-                      ? formatMoney(salesSummary.thisWeek)
-                      : PLACEHOLDER
+                      ? formatAmount(salesSummary.thisWeek)
+                      : EMPTY
                 }
-                sub="Sales this week"
+                hint="Weekly sales"
                 icon="ti-chart-bar"
-                color="success"
-                href="/sales"
+                tone="success"
+                href="/dashboard/sales"
               />
             </div>
             <div className="col-lg-3 col-6">
-              <StatCard
-                title="This month"
+              <MetricTile
+                label="This month"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && salesSummary != null
-                      ? formatMoney(salesSummary.thisMonth)
-                      : PLACEHOLDER
+                      ? formatAmount(salesSummary.thisMonth)
+                      : EMPTY
                 }
-                sub="Sales this month"
+                hint="Monthly sales"
                 icon="ti-calendar-month"
-                color="info"
-                href="/sales"
+                tone="info"
+                href="/dashboard/sales"
               />
             </div>
             <div className="col-lg-3 col-6">
-              <StatCard
-                title="This year"
+              <MetricTile
+                label="This year"
                 value={
                   loading
                     ? "…"
                     : apiAvailable && salesSummary != null
-                      ? formatMoney(salesSummary.thisYear)
-                      : PLACEHOLDER
+                      ? formatAmount(salesSummary.thisYear)
+                      : EMPTY
                 }
-                sub="Sales this year"
+                hint="Year to date"
                 icon="ti-calendar-year"
-                color="warning"
-                href="/sales"
+                tone="warning"
+                href="/dashboard/sales"
               />
             </div>
           </div>
+          {apiAvailable && stockSummary != null && (
+            <div className="row g-3 mb-4">
+              <div className="col-lg-4 col-md-6">
+                <MetricTile
+                  label="Inventory value"
+                  value={formatAmount(stockSummary.inventoryValue)}
+                  hint={`${stockSummary.totalProducts} products tracked`}
+                  icon="ti-box"
+                  tone="info"
+                  href="/dashboard/stock"
+                />
+              </div>
+              {stockSummary.lowStockCount > 0 && (
+                <div className="col-lg-4 col-md-6">
+                  <MetricTile
+                    label="Need restock"
+                    value={stockSummary.lowStockCount}
+                    hint="Items below alert level"
+                    icon="ti-alert-triangle"
+                    tone="warning"
+                    href="/dashboard/stock"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

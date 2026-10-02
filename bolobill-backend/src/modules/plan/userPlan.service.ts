@@ -1,6 +1,11 @@
 import {UserModel} from '../../models/User.model';
 import {ApiError} from '../../common/ApiError';
 import {PlanDocument} from '../../models/Plan.model';
+import {env, subscriptionLimitsEnabled} from '../../config/env';
+
+function limitsOn() {
+  return subscriptionLimitsEnabled();
+}
 
 export const userPlanService = {
   /**
@@ -33,6 +38,20 @@ export const userPlanService = {
     const voiceSecondsUsed = user.usage?.voiceToTextSecondsUsed || 0;
     const voiceMinutesUsed = voiceSecondsUsed / 60;
 
+    if (!limitsOn()) {
+      return {
+        isActive: true,
+        expiresAt: sub?.expiresAt,
+        invoiceLimit: 0,
+        invoicesUsed,
+        invoicesRemaining: Number.MAX_SAFE_INTEGER,
+        voiceMinutesLimit: 0,
+        voiceMinutesUsed,
+        voiceSecondsRemaining: Number.MAX_SAFE_INTEGER,
+        features: features.length ? features : ['unlimited'],
+      };
+    }
+
     return {
       isActive,
       expiresAt: sub?.expiresAt,
@@ -47,6 +66,7 @@ export const userPlanService = {
   },
 
   async enforceInvoiceLimit(userId: string) {
+    if (!limitsOn()) return;
     const limits = await this.getUserLimits(userId);
     if (limits.invoicesRemaining <= 0) {
       throw new ApiError(403, 'Invoice limit reached. Please upgrade your plan.');
@@ -54,6 +74,7 @@ export const userPlanService = {
   },
 
   async enforceVoiceLimit(userId: string, requestedDurationSec = 0) {
+    if (!limitsOn()) return;
     const limits = await this.getUserLimits(userId);
     if (limits.voiceSecondsRemaining < requestedDurationSec) {
       throw new ApiError(403, 'Voice minutes limit reached. Please upgrade your plan.');

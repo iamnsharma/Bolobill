@@ -55,7 +55,23 @@ export const adminController = {
     const page = parsePage(req.query.page);
     const limit = parseLimit(req.query.limit);
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-    const result = await adminService.listUsers({page, limit, search});
+    let createdFrom = parseDate(req.query.createdFrom);
+    let createdTo = parseDate(req.query.createdTo);
+    if (
+      typeof req.query.createdTo === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(req.query.createdTo.trim()) &&
+      createdTo
+    ) {
+      createdTo = new Date(createdTo);
+      createdTo.setHours(23, 59, 59, 999);
+    }
+    const result = await adminService.listUsers({
+      page,
+      limit,
+      search,
+      createdFrom,
+      createdTo,
+    });
     const users = result.users.map((u) => toAdminUserVm(u as Parameters<typeof toAdminUserVm>[0]));
     return res.json({
       users,
@@ -86,6 +102,23 @@ export const adminController = {
     const expiryDate = expiresAt ? new Date(expiresAt) : undefined;
     const user = await adminService.assignPlan(id as string, planId || null, expiryDate);
     return res.json({user: toAdminUserVm(user)});
+  }),
+
+  createMerchant: asyncHandler(async (req: Request, res: Response) => {
+    const {name, businessName, phone, pin} = req.body ?? {};
+    if (!name || !businessName || !phone || !pin) {
+      throw new ApiError(400, 'name, businessName, phone, and pin are required');
+    }
+    if (String(pin).length < 4) {
+      throw new ApiError(400, 'PIN must be at least 4 characters');
+    }
+    const user = await adminService.createMerchantAccount({
+      name: String(name),
+      businessName: String(businessName),
+      phone: String(phone),
+      pin: String(pin),
+    });
+    return res.status(201).json({user: toAdminUserVm(user)});
   }),
 
   getSalesSummary: asyncHandler(async (req: Request, res: Response) => {
@@ -163,8 +196,10 @@ export const adminController = {
     }
     const items = parsed.data.items.map((it) => ({
       name: it.name,
-      quantity: typeof it.quantity === 'number' ? it.quantity : parseFloat(String(it.quantity)) || 0,
+      quantity: typeof it.quantity === 'number' ? String(it.quantity) : it.quantity,
       totalPrice: it.totalPrice,
+      productId: it.productId,
+      quantityNumeric: it.quantityNumeric,
     }));
     const invoice = await adminService.createInvoice(ctx.userId, {
       customerName: parsed.data.customerName,

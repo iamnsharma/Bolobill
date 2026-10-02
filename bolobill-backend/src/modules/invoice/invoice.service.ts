@@ -12,6 +12,121 @@ import {
   localizeItemNamesByLanguage,
   transcribeAudio,
 } from '../../services/whisper.service';
+import {stockService} from '../stock/stock.service';
+
+export type InvoiceLineInput = InvoiceItemInput;
+
+const toDbInvoiceItems = (
+  items: InvoiceLineInput[],
+  stockDeductions?: Map<string, number>,
+) =>
+  items.map(it => {
+    const productIdStr = it.productId;
+    const deducted =
+      productIdStr && stockDeductions?.has(productIdStr)
+        ? stockDeductions.get(productIdStr)
+        : undefined;
+    return {
+      name: it.name,
+      quantity: it.quantity,
+      totalPrice: it.totalPrice,
+      ...(productIdStr ? {productId: new mongoose.Types.ObjectId(productIdStr)} : {}),
+      ...(it.quantityNumeric !== undefined && it.quantityNumeric > 0
+        ? {quantityNumeric: it.quantityNumeric}
+        : {}),
+      ...(deducted !== undefined ? {stockQuantityDeducted: deducted} : {}),
+    };
+  });
+
+const getStockLines = (items: InvoiceLineInput[]) =>
+  items
+    .filter(it => it.productId && it.quantityNumeric && it.quantityNumeric > 0)
+    .map(it => ({
+      productId: it.productId as string,
+      quantityNumeric: it.quantityNumeric as number,
+      name: it.name,
+    }));
+
+const persistInvoice = async (input: {
+  userId: string;
+  customerName: string;
+  items: InvoiceLineInput[];
+  transcript: string;
+  source: 'voice' | 'manual';
+}) => {
+  const user = await UserModel.findById(input.userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  const billToName = input.customerName?.trim() || 'Customer';
+  const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
+  const invoiceId = createInvoiceId();
+  const stockLines = getStockLines(input.items);
+  let dbItems = toDbInvoiceItems(input.items);
+
+  if (stockLines.length) {
+    await stockService.validateSaleStockAvailability(input.userId, stockLines);
+  }
+
+  const pdf = await generateInvoicePdf({
+    invoiceId,
+    customerName: user.name,
+    customerPhone: user.phone,
+    billToName,
+    items: input.items,
+    total,
+    transcript: input.transcript,
+    qrImagePath: user.qrCodePath || undefined,
+    qrImageUrl: user.qrCodePath
+      ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}`
+      : undefined,
+  });
+
+  if (!stockLines.length) {
+    return InvoiceModel.create({
+      userId: user._id,
+      invoiceId,
+      customerName: billToName,
+      items: dbItems,
+      total,
+      voiceTranscript: input.transcript,
+      pdfPath: pdf.pdfPath,
+      source: input.source,
+    });
+  }
+
+  return stockService.runWithOptionalTransaction(async session => {
+    const invoiceObjectId = new mongoose.Types.ObjectId();
+    const saleDeductions = await stockService.applySaleLines(
+      input.userId,
+      invoiceObjectId.toString(),
+      stockLines,
+      session,
+    );
+    const deductionMap = new Map(
+      saleDeductions.map(d => [d.productId, d.stockQuantityDeducted]),
+    );
+    dbItems = toDbInvoiceItems(input.items, deductionMap);
+    const created = await InvoiceModel.create(
+      [
+        {
+          _id: invoiceObjectId,
+          userId: user._id,
+          invoiceId,
+          customerName: billToName,
+          items: dbItems,
+          total,
+          voiceTranscript: input.transcript,
+          pdfPath: pdf.pdfPath,
+          source: input.source,
+        },
+      ],
+      session ? {session} : undefined,
+    );
+    return created[0];
+  });
+};
 
 const createInvoiceId = () => `KB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 const computeTotal = (items: InvoiceItemInput[]) =>
@@ -105,43 +220,18 @@ export const invoiceService = {
   async createInvoiceFromVoicePreview(input: {
     userId: string;
     customerName: string;
-    items: InvoiceItemInput[];
+    items: InvoiceLineInput[];
     transcript?: string;
     durationSec?: number;
   }) {
-    const user = await UserModel.findById(input.userId);
-    if (!user) {
-      throw new ApiError(404, 'User not found');
-    }
-    const billToName = input.customerName?.trim() || 'Customer';
-    const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const invoiceId = createInvoiceId();
     const transcript = input.transcript?.trim() ?? '';
-
-    const pdf = await generateInvoicePdf({
-      invoiceId,
-      customerName: user.name,
-      customerPhone: user.phone,
-      billToName,
+    return persistInvoice({
+      userId: input.userId,
+      customerName: input.customerName,
       items: input.items,
-      total,
       transcript,
-      qrImagePath: user.qrCodePath || undefined,
-      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
-    });
-
-    const invoice = await InvoiceModel.create({
-      userId: user._id,
-      invoiceId,
-      customerName: billToName,
-      items: input.items,
-      total,
-      voiceTranscript: transcript,
-      pdfPath: pdf.pdfPath,
       source: 'voice',
     });
-
-    return invoice;
   },
 
   async createVoiceInvoice(input: {
@@ -193,43 +283,16 @@ export const invoiceService = {
   async createManualInvoice(input: {
     userId: string;
     customerName?: string;
-    items: InvoiceItemInput[];
+    items: InvoiceLineInput[];
     note?: string;
   }) {
-    const user = await UserModel.findById(input.userId);
-    if (!user) {
-      throw new ApiError(404, 'User not found');
-    }
-
-    const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const invoiceId = createInvoiceId();
-    const transcript = input.note ?? '';
-    const billToName = input.customerName?.trim() || 'Customer';
-
-    const pdf = await generateInvoicePdf({
-      invoiceId,
-      customerName: user.name,
-      customerPhone: user.phone,
-      billToName,
+    return persistInvoice({
+      userId: input.userId,
+      customerName: input.customerName ?? 'Customer',
       items: input.items,
-      total,
-      transcript,
-      qrImagePath: user.qrCodePath || undefined,
-      qrImageUrl: user.qrCodePath ? `${env.BASE_URL}/api/files/qr/${path.basename(user.qrCodePath)}` : undefined,
-    });
-
-    const invoice = await InvoiceModel.create({
-      userId: user._id,
-      invoiceId,
-      customerName: billToName,
-      items: input.items,
-      total,
-      voiceTranscript: transcript,
-      pdfPath: pdf.pdfPath,
+      transcript: input.note ?? '',
       source: 'manual',
     });
-
-    return invoice;
   },
 
   async getAllInvoices(
@@ -419,9 +482,37 @@ export const invoiceService = {
   },
 
   async deleteInvoice(userId: string, id: string) {
-    const invoice = await InvoiceModel.findOneAndDelete({_id: id, userId});
+    const invoice = await InvoiceModel.findOne({_id: id, userId});
     if (!invoice) {
       throw new ApiError(404, 'Invoice not found');
+    }
+
+    const stockLines = invoice.items.filter(
+      it => it.productId && it.quantityNumeric && it.quantityNumeric > 0,
+    );
+
+    if (stockLines.length) {
+      await stockService.runWithOptionalTransaction(async session => {
+        await stockService.reverseSaleLines(
+          userId,
+          invoice._id.toString(),
+          stockLines.map(it => ({
+            productId: it.productId as mongoose.Types.ObjectId,
+            quantityNumeric: Number(it.quantityNumeric),
+            stockQuantityDeducted:
+              it.stockQuantityDeducted != null ? Number(it.stockQuantityDeducted) : undefined,
+            name: it.name,
+          })),
+          session,
+        );
+        if (session) {
+          await InvoiceModel.deleteOne({_id: invoice._id, userId}).session(session);
+        } else {
+          await InvoiceModel.deleteOne({_id: invoice._id, userId});
+        }
+      });
+    } else {
+      await InvoiceModel.deleteOne({_id: invoice._id, userId});
     }
 
     if (invoice.pdfPath && fs.existsSync(invoice.pdfPath)) {

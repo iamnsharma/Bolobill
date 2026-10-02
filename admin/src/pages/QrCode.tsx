@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { adminApi } from "../api/admin";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
 
 export default function QrCode() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
@@ -71,20 +74,21 @@ export default function QrCode() {
 
   if (loading) {
     return (
-      <div className="admin-page">
+      <PageShell>
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" role="status" />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">QR Code</h1>
-      <p className="text-muted mb-4">
-        Upload your payment QR (e.g. UPI) so it appears on every bill PDF. Customers can scan it to pay.
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Payment QR"
+        icon="ti-qrcode"
+        subtitle="Upload your UPI or payment QR. It appears on bill PDFs and when you share bills on WhatsApp."
+      />
 
       {message && (
         <div className={`alert alert-${message.type} mb-4`} role="alert">
@@ -92,8 +96,7 @@ export default function QrCode() {
         </div>
       )}
 
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div className="card-body p-4 p-lg-5">
+      <SectionPanel>
           {qrUrl ? (
             <>
               <div className="d-flex flex-wrap align-items-start gap-4">
@@ -155,8 +158,7 @@ export default function QrCode() {
               )}
             </>
           )}
-        </div>
-      </div>
-    </div>
+      </SectionPanel>
+    </PageShell>
   );
 }

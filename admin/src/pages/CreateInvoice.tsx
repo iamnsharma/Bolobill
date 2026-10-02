@@ -1,26 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { adminApi } from "../api/admin";
+import { adminApi, type StockCategory, type StockProduct } from "../api/admin";
 import {
   VoiceRecorder,
   type RecordingResult,
+  MicIconButton,
 } from "../components/VoiceRecorder";
 import ReviewInvoiceModal, {
   type ReviewInvoiceData,
 } from "../components/ReviewInvoiceModal";
+import ShareBillWhatsAppModal from "../components/ShareBillWhatsAppModal";
+import type { AdminInvoice } from "../api/admin";
+import AppModal from "../components/AppModal";
+import ExpandableSearch from "../components/ExpandableSearch";
+import CategoryChipBar from "../components/pos/CategoryChipBar";
+import ProductCatalogList from "../components/pos/ProductCatalogList";
+import BillCartPanel from "../components/pos/BillCartPanel";
+import MobileCartBar from "../components/pos/MobileCartBar";
+import type { PosCartLine } from "../components/pos/CartLineStepper";
+import { exceedsAvailableStock } from "../components/stock/StockStatusBadge";
+import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
 
-type LineItem = { name: string; quantity: string; totalPrice: string };
+type LineItem = {
+  name: string;
+  quantity: string;
+  totalPrice: string;
+  productId?: string;
+  quantityNumeric?: number;
+  unitPrice?: number;
+  unit?: string;
+  /** Snapshot of stock when line was added (live value from picker when shown) */
+  quantityOnHand?: number;
+  /** Raw qty while user is typing (avoids "12" when changing 1 → 2) */
+  qtyInput?: string;
+};
 
-const defaultLine: LineItem = { name: "", quantity: "", totalPrice: "" };
+const applyQtyToLine = (row: LineItem, qty: number): LineItem => {
+  const unit = row.unit ?? "pcs";
+  const unitPrice = row.unitPrice ?? 0;
+  const safeQty = qty > 0 ? qty : 1;
+  const qtyStr =
+    safeQty % 1 === 0 ? String(safeQty) : String(Math.round(safeQty * 1000) / 1000);
+  return {
+    ...row,
+    qtyInput: qtyStr,
+    quantityNumeric: safeQty,
+    quantity: `${qtyStr} ${unit}`,
+    totalPrice: String(Math.round(unitPrice * safeQty * 100) / 100),
+  };
+};
 
-type CreateMode = "voice" | "manual";
+const commitLineQtyInput = (row: LineItem): LineItem => {
+  const raw = (row.qtyInput ?? String(row.quantityNumeric ?? "")).trim();
+  if (raw === "" || raw === ".") {
+    return applyQtyToLine(row, 1);
+  }
+  const parsed = parseFloat(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return applyQtyToLine(row, 1);
+  }
+  return applyQtyToLine(row, parsed);
+};
+
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<CreateMode>("voice");
+  const { formatMoney } = useFinancePrivacy();
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [note, setNote] = useState("");
-  const [lines, setLines] = useState<LineItem[]>([{ ...defaultLine }]);
+  const [lines, setLines] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [voiceRecording, setVoiceRecording] = useState<RecordingResult | null>(
     null,
@@ -30,26 +82,154 @@ export default function CreateInvoice() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewData, setReviewData] = useState<ReviewInvoiceData | null>(null);
   const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
+  const [createdInvoiceForShare, setCreatedInvoiceForShare] = useState<AdminInvoice | null>(
+    null,
+  );
 
-  const addLine = () => setLines((prev) => [...prev, { ...defaultLine }]);
+  const [stockSearch, setStockSearch] = useState("");
+  const [stockCategoryId, setStockCategoryId] = useState("");
+  const [stockCategories, setStockCategories] = useState<StockCategory[]>([]);
+  const [stockProducts, setStockProducts] = useState<StockProduct[]>([]);
+  const [stockPickerLoading, setStockPickerLoading] = useState(false);
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
+  const stockPickerLoaded = useRef(false);
 
-  const removeLine = (index: number) => {
-    if (lines.length <= 1) return;
-    setLines((prev) => prev.filter((_, i) => i !== index));
+  const loadStockPicker = useCallback(async (background = false) => {
+    if (!background || !stockPickerLoaded.current) {
+      setStockPickerLoading(true);
+    }
+    try {
+      const [cats, prodRes] = await Promise.all([
+        adminApi.listStockCategories(),
+        adminApi.listStockProducts({
+          q: stockSearch.trim() || undefined,
+          categoryId: stockCategoryId || undefined,
+          limit: 80,
+        }),
+      ]);
+      setStockCategories(cats);
+      setStockProducts(prodRes.products);
+      stockPickerLoaded.current = true;
+    } catch {
+      setStockProducts([]);
+    } finally {
+      setStockPickerLoading(false);
+    }
+  }, [stockSearch, stockCategoryId]);
+
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => loadStockPicker(stockPickerLoaded.current),
+      stockSearch ? 300 : 0,
+    );
+    return () => window.clearTimeout(t);
+  }, [loadStockPicker, stockSearch, stockCategoryId]);
+
+  const addProductToBill = (product: StockProduct, qty = 1) => {
+    const q = qty > 0 ? qty : 1;
+    const inCart = lines.find((l) => l.productId === product._id);
+    const currentQty = inCart?.quantityNumeric ?? 0;
+    const nextQty = currentQty + q;
+    const onHand = product.quantityOnHand;
+
+    if (onHand <= 0 && currentQty === 0) {
+      setError(`"${product.name}" is out of stock.`);
+      return;
+    }
+    if (nextQty > onHand) {
+      setError(
+        `Only ${onHand} ${product.unit} of "${product.name}" in stock.`,
+      );
+      return;
+    }
+
+    setLines((prev) => {
+      const idx = prev.findIndex((l) => l.productId === product._id);
+      if (idx >= 0) {
+        const row = prev[idx];
+        const nextQty = (row.quantityNumeric ?? 1) + q;
+        const unitPrice = row.unitPrice ?? product.unitPrice;
+        const next = [...prev];
+        next[idx] = applyQtyToLine(
+          { ...row, unitPrice, unit: product.unit },
+          nextQty,
+        );
+        return next;
+      }
+      return [
+        ...prev,
+        applyQtyToLine(
+          {
+            name: product.name,
+            totalPrice: "0",
+            productId: product._id,
+            unitPrice: product.unitPrice,
+            unit: product.unit,
+            quantityOnHand: product.quantityOnHand,
+            quantity: "",
+          },
+          q,
+        ),
+      ];
+    });
+    setError(null);
+    setRecentlyAddedId(product._id);
+    window.setTimeout(() => setRecentlyAddedId(null), 1200);
   };
 
-  const updateLine = (index: number, field: keyof LineItem, value: string) => {
+  const incrementLine = (index: number) => {
     setLines((prev) => {
+      const row = prev[index];
+      if (!row) return prev;
+      const onHand = stockOnHandForLine(row);
+      const nextQty = (row.quantityNumeric ?? 1) + 1;
+      if (onHand != null && nextQty > onHand) {
+        setError(
+          `Only ${onHand} ${row.unit ?? "pcs"} of "${row.name}" in stock.`,
+        );
+        return prev;
+      }
       const next = [...prev];
-      (next[index] as Record<string, string>)[field] = value;
+      next[index] = applyQtyToLine(row, nextQty);
       return next;
     });
   };
+
+  const decrementLine = (index: number) => {
+    setLines((prev) => {
+      const row = prev[index];
+      if (!row) return prev;
+      const current = row.quantityNumeric ?? 1;
+      if (current <= 1) {
+        return prev.filter((_, i) => i !== index);
+      }
+      const next = [...prev];
+      next[index] = applyQtyToLine(row, current - 1);
+      return next;
+    });
+  };
+
+  const removeLine = (index: number) => {
+    setLines((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const linesWithCommittedQty = (items: LineItem[]) =>
+    items.map((row) => commitLineQtyInput(row));
 
   const total = lines.reduce(
     (sum, l) => sum + (parseFloat(l.totalPrice) || 0),
     0,
   );
+
+  const cartQtyByProductId = lines.reduce<Record<string, number>>((acc, l) => {
+    if (l.productId) {
+      acc[l.productId] = l.quantityNumeric ?? 1;
+    }
+    return acc;
+  }, {});
+
+  const getStockOnHandForCartLine = (line: PosCartLine, index: number) =>
+    stockOnHandForLine(lines[index] ?? line);
 
   const handleVoiceRecorded = (result: RecordingResult) => {
     setVoiceRecording(result);
@@ -91,29 +271,83 @@ export default function CreateInvoice() {
     }
   };
 
+  const stockOnHandForLine = (line: LineItem) => {
+    if (!line.productId) return undefined;
+    const live = stockProducts.find((p) => p._id === line.productId);
+    return live?.quantityOnHand ?? line.quantityOnHand;
+  };
+
+  const lineExceedsStock = (line: LineItem) => {
+    if (!line.productId) return false;
+    const qty = line.quantityNumeric ?? 1;
+    return exceedsAvailableStock(qty, stockOnHandForLine(line));
+  };
+
+  const hasStockConflict = linesWithCommittedQty(lines).some(lineExceedsStock);
+
+  const openManualReview = () => {
+    if (!customerName.trim()) {
+      setError("Customer name is required.");
+      return;
+    }
+    const stockLines = linesWithCommittedQty(lines).filter(
+      (l) => l.productId && l.name.trim(),
+    );
+    if (stockLines.length === 0) {
+      setError("Add at least one product from your stock below.");
+      return;
+    }
+    if (stockLines.some(lineExceedsStock)) {
+      setError("Fix out-of-stock items in the cart before creating the bill.");
+      return;
+    }
+    setError(null);
+    setReviewData({
+      customerName: customerName.trim(),
+      items: stockLines.map((l) => ({
+        name: l.name.trim(),
+        quantity: l.quantity.trim() || "1",
+        totalPrice: parseFloat(l.totalPrice) || 0,
+        productId: l.productId,
+        quantityNumeric: l.quantityNumeric ?? 1,
+        unitPrice: l.unitPrice,
+        unit: l.unit,
+        stockOnHand: stockOnHandForLine(l),
+      })),
+      note: note.trim() || undefined,
+      source: "manual",
+    });
+    setReviewOpen(true);
+  };
+
   const handleReviewConfirm = async (data: ReviewInvoiceData) => {
     setReviewSubmitLoading(true);
     setError(null);
     setVoiceError(null);
     try {
+      let invoice: AdminInvoice;
       if (data.source === "voice") {
-        await adminApi.createFromVoicePreview({
+        invoice = await adminApi.createFromVoicePreview({
           customerName: data.customerName,
           items: data.items.map((i) => ({
             name: i.name,
             quantity: i.quantity,
             totalPrice: i.totalPrice,
+            productId: i.productId,
+            quantityNumeric: i.quantityNumeric,
           })),
           transcript: data.transcript,
           durationSec: data.durationSec,
         });
       } else {
-        await adminApi.createInvoice({
+        invoice = await adminApi.createInvoice({
           customerName: data.customerName,
           items: data.items.map((i) => ({
             name: i.name,
             quantity: String(i.quantity),
             totalPrice: i.totalPrice,
+            productId: i.productId,
+            quantityNumeric: i.quantityNumeric,
           })),
           note: data.note,
         });
@@ -121,7 +355,7 @@ export default function CreateInvoice() {
       setReviewOpen(false);
       setReviewData(null);
       resetForm();
-      navigate("/dashboard/invoices", { replace: true });
+      setCreatedInvoiceForShare(invoice);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -135,286 +369,209 @@ export default function CreateInvoice() {
   const resetForm = () => {
     setCustomerName("");
     setNote("");
-    setLines([{ ...defaultLine }]);
+    setLines([]);
     setVoiceRecording(null);
     setError(null);
     setVoiceError(null);
   };
 
   const canRecord = customerName.trim().length > 0;
+  const needsCustomerName = lines.length > 0 && !customerName.trim();
+  const reviewBlockedByStock = hasStockConflict && lines.length > 0;
+  const reviewDisabledReason = needsCustomerName
+    ? "Enter customer name above to enable Review & create bill."
+    : reviewBlockedByStock
+      ? "Some items exceed stock on hand. Reduce quantities or remove them to continue."
+      : undefined;
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Create Bill</h1>
-      <p className="text-muted mb-4">
-        Create a bill with voice or by adding items manually. Customer name is
-        required for voice bills.
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Create Bill"
+        icon="ti-receipt-2"
+        subtitle="Pick items from stock to build a bill. Voice billing is coming soon."
+        actions={
+          <MicIconButton
+            active={showVoiceModal}
+            onClick={() => setShowVoiceModal(true)}
+            title="Speak bill"
+          />
+        }
+      />
+
+      {hasStockConflict && lines.length > 0 && !error && !voiceError && (
+        <div className="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
+          <i className="ti ti-alert-circle" />
+          Some cart items exceed available stock. You cannot create the bill until quantities are fixed.
+        </div>
+      )}
 
       {(error || voiceError) && (
         <div
-          className="alert alert-danger d-flex align-items-center gap-2"
+          className="alert alert-danger d-flex align-items-center gap-2 mb-4"
           role="alert">
           <i className="ti ti-alert-circle" />
           {voiceError || error}
         </div>
       )}
 
-      {/* Mode selector: Voice or Manual */}
-      <div className="d-flex gap-2 mb-4">
-        <button
-          type="button"
-          className={`btn flex-grow-1 py-3 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2 ${
-            mode === "voice" ? "btn-primary" : "btn-outline-primary"
-          }`}
-          onClick={() => setMode("voice")}>
-          <i className="ti ti-microphone fs-5" />
-          Voice
-        </button>
-        <button
-          type="button"
-          className={`btn flex-grow-1 py-3 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-2 ${
-            mode === "manual" ? "btn-secondary" : "btn-outline-secondary"
-          }`}
-          onClick={() => setMode("manual")}>
-          <i className="ti ti-edit fs-5" />
-          Manual
-        </button>
-      </div>
-
-      {/* Voice form — shown only when Voice is selected */}
-      {mode === "voice" && (
-        <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-          <div className="card-body p-4">
-            <p className="small text-muted mb-4">
-              Add customer name first, then record. Speak items like &quot;2 kg
-              rice 100 rupees, 1 packet salt 30 rupees&quot;.
-            </p>
-            <div className="row align-items-end">
-              <div className="col-md-4 mb-3 mb-md-0">
-                <label className="form-label fw-semibold">
-                  Customer name <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter customer name"
-                  value={customerName}
-                  onChange={(e) => {
-                    setCustomerName(e.target.value);
-                    setVoiceError(null);
-                  }}
-                />
-                <small className="text-muted">Required for voice bills</small>
-              </div>
-            </div>
-            <div className="mt-4">
-              <VoiceRecorder
-                onRecorded={handleVoiceRecorded}
-                onError={setVoiceError}
-                disabled={!canRecord}
-              />
-            </div>
-            {voiceRecording && (
-              <div className="mt-4 p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
-                <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-                  <i className="ti ti-check text-success fs-5" />
-                  <span className="fw-semibold">
-                    Recorded {voiceRecording.durationSec}s
-                  </span>
-                </div>
-                <p className="small text-muted mb-2">
-                  Review and edit the parsed items before creating the bill.
-                </p>
-                <div className="d-flex gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    className="btn btn-success"
-                    onClick={handleReviewFromVoice}
-                    disabled={voiceLoading || !customerName.trim()}>
-                    {voiceLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" />
-                        Parsing…
-                      </>
-                    ) : (
-                      <>
-                        <i className="ti ti-clipboard-check me-1" />
-                        Review &amp; create bill
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={() => setVoiceRecording(null)}
-                    disabled={voiceLoading}>
-                    Discard
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Manual form — shown only when Manual is selected */}
-      {mode === "manual" && (
-        <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
-          <div className="card-body p-4">
-            <div className="row g-3 mb-4">
+      <SectionPanel title="Bill details" icon="ti-shopping-cart" className="pos-create-bill-manual">
+            <div className="row g-2 mb-3">
               <div className="col-md-6">
-                <label className="form-label">
+                <label className="form-label fw-semibold small mb-1">
                   Customer name <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control${needsCustomerName ? " is-invalid" : ""}`}
                   placeholder="Enter customer name"
                   value={customerName}
                   onChange={(e) => {
                     setCustomerName(e.target.value);
                     setError(null);
                   }}
+                  aria-invalid={needsCustomerName}
                 />
-                <small className="text-muted">Required for every bill</small>
+                {needsCustomerName ? (
+                  <div className="invalid-feedback d-block">Required to create the bill.</div>
+                ) : null}
               </div>
               <div className="col-md-6">
-                <label className="form-label">Note (optional)</label>
+                <label className="form-label small mb-1">Note (optional)</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Note"
+                  placeholder="Note on bill"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <label className="form-label mb-0 fw-bold">Items</label>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary"
-                onClick={addLine}>
-                <i className="ti ti-plus me-1" />
-                Add row
-              </button>
-            </div>
-            <div className="table-responsive">
-              <table className="table table-bordered align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th style={{ width: "40%" }}>Item name</th>
-                    <th style={{ width: "15%" }}>Qty</th>
-                    <th style={{ width: "25%" }}>Total price (₹)</th>
-                    <th style={{ width: "100px" }} className="text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line, i) => (
-                    <tr key={i}>
-                      <td className="pe-2">
-                        <input
-                          type="text"
-                          className="form-control create-invoice-input"
-                          placeholder="Item name"
-                          value={line.name}
-                          onChange={(e) =>
-                            updateLine(i, "name", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="pe-2">
-                        <input
-                          type="text"
-                          className="form-control create-invoice-input"
-                          placeholder="Qty"
-                          value={line.quantity}
-                          onChange={(e) =>
-                            updateLine(i, "quantity", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="pe-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control create-invoice-input"
-                          placeholder="0"
-                          value={line.totalPrice}
-                          onChange={(e) =>
-                            updateLine(i, "totalPrice", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="ps-1">
-                        <div className="d-flex gap-1 justify-content-center align-items-center">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary create-invoice-row-btn"
-                            onClick={addLine}
-                            aria-label="Add item">
-                            <i className="ti ti-plus" />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger create-invoice-row-btn"
-                            onClick={() => removeLine(i)}
-                            disabled={lines.length <= 1}
-                            aria-label="Remove row">
-                            <i className="ti ti-trash" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="row g-4">
+              <div className="col-lg-7">
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+                  <CategoryChipBar
+                    categories={stockCategories}
+                    value={stockCategoryId}
+                    onChange={setStockCategoryId}
+                    className="flex-grow-1 mb-0"
+                  />
+                  <ExpandableSearch
+                    value={stockSearch}
+                    onChange={setStockSearch}
+                    placeholder="Search products…"
+                  />
+                </div>
+                <ProductCatalogList
+                  products={stockProducts}
+                  loading={stockPickerLoading && stockProducts.length === 0}
+                  subtleLoading={stockPickerLoading && stockProducts.length > 0}
+                  formatMoney={formatMoney}
+                  cartQtyByProductId={cartQtyByProductId}
+                  recentlyAddedId={recentlyAddedId}
+                  onAdd={(p) => addProductToBill(p, 1)}
+                  emptyAction={
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => navigate("/dashboard/stock")}
+                    >
+                      Add products in Stock
+                    </button>
+                  }
+                />
+              </div>
+
+              <div className="col-lg-5 d-none d-lg-block">
+                <div className="card bg-light border-0 h-100">
+                  <div className="card-body">
+                    <BillCartPanel
+                      lines={lines}
+                      formatMoney={formatMoney}
+                      getStockOnHand={getStockOnHandForCartLine}
+                      onDecrement={decrementLine}
+                      onIncrement={incrementLine}
+                      onRemove={removeLine}
+                      total={total}
+                      onCancel={() => navigate("/dashboard/invoices")}
+                      onReview={openManualReview}
+                      reviewDisabled={!customerName.trim() || hasStockConflict}
+                      reviewDisabledReason={reviewDisabledReason}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="d-flex justify-content-end align-items-center mt-3 pt-3 border-top">
-              <span className="me-3 fw-bold">Total: ₹{total.toFixed(2)}</span>
-              <button
-                type="button"
-                className="btn btn-outline-secondary me-2"
-                onClick={() => navigate("/dashboard/invoices")}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (!customerName.trim()) {
-                    setError("Customer name is required.");
-                    return;
-                  }
-                  const validLines = lines.filter((l) => l.name.trim());
-                  if (validLines.length === 0) {
-                    setError("Add at least one item with a name.");
-                    return;
-                  }
-                  setError(null);
-                  setReviewData({
-                    customerName: customerName.trim(),
-                    items: validLines.map((l) => ({
-                      name: l.name.trim(),
-                      quantity: l.quantity.trim() || "1",
-                      totalPrice: parseFloat(l.totalPrice) || 0,
-                    })),
-                    note: note.trim() || undefined,
-                    source: "manual",
-                  });
-                  setReviewOpen(true);
-                }}>
-                Review & create bill
-              </button>
-            </div>
-          </div>
+          <MobileCartBar
+            lines={lines}
+            total={total}
+            formatMoney={formatMoney}
+            getStockOnHand={getStockOnHandForCartLine}
+            onDecrement={decrementLine}
+            onIncrement={incrementLine}
+            onRemove={removeLine}
+            onReview={openManualReview}
+            onCancel={() => navigate("/dashboard/invoices")}
+            reviewDisabled={!customerName.trim() || hasStockConflict}
+            reviewDisabledReason={reviewDisabledReason}
+          />
+      </SectionPanel>
+
+      <AppModal
+        show={showVoiceModal}
+        title="Speak your bill"
+        onClose={() => {
+          setShowVoiceModal(false);
+          setVoiceRecording(null);
+        }}
+        size="md"
+      >
+        <div className="mb-3">
+          <label className="form-label fw-semibold small">
+            Customer name <span className="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Customer name"
+            value={customerName}
+            onChange={(e) => {
+              setCustomerName(e.target.value);
+              setVoiceError(null);
+            }}
+          />
         </div>
-      )}
+        <VoiceRecorder
+          onRecorded={handleVoiceRecorded}
+          onError={setVoiceError}
+          disabled={!canRecord}
+        />
+        {voiceRecording && (
+          <div className="d-flex gap-2 flex-wrap mt-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setShowVoiceModal(false);
+                handleReviewFromVoice();
+              }}
+              disabled={voiceLoading || !customerName.trim()}
+            >
+              {voiceLoading ? "Parsing…" : "Review bill"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => setVoiceRecording(null)}
+              disabled={voiceLoading}
+            >
+              Discard
+            </button>
+          </div>
+        )}
+      </AppModal>
 
       <ReviewInvoiceModal
         open={reviewOpen}
@@ -426,6 +583,11 @@ export default function CreateInvoice() {
         onConfirm={handleReviewConfirm}
         loading={reviewSubmitLoading}
       />
-    </div>
+
+      <ShareBillWhatsAppModal
+        invoice={createdInvoiceForShare}
+        onClose={() => setCreatedInvoiceForShare(null)}
+      />
+    </PageShell>
   );
 }

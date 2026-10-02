@@ -1,22 +1,41 @@
 import { useState, useEffect } from "react";
 import { adminApi, type ItemSold } from "../api/admin";
-
-const formatMoney = (n: number) => `₹${Number(n).toLocaleString()}`;
+import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
+import PageShell from "../components/merchant/PageShell";
+import PageHeader from "../components/merchant/PageHeader";
+import SectionPanel from "../components/merchant/SectionPanel";
+import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
+import {
+  canApplyDateRangeFilter,
+  isDateRangeComplete,
+} from "../utils/dateRangeFilters";
 
 export default function ItemsSold() {
+  const { formatFinance } = useFinancePrivacy();
   const [items, setItems] = useState<ItemSold[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const [appliedFrom, setAppliedFrom] = useState("");
+  const [appliedTo, setAppliedTo] = useState("");
+
+  const dateApplyReady = canApplyDateRangeFilter(
+    draftFrom,
+    draftTo,
+    appliedFrom,
+    appliedTo,
+  );
+  const rangeFiltered = isDateRangeComplete(appliedFrom, appliedTo);
 
   const fetchItems = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await adminApi.getItemsSold({
-        from: dateFrom || undefined,
-        to: dateTo || undefined,
+        from: appliedFrom || undefined,
+        to: appliedTo || undefined,
       });
       setItems(res.items ?? []);
     } catch (e: unknown) {
@@ -32,19 +51,28 @@ export default function ItemsSold() {
 
   useEffect(() => {
     fetchItems();
-  }, [dateFrom, dateTo]);
+  }, [appliedFrom, appliedTo]);
+
+  const onApplyDates = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dateApplyReady) return;
+    setAppliedFrom(draftFrom);
+    setAppliedTo(draftTo);
+  };
 
   return (
-    <div className="mt-6 admin-page">
-      <h1 className="fs-3 mb-1 fw-bold">Items Sold</h1>
-      <p className="text-muted mb-4">
-        See which items sold how much, with quantity and amount. Use the date
-        filter to view sales for a specific period.
-      </p>
+    <PageShell>
+      <PageHeader
+        title="Items Sold"
+        icon="ti-package"
+        subtitle="What sold, how much quantity, and revenue per item for any date range."
+      />
 
-      <div className="card border-0 shadow-sm rounded-3 mb-4">
-        <div className="card-body p-4">
-          <div className="d-flex flex-wrap gap-3 align-items-end">
+      <SectionPanel title="Date range" icon="ti-calendar" className="mb-4">
+          <form
+            className="d-flex flex-wrap gap-3 align-items-end"
+            onSubmit={onApplyDates}
+          >
             <div>
               <label className="form-label small text-muted mb-1">
                 From date
@@ -52,8 +80,8 @@ export default function ItemsSold() {
               <input
                 type="date"
                 className="form-control"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
               />
             </div>
             <div>
@@ -63,13 +91,16 @@ export default function ItemsSold() {
               <input
                 type="date"
                 className="form-control"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                value={draftTo}
+                onChange={(e) => setDraftTo(e.target.value)}
               />
             </div>
-          </div>
-        </div>
-      </div>
+            <FilterApplyButton loading={loading} disabled={!dateApplyReady} />
+          </form>
+          <p className="small text-muted mb-0 mt-2">
+            Leave dates empty and Apply clears the filter (shows all). Both dates required to filter.
+          </p>
+      </SectionPanel>
 
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -77,28 +108,27 @@ export default function ItemsSold() {
         </div>
       )}
 
-      <div className="card border-0 shadow-sm rounded-3">
-        <div className="card-body p-0">
+      <SectionPanel title="Sold items" icon="ti-list" flush bodyClassName="p-0">
           {loading ? (
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
+            <MerchantDataTable>
                 <thead className="bg-light">
                   <tr>
-                    <th>
-                      <i className="ti ti-package me-1" />
-                      Item name
+                    <th scope="col">
+                      <MerchantTableHeadLabel>Item name</MerchantTableHeadLabel>
                     </th>
-                    <th className="text-end">
-                      <i className="ti ti-number me-1" />
-                      Quantity
+                    <th scope="col" className="merchant-data-table__num">
+                      <MerchantTableHeadLabel numeric>
+                        Quantity
+                      </MerchantTableHeadLabel>
                     </th>
-                    <th className="text-end">
-                      <i className="ti ti-cash me-1" />
-                      Amount (₹)
+                    <th scope="col" className="merchant-data-table__num">
+                      <MerchantTableHeadLabel numeric>
+                        Amount (₹)
+                      </MerchantTableHeadLabel>
                     </th>
                   </tr>
                 </thead>
@@ -106,24 +136,24 @@ export default function ItemsSold() {
                   {items.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="text-center text-muted py-4">
-                        No items found for the selected period.
+                        {rangeFiltered
+                          ? "No items found for the selected period."
+                          : "No items sold yet."}
                       </td>
                     </tr>
                   ) : (
                     items.map((row, i) => (
                       <tr key={i}>
                         <td className="fw-medium">{row.itemName}</td>
-                        <td className="text-end">{row.quantity}</td>
-                        <td className="text-end">{formatMoney(row.amount)}</td>
+                        <td className="merchant-data-table__num">{row.quantity}</td>
+                        <td className="merchant-data-table__num">{formatFinance(row.amount)}</td>
                       </tr>
                     ))
                   )}
                 </tbody>
-              </table>
-            </div>
+            </MerchantDataTable>
           )}
-        </div>
-      </div>
-    </div>
+      </SectionPanel>
+    </PageShell>
   );
 }
