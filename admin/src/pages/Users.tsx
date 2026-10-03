@@ -12,6 +12,11 @@ import {
   gainedFilterToCreatedRange,
   type GainedFilter,
 } from "../utils/gainedUserFilter";
+import {
+  buildMerchantOnboardingWhatsAppMessage,
+  openWhatsAppToPhone,
+  resolveAdminLoginUrl,
+} from "../utils/merchantOnboardingWhatsApp";
 
 export default function Users() {
   const { isSuperAdmin } = useAuth();
@@ -42,6 +47,12 @@ export default function Users() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createdMerchant, setCreatedMerchant] = useState<AdminUser | null>(null);
+  const [createdOnboardingShare, setCreatedOnboardingShare] = useState<{
+    ownerName: string;
+    businessName: string;
+    phone: string;
+    temporaryPin: string;
+  } | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -118,6 +129,19 @@ export default function Users() {
     setCreatePin("");
     setCreateError(null);
     setCreatedMerchant(null);
+    setCreatedOnboardingShare(null);
+  };
+
+  const shareOnboardingOnWhatsApp = () => {
+    if (!createdOnboardingShare) return;
+    const message = buildMerchantOnboardingWhatsAppMessage({
+      ownerName: createdOnboardingShare.ownerName,
+      businessName: createdOnboardingShare.businessName,
+      phone: createdOnboardingShare.phone,
+      temporaryPin: createdOnboardingShare.temporaryPin,
+      loginUrl: resolveAdminLoginUrl(),
+    });
+    openWhatsAppToPhone(createdOnboardingShare.phone, message);
   };
 
   const closeCreateModal = () => {
@@ -143,6 +167,12 @@ export default function Users() {
         businessName: createBusiness.trim(),
         phone: createPhone.replace(/\D/g, "").slice(-10),
         pin: createPin,
+      });
+      setCreatedOnboardingShare({
+        ownerName: createName.trim(),
+        businessName: createBusiness.trim(),
+        phone: user.phone,
+        temporaryPin: createPin,
       });
       setCreatedMerchant(user);
       await fetchUsers();
@@ -349,9 +379,19 @@ export default function Users() {
         size="md"
         footer={
           createdMerchant ? (
-            <button type="button" className="btn btn-primary" onClick={closeCreateModal}>
-              Done
-            </button>
+            <>
+              <button type="button" className="btn btn-outline-secondary" onClick={closeCreateModal}>
+                Done
+              </button>
+              <button
+                type="button"
+                className="btn btn-success d-inline-flex align-items-center gap-1"
+                onClick={shareOnboardingOnWhatsApp}
+              >
+                <i className="ti ti-brand-whatsapp" aria-hidden />
+                Share on WhatsApp
+              </button>
+            </>
           ) : (
             <>
               <button type="button" className="btn btn-outline-secondary" onClick={closeCreateModal}>
@@ -370,21 +410,27 @@ export default function Users() {
           )
         }
       >
-        {createdMerchant ? (
+        {createdMerchant && createdOnboardingShare ? (
           <div className="small">
-            <p className="mb-2">Share these credentials securely with the business owner:</p>
-            <ul className="list-unstyled mb-0">
-              <li>
-                <strong>Phone:</strong> {createdMerchant.phone}
-              </li>
-              <li>
-                <strong>Business:</strong> {createdMerchant.businessName || "—"}
-              </li>
-              <li>
-                <strong>Temporary PIN:</strong> {createPin}
-              </li>
-            </ul>
-            <p className="text-muted mt-3 mb-0">They can change PIN under Settings after first login.</p>
+            <p className="mb-3">
+              Account created. Tap <strong>Share on WhatsApp</strong> to send the owner their login
+              details (same style as bill messages).
+            </p>
+            <div className="rounded-3 border bg-light p-3 mb-0">
+              <p className="fw-semibold mb-2">Preview</p>
+              <pre
+                className="mb-0 small text-muted"
+                style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}
+              >
+                {buildMerchantOnboardingWhatsAppMessage({
+                  ownerName: createdOnboardingShare.ownerName,
+                  businessName: createdOnboardingShare.businessName,
+                  phone: createdOnboardingShare.phone,
+                  temporaryPin: createdOnboardingShare.temporaryPin,
+                  loginUrl: resolveAdminLoginUrl(),
+                })}
+              </pre>
+            </div>
           </div>
         ) : (
           <>
