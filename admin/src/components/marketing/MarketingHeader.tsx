@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 
 type MarketingHeaderProps = {
-  mode?: "transparent" | "solid";
+  mode?: "transparent" | "solid" | "platform";
   scrolled?: boolean;
   showNav?: boolean;
   /** Rapid taps on brand (e.g. login easter egg); does not navigate home. */
   onBrandSecretTap?: () => void;
+  platformAdminMode?: boolean;
+  onBackToBusinessLogin?: () => void;
 };
 
 export default function MarketingHeader({
@@ -13,38 +15,58 @@ export default function MarketingHeader({
   scrolled = false,
   showNav = true,
   onBrandSecretTap,
+  platformAdminMode = false,
+  onBackToBusinessLogin,
 }: MarketingHeaderProps) {
   const { pathname } = useLocation();
   const onLogin = pathname === "/login";
   const onSignup = pathname === "/signup";
   const onAuth = onLogin || onSignup;
 
+  const isPlatformHeader = mode === "platform" || platformAdminMode;
   const isSolid =
-    !onAuth && (mode === "solid" || (mode === "transparent" && scrolled));
+    !isPlatformHeader &&
+    !onAuth &&
+    (mode === "solid" || (mode === "transparent" && scrolled));
 
   return (
     <header
-      className={`marketing-header ${isSolid ? "marketing-header--solid" : "marketing-header--dark"}`}>
+      className={`marketing-header ${
+        isPlatformHeader
+          ? "marketing-header--platform"
+          : isSolid
+            ? "marketing-header--solid"
+            : "marketing-header--dark"
+      }`}
+    >
       <div className="container-fluid container-lg">
         <div
           className={`marketing-header-inner ${showNav ? "" : "marketing-header-inner--no-nav"}`.trim()}>
-          {onBrandSecretTap ? (
-            <button
-              type="button"
-              className="marketing-brand marketing-brand--tap border-0 bg-transparent p-0"
-              onClick={onBrandSecretTap}
-              aria-label="BoloBill home">
-              <span className="marketing-brand-text">
-                Bolo<span className="marketing-brand-accent">Bill</span>
-              </span>
-            </button>
-          ) : (
-            <Link to="/" className="marketing-brand text-decoration-none">
-              <span className="marketing-brand-text">
-                Bolo<span className="marketing-brand-accent">Bill</span>
-              </span>
-            </Link>
-          )}
+          <div className="marketing-header-brand-group">
+            {onAuth ? (
+              <Link to="/" className="marketing-back-home text-decoration-none">
+                <i className="ti ti-arrow-left" aria-hidden />
+                <span className="d-none d-sm-inline">Back to home</span>
+              </Link>
+            ) : null}
+            {onBrandSecretTap ? (
+              <button
+                type="button"
+                className="marketing-brand marketing-brand--tap border-0 bg-transparent p-0"
+                onClick={onBrandSecretTap}
+                aria-label="BoloBill home">
+                <span className="marketing-brand-text">
+                  Bolo<span className="marketing-brand-accent">Bill</span>
+                </span>
+              </button>
+            ) : (
+              <Link to="/" className="marketing-brand text-decoration-none">
+                <span className="marketing-brand-text">
+                  Bolo<span className="marketing-brand-accent">Bill</span>
+                </span>
+              </Link>
+            )}
+          </div>
 
           {showNav ? (
             <nav className="marketing-nav d-none d-xl-flex" aria-label="Primary">
@@ -61,19 +83,33 @@ export default function MarketingHeader({
           ) : null}
 
           <div className="marketing-header-actions">
-            {!onLogin ? (
-              <Link to="/login" className="marketing-header-btn marketing-header-btn--ghost">
-                Log in
-              </Link>
-            ) : null}
-            {!onSignup ? (
-              <Link to="/signup" className="marketing-header-btn marketing-header-btn--primary">
-                Get access
-              </Link>
+            {platformAdminMode && onBackToBusinessLogin ? (
+              <button
+                type="button"
+                className="marketing-header-btn marketing-header-btn--exit-admin"
+                onClick={onBackToBusinessLogin}
+              >
+                Exit Admin
+              </button>
+            ) : onAuth ? (
+              onSignup ? (
+                <Link to="/login" className="marketing-header-btn marketing-header-btn--primary">
+                  Log in
+                </Link>
+              ) : (
+                <Link to="/signup" className="marketing-header-btn marketing-header-btn--primary">
+                  Get access
+                </Link>
+              )
             ) : (
-              <Link to="/login" className="marketing-header-btn marketing-header-btn--primary">
-                Sign in
-              </Link>
+              <>
+                <Link to="/login" className="marketing-header-btn marketing-header-btn--ghost">
+                  Log in
+                </Link>
+                <Link to="/signup" className="marketing-header-btn marketing-header-btn--primary">
+                  Get access
+                </Link>
+              </>
             )}
           </div>
         </div>

@@ -5,6 +5,7 @@ import AuthScreenLayout from "../components/AuthScreenLayout";
 import PlatformAdminLogin from "../components/auth/PlatformAdminLogin";
 import { useEasterEggUnlock } from "../hooks/useEasterEggUnlock";
 import { resolveApiOrigin } from "../config/deployUrls";
+import PinInput from "../components/PinInput";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [platformUnlocked, setPlatformUnlocked] = useState(false);
 
-  const registerBrandTap = useEasterEggUnlock(() => setPlatformUnlocked(true), 4, 4000);
+  const registerBrandTap = useEasterEggUnlock(() => setPlatformUnlocked(true), 9, 6000);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,10 +66,26 @@ export default function LoginPage() {
     }
   };
 
+  if (platformUnlocked) {
+    return (
+      <AuthScreenLayout
+        variant="platform"
+        badge="Platform admin"
+        title="Super admin console"
+        subtitle="Sign in with the platform administrator phone and PIN. This area is not for merchant staff."
+        formHeading="Platform admin sign in"
+        formLead="Manage users, subscriptions, and platform settings after you authenticate."
+        onExitPlatformAdmin={() => setPlatformUnlocked(false)}
+      >
+        <PlatformAdminLogin />
+      </AuthScreenLayout>
+    );
+  }
+
   return (
     <AuthScreenLayout
       title="Welcome back"
-      subtitle="Sign in with the phone number and PIN we sent when your shop was onboarded."
+      subtitle="Sign in with the phone number and PIN we sent when your business was onboarded."
       onBrandSecretTap={registerBrandTap}
     >
       {error ? (
@@ -103,21 +120,13 @@ export default function LoginPage() {
           <label htmlFor="login-pin" className="form-label marketing-label">
             PIN
           </label>
-          <div className="marketing-input-wrap">
-            <span className="marketing-input-icon" aria-hidden>
-              <i className="ti ti-lock" />
-            </span>
-            <input
-              id="login-pin"
-              type="password"
-              className="form-control marketing-input"
-              placeholder="Shop PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              autoComplete="current-password"
-              maxLength={8}
-            />
-          </div>
+          <PinInput
+            id="login-pin"
+            value={pin}
+            onChange={setPin}
+            placeholder="Login PIN"
+            autoComplete="current-password"
+          />
         </div>
         <button
           type="submit"
@@ -131,11 +140,9 @@ export default function LoginPage() {
       <p className="text-center small marketing-muted mt-4 mb-0">
         New to BoloBill?{" "}
         <Link to="/signup" className="marketing-inline-link fw-semibold">
-          Request shop access
+          Request business access
         </Link>
       </p>
-
-      {platformUnlocked ? <PlatformAdminLogin /> : null}
     </AuthScreenLayout>
   );
 }

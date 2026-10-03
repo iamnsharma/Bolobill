@@ -2159,6 +2159,42 @@
 }
 
 /* —— Merchant / shop-owned UI —— */
+.pin-input-form-wrap {
+  position: relative;
+}
+
+.pin-input-form-wrap .form-control {
+  padding-right: 2.75rem;
+}
+
+.pin-input-form-toggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.pin-input-form-toggle:hover:not(:disabled) {
+  color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.pin-input-form-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .merchant-page {
   max-width: 1400px;
 }

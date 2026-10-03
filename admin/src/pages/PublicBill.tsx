@@ -81,7 +81,7 @@ export default function PublicBill() {
         <header className="public-bill-card__head text-center">
           <p className="public-bill-card__eyebrow mb-1">BOLOBILL</p>
           <h1 className="public-bill-card__shop mb-2">{bill.shopName}</h1>
-          <p className="text-muted small mb-1">Thank you for your visit! 🙏</p>
+          <p className="text-muted small mb-1">Thank you for your business! 🙏</p>
           {bill.customerName ? (
             <p className="fw-semibold mb-0">Hi {bill.customerName},</p>
           ) : null}
@@ -94,7 +94,7 @@ export default function PublicBill() {
           </div>
           <div className="col-6 text-end">
             <span className="text-muted d-block">Date</span>
-            <span className="fw-semibold">{created.toLocaleDateString("en-IN")}</span>
+            <span className="fw-semibold">{created.toLocaleDateString()}</span>
           </div>
           <div className="col-12 pt-2">
             <span className="text-muted">Customer: </span>
@@ -135,9 +135,8 @@ export default function PublicBill() {
 
         <div className="public-bill-card__feedback text-center">
           <p className="fw-semibold mb-1">How was your experience?</p>
-          <p className="text-muted small mb-2">Apka anubhav kaisa tha? ✨</p>
           <p className="text-muted small mb-0">
-            We&apos;d love your feedback — reply to the shop anytime!
+            We&apos;d love your feedback — contact the business anytime!
             {bill.shopPhone ? (
               <>
                 {" "}
@@ -147,7 +146,7 @@ export default function PublicBill() {
               </>
             ) : null}
           </p>
-          <p className="text-muted small mb-0 mt-2">Dhanyavaad, phir milenge! 🛍️</p>
+          <p className="text-muted small mb-0 mt-2">We appreciate you — see you again soon!</p>
         </div>
 
         {bill.pdfUrl ? (

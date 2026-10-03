@@ -74,7 +74,7 @@ export default function BulkStockForm({
             list={`${categorySelectId}-list`}
             value={sharedCategory}
             onChange={(e) => setSharedCategory(e.target.value)}
-            placeholder="e.g. Rice, Snacks"
+            placeholder="e.g. Category name"
             required
           />
           <datalist id={`${categorySelectId}-list`}>

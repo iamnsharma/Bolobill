@@ -1,9 +1,13 @@
 export const VOICE_MIC_COMING_SOON_TITLE = "Coming soon";
 
+/** Shown if a legacy mic entry point is used while the feature is off. */
 export const VOICE_MIC_COMING_SOON_MESSAGE =
-  "Voice billing is coming soon. Use manual billing or stock forms for now.";
+  "Quick dictation is coming soon. Use catalog billing and stock forms for now.";
 
-/** When false, all mic / voice-record UI shows coming soon instead of recording. */
+/**
+ * When true, enables mic UI across billing, stock, and out-of-stock flows.
+ * Product label when shipped: "Quick dictation" (not "voice billing").
+ */
 export const VOICE_MIC_FEATURE_ENABLED = false;
 
 export function notifyVoiceComingSoon(onError?: (message: string) => void): void {

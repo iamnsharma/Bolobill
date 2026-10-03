@@ -10,10 +10,10 @@ export type BillWhatsAppMessageInput = {
 
 /** WhatsApp formatting: *bold* */
 export function buildEzoStyleWhatsAppMessage(input: BillWhatsAppMessageInput): string {
-  const shop = input.shopName.trim().toUpperCase() || "OUR SHOP";
+  const shop = input.shopName.trim().toUpperCase() || "OUR BUSINESS";
   const lines = [
     `*${shop}*`,
-    "Thank you for your visit! 🙏",
+    "Thank you for your business! 🙏",
     "",
     `Bill Total - *${input.totalFormatted}*`,
     "",
@@ -21,10 +21,9 @@ export function buildEzoStyleWhatsAppMessage(input: BillWhatsAppMessageInput): s
     `*${input.billUrl}*`,
     "",
     "How was your experience?",
-    "Apka anubhav kaisa tha? ✨",
     "",
     "We'd love your feedback — reply to this message anytime!",
-    "Dhanyavaad, phir milenge! 🛍️",
+    "Thank you — we hope to serve you again!",
   ];
   if (input.customerName?.trim()) {
     lines.splice(2, 0, `Hi ${input.customerName.trim()},`);
@@ -44,7 +43,7 @@ export function buildBillWhatsAppMessageFromInvoice(
     shopNameOverride?.trim() ||
     invoice.user?.businessName?.trim() ||
     invoice.user?.name?.trim() ||
-    "Our shop";
+    "Our business";
 
   let billUrl = invoice.publicBillUrl?.trim() || "";
   if (!billUrl && invoice.publicToken) {

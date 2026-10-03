@@ -23,6 +23,7 @@ import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
+import { VOICE_MIC_FEATURE_ENABLED } from "../utils/voiceComingSoon";
 
 type LineItem = {
   name: string;
@@ -389,13 +390,15 @@ export default function CreateInvoice() {
       <PageHeader
         title="Create Bill"
         icon="ti-receipt-2"
-        subtitle="Pick items from stock to build a bill. Voice billing is coming soon."
+        subtitle="Pick items from stock, review totals, and create the bill."
         actions={
-          <MicIconButton
-            active={showVoiceModal}
-            onClick={() => setShowVoiceModal(true)}
-            title="Speak bill"
-          />
+          VOICE_MIC_FEATURE_ENABLED ? (
+            <MicIconButton
+              active={showVoiceModal}
+              onClick={() => setShowVoiceModal(true)}
+              title="Speak bill"
+            />
+          ) : undefined
         }
       />
 
@@ -460,7 +463,7 @@ export default function CreateInvoice() {
                   <ExpandableSearch
                     value={stockSearch}
                     onChange={setStockSearch}
-                    placeholder="Search products…"
+                    placeholder="Search items…"
                   />
                 </div>
                 <ProductCatalogList
@@ -519,6 +522,7 @@ export default function CreateInvoice() {
           />
       </SectionPanel>
 
+      {VOICE_MIC_FEATURE_ENABLED ? (
       <AppModal
         show={showVoiceModal}
         title="Speak your bill"
@@ -572,6 +576,7 @@ export default function CreateInvoice() {
           </div>
         )}
       </AppModal>
+      ) : null}
 
       <ReviewInvoiceModal
         open={reviewOpen}

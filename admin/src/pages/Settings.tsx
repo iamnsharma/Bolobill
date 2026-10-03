@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
+import PinInput from "../components/PinInput";
 import { authApi } from "../api/auth";
 import {
   DEFAULT_SHOP_SETTINGS,
+  SHOP_SETTINGS_FIELD_PLACEHOLDERS,
   useShopSettings,
   type ThemeColorCount,
 } from "../contexts/ShopSettingsContext";
@@ -116,31 +118,30 @@ export default function Settings() {
             ) : null}
             <form onSubmit={handleChangePin}>
               <label className="form-label fw-semibold small">Current PIN</label>
-              <input
-                type="password"
-                className="form-control mb-3"
+              <PinInput
+                variant="form"
+                className="mb-3"
                 value={currentPin}
-                onChange={(e) => setCurrentPin(e.target.value)}
+                onChange={setCurrentPin}
                 autoComplete="current-password"
-                maxLength={8}
               />
               <label className="form-label fw-semibold small">New PIN</label>
-              <input
-                type="password"
-                className="form-control mb-3"
+              <PinInput
+                variant="form"
+                className="mb-3"
                 value={newPin}
-                onChange={(e) => setNewPin(e.target.value)}
+                onChange={setNewPin}
                 autoComplete="new-password"
-                maxLength={8}
+                placeholder="New PIN"
               />
               <label className="form-label fw-semibold small">Confirm new PIN</label>
-              <input
-                type="password"
-                className="form-control mb-3"
+              <PinInput
+                variant="form"
+                className="mb-3"
                 value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value)}
+                onChange={setConfirmPin}
                 autoComplete="new-password"
-                maxLength={8}
+                placeholder="Confirm PIN"
               />
               <button
                 type="submit"
@@ -161,15 +162,15 @@ export default function Settings() {
 
         <div className="col-lg-6">
           <SectionPanel
-            title="Your store"
+            title="Business branding"
             icon="ti-building-store"
-            subtitle="Sidebar and header show these after you apply"
+            subtitle="Name and tagline shown in the sidebar and header after you apply"
           >
-            <label className="form-label fw-semibold small">Store name</label>
+            <label className="form-label fw-semibold small">Business / store name</label>
             <input
               type="text"
               className="form-control mb-3"
-              placeholder={DEFAULT_SHOP_SETTINGS.storeName}
+              placeholder={SHOP_SETTINGS_FIELD_PLACEHOLDERS.storeName}
               value={draftName}
               maxLength={40}
               onChange={(e) => setDraftName(e.target.value)}
@@ -178,7 +179,7 @@ export default function Settings() {
             <input
               type="text"
               className="form-control mb-3"
-              placeholder={DEFAULT_SHOP_SETTINGS.storeTagline}
+              placeholder={SHOP_SETTINGS_FIELD_PLACEHOLDERS.storeTagline}
               value={draftTagline}
               maxLength={48}
               onChange={(e) => setDraftTagline(e.target.value)}

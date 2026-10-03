@@ -88,6 +88,36 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.marketing-header-brand-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.marketing-back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.88;
+  flex-shrink: 0;
+}
+
+.marketing-back-home:hover {
+  opacity: 1;
+}
+
+.marketing-header--solid .marketing-back-home {
+  color: var(--bb-text-muted, #76504d);
+}
+
+.marketing-header--dark .marketing-back-home {
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .marketing-brand {
   display: inline-flex;
   align-items: center;
@@ -106,11 +136,9 @@
 }
 
 .platform-admin-login {
-  border-top: 1px dashed rgba(183, 28, 28, 0.25);
-}
-
-.platform-admin-login-label {
-  color: var(--bb-red, #b71c1c);
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .marketing-header--dark .marketing-brand {
@@ -360,10 +388,6 @@
   margin-bottom: 0.75rem;
 }
 
-.marketing-auth-subtitle--on-dark {
-  color: rgba(255, 255, 255, 0.88);
-  margin-bottom: 1.5rem;
-}
 
 .marketing-auth-feature-list {
   list-style: none;
@@ -473,6 +497,11 @@
   margin-bottom: 1.25rem;
 }
 
+.marketing-auth-subtitle--on-dark {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+}
+
 .marketing-auth-mobile-logo {
   width: 72px;
   height: auto;
@@ -533,6 +562,45 @@
   outline: none;
 }
 
+.marketing-input-wrap--pin {
+  gap: 0.15rem;
+  padding-right: 0.35rem;
+}
+
+.marketing-input-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--bb-text-muted, #76504d);
+  cursor: pointer;
+}
+
+.marketing-input-toggle:hover:not(:disabled) {
+  color: var(--bb-text, #2a1211);
+  background: rgba(42, 18, 17, 0.06);
+}
+
+.marketing-input-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.marketing-auth-card--platform .marketing-input-toggle {
+  color: #64748b;
+}
+
+.marketing-auth-card--platform .marketing-input-toggle:hover:not(:disabled) {
+  color: #4338ca;
+  background: rgba(67, 56, 202, 0.08);
+}
+
 .marketing-submit-btn {
   padding: 0.85rem 1rem;
   border-radius: 0.9rem !important;
@@ -546,6 +614,124 @@
   background: var(--bb-red-dark, #7a1515) !important;
   border-color: var(--bb-red-dark, #7a1515) !important;
   color: #fff !important;
+}
+
+/* —— Platform admin login (9× logo tap on /login) —— */
+.marketing-header--platform {
+  background: #0f172a;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.marketing-header--platform .marketing-brand,
+.marketing-header--platform .marketing-brand-text {
+  color: #f8fafc;
+}
+
+.marketing-header--platform .marketing-brand-accent {
+  color: #a5b4fc;
+}
+
+.marketing-header--platform .marketing-back-home {
+  color: #94a3b8;
+}
+
+.marketing-header--platform .marketing-back-home:hover {
+  color: #e2e8f0;
+}
+
+.marketing-header-btn--exit-admin {
+  background: rgba(248, 250, 252, 0.08) !important;
+  border: 1px solid rgba(226, 232, 240, 0.35) !important;
+  color: #f8fafc !important;
+}
+
+.marketing-header-btn--exit-admin:hover {
+  background: rgba(248, 250, 252, 0.14) !important;
+  color: #fff !important;
+}
+
+.marketing-page--auth-platform {
+  background: #e2e8f0;
+}
+
+.marketing-auth-split-left--platform {
+  background: #0f172a;
+}
+
+.marketing-auth-split-left--platform .marketing-auth-split-left-shade {
+  background: linear-gradient(
+    160deg,
+    #0f172a 0%,
+    #1e293b 55%,
+    #0f172a 100%
+  );
+}
+
+.marketing-auth-badge--on-dark.marketing-auth-badge--platform {
+  color: #e0e7ff;
+  background: rgba(129, 140, 248, 0.22);
+  border: 1px solid rgba(165, 180, 252, 0.25);
+}
+
+.marketing-auth-split-left--platform .marketing-auth-title--on-dark,
+.marketing-auth-split-left--platform .marketing-auth-subtitle--on-dark {
+  color: #f1f5f9;
+}
+
+.marketing-auth-split-left--platform .marketing-auth-subtitle--on-dark {
+  color: #cbd5e1;
+}
+
+.marketing-auth-split-left--platform .marketing-auth-feature-list li {
+  color: #e2e8f0;
+}
+
+.marketing-auth-split-left--platform .marketing-auth-feature-list .ti {
+  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.25);
+}
+
+.marketing-auth-split-right--platform {
+  background: #e2e8f0;
+}
+
+.marketing-auth-card--platform {
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  max-width: 28rem;
+}
+
+.marketing-auth-badge--platform-inline {
+  color: #4338ca;
+  background: rgba(67, 56, 202, 0.1);
+}
+
+.marketing-auth-form-title--platform {
+  color: #0f172a;
+}
+
+.marketing-auth-form-lead--platform {
+  color: #475569;
+}
+
+.marketing-auth-card--platform .marketing-input-wrap:focus-within {
+  border-color: rgba(67, 56, 202, 0.45);
+  box-shadow: 0 0 0 0.2rem rgba(67, 56, 202, 0.12);
+}
+
+.marketing-auth-card--platform .marketing-input-icon {
+  color: #6366f1;
+}
+
+.marketing-submit-btn.marketing-submit-btn--platform {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important;
+  border: 1px solid #4338ca !important;
+  color: #fff !important;
+}
+
+.marketing-submit-btn.marketing-submit-btn--platform:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%) !important;
+  border-color: #4f46e5 !important;
 }
 
 .marketing-alert-danger {

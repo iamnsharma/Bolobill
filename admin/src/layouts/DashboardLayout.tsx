@@ -4,12 +4,15 @@ import { useAuth } from "../contexts/AuthContext";
 import { FinancePrivacyProvider, useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import { ShopSettingsProvider, useShopSettings } from "../contexts/ShopSettingsContext";
 import ConfirmModal from "../components/ConfirmModal";
+import { VOICE_MIC_FEATURE_ENABLED } from "../utils/voiceComingSoon";
 
 const SUPERADMIN_NAV = [
   { to: "/dashboard", icon: "ti-home", label: "Dashboard" },
   { to: "/dashboard/users", icon: "ti-users", label: "Manage users" },
   { to: "/dashboard/subscriptions", icon: "ti-crown", label: "Manage subscriptions" },
-  { to: "/dashboard/whisper", icon: "ti-microphone", label: "Whisper" },
+  ...(VOICE_MIC_FEATURE_ENABLED
+    ? [{ to: "/dashboard/whisper", icon: "ti-microphone", label: "Whisper" }]
+    : []),
   { to: "/dashboard/settings", icon: "ti-settings", label: "Settings" },
 ];
 

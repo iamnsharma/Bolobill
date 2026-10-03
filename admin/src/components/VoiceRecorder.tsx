@@ -190,7 +190,7 @@ export function VoiceRecorder({
         <div className="flex-grow-1 min-width-0">
           {status === "idle" && (
             <span className="small text-muted">
-              {VOICE_MIC_FEATURE_ENABLED ? "Tap mic to speak" : "Voice billing — coming soon"}
+              {VOICE_MIC_FEATURE_ENABLED ? "Tap mic for quick dictation" : "Quick dictation — coming soon"}
             </span>
           )}
           {status !== "idle" && (
@@ -228,7 +228,7 @@ export function VoiceRecorder({
         ? `Paused at ${formatTime(elapsedSec)}`
         : VOICE_MIC_FEATURE_ENABLED
           ? "Tap the mic or Record to start. Use Pause/Resume or Stop when done."
-          : "Voice billing — coming soon.";
+          : "Quick dictation — coming soon.";
 
   return (
     <div className="voice-recorder border rounded-3 p-4 bg-light bg-opacity-50 position-relative">
@@ -285,6 +285,10 @@ export function MicIconButton({
   title?: string;
   className?: string;
 }) {
+  if (!VOICE_MIC_FEATURE_ENABLED) {
+    return null;
+  }
+
   return (
     <button
       type="button"
@@ -297,8 +301,8 @@ export function MicIconButton({
         onClick?.();
       }}
       disabled={disabled}
-      title={VOICE_MIC_FEATURE_ENABLED ? title : "Coming soon — voice billing"}
-      aria-label={VOICE_MIC_FEATURE_ENABLED ? title : "Voice billing coming soon"}
+      title={VOICE_MIC_FEATURE_ENABLED ? title : "Coming soon — quick dictation"}
+      aria-label={VOICE_MIC_FEATURE_ENABLED ? title : "Quick dictation coming soon"}
       style={{ width: 44, height: 44 }}
     >
       <i className="ti ti-microphone fs-5" />

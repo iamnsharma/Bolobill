@@ -137,7 +137,7 @@ export default function OutOfStock() {
       <PageHeader
         title="Out of Stock"
         icon="ti-alert-circle"
-        subtitle="Items to reorder. Share the list as PDF with your supplier."
+        subtitle="Track what you are out of. Share the list as PDF with vendors or your team."
         actions={
           <MicIconButton title="Speak items" onClick={() => setShowVoiceModal(true)} />
         }
@@ -181,7 +181,7 @@ export default function OutOfStock() {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Quantity (e.g. 2 kg)"
+                        placeholder="Quantity (e.g. 2 units)"
                         value={formQuantity}
                         onChange={(e) => setFormQuantity(e.target.value)}
                       />
@@ -292,7 +292,7 @@ export default function OutOfStock() {
                     <tr>
                       <td colSpan={4} className="text-center text-muted py-4">
                         No out-of-stock items. Click &quot;Add item&quot; to
-                        create a list to share with your supplier.
+                        create a list to share with vendors or your team.
                       </td>
                     </tr>
                   ) : (

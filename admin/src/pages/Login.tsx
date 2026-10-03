@@ -453,7 +453,7 @@ export default function Login() {
                     <input
                       type="text"
                       className="form-control form-control-lg rounded-3"
-                      placeholder="e.g. Sharma Kirana – Jaipur Branch"
+                      placeholder="e.g. Your business name"
                       value={businessName}
                       onChange={(e) => setBusinessName(e.target.value)}
                       maxLength={60}

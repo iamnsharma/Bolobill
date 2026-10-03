@@ -1,17 +1,21 @@
 import { Link } from "react-router-dom";
 import AuthScreenLayout from "../components/AuthScreenLayout";
-import { BOLOBILL_CONTACT_EMAIL } from "../config/contact";
+import ConnectWhatsAppButton from "../components/marketing/ConnectWhatsAppButton";
+import {
+  BOLOBILL_ACCESS_WHATSAPP_MESSAGE,
+  BOLOBILL_CONTACT_EMAIL,
+} from "../config/contact";
 
 const STEPS = [
   {
     icon: "ti ti-message-circle",
     title: "Contact BoloBill",
-    desc: "Tell us about your kirana or retail shop and subscription plan.",
+    desc: "Tell us about your business and the plan you need.",
   },
   {
     icon: "ti ti-user-check",
     title: "Get credentials",
-    desc: "We create your merchant login — phone number and temporary PIN.",
+    desc: "We create your business login — phone number and temporary PIN.",
   },
   {
     icon: "ti ti-receipt",
@@ -21,15 +25,15 @@ const STEPS = [
 ];
 
 export default function SignupPage() {
-  const mailHref = `mailto:${BOLOBILL_CONTACT_EMAIL}?subject=${encodeURIComponent("BoloBill shop access")}`;
+  const mailHref = `mailto:${BOLOBILL_CONTACT_EMAIL}?subject=${encodeURIComponent("BoloBill business access")}`;
 
   return (
     <AuthScreenLayout
-      badge="Shop onboarding"
-      title="Get BoloBill for your shop"
-      subtitle="We onboard businesses after subscription — no self-signup or OTP on this panel."
+      badge="Business onboarding"
+      title="Get BoloBill for your business"
+      subtitle="We onboard your business after subscription — no self-signup or OTP on this panel."
       formHeading="Request access"
-      formLead="Contact us to subscribe and receive your shop credentials."
+      formLead="Contact us to subscribe and receive your login credentials."
     >
       <div className="marketing-steps mb-4">
         {STEPS.map((step, i) => (
@@ -46,13 +50,16 @@ export default function SignupPage() {
         ))}
       </div>
 
-      <a
-        href={mailHref}
-        className="btn w-100 marketing-submit-btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
-      >
-        <i className="ti ti-mail" aria-hidden />
-        Email {BOLOBILL_CONTACT_EMAIL}
-      </a>
+      <div className="d-flex flex-column gap-2">
+        <ConnectWhatsAppButton prefillMessage={BOLOBILL_ACCESS_WHATSAPP_MESSAGE} />
+        <a
+          href={mailHref}
+          className="btn w-100 marketing-submit-btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2"
+        >
+          <i className="ti ti-mail" aria-hidden />
+          Email {BOLOBILL_CONTACT_EMAIL}
+        </a>
+      </div>
 
       <p className="text-center small marketing-muted mt-4 mb-0">
         Already have credentials?{" "}

@@ -206,12 +206,6 @@ export default function InvoiceViewModal({
                     </a>
                   </div>
                 )}
-                {invoice.voiceTranscript && (
-                  <div className="mt-4 pt-4 border-top">
-                    <p className="mb-1 fw-bold text-muted small text-uppercase">Transcript</p>
-                    <p className="mb-0 small text-muted">{invoice.voiceTranscript}</p>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -222,7 +216,7 @@ export default function InvoiceViewModal({
                   <label className="form-label small mb-0 fw-bold">Send bill to WhatsApp number</label>
                   <p className="small text-muted mb-0">
                     Customer gets a message with bill total and a link to view the bill and scan your
-                    QR — like Ezo Bill.
+                    payment QR.
                   </p>
                   <div className="d-flex gap-2 flex-wrap align-items-center">
                     <input

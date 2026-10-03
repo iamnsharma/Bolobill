@@ -28,10 +28,16 @@ export const BOLOBILL_BRAND_COLORS: ShopSettings["colors"] = [
 
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   storeName: "BoloBill",
-  storeTagline: "Voice billing & stock platform",
+  storeTagline: "Billing, stock & insights",
   themeColorCount: 1,
   colors: BOLOBILL_BRAND_COLORS,
 };
+
+/** Neutral examples for empty store fields in Settings (not applied until user saves). */
+export const SHOP_SETTINGS_FIELD_PLACEHOLDERS = {
+  storeName: "My Store",
+  storeTagline: "Quality you can trust",
+} as const;
 
 const STORAGE_PREFIX = "bolobill_shop_settings_v1_";
 

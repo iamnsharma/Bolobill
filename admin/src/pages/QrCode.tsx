@@ -88,7 +88,7 @@ export default function QrCode() {
       <PageHeader
         title="Payment QR"
         icon="ti-qrcode"
-        subtitle="Upload your UPI or payment QR. It appears on bill PDFs and when you share bills on WhatsApp."
+        subtitle="Upload your payment QR (UPI, bank, or wallet). It appears on bill PDFs and customer bill links."
       />
 
       {message && (

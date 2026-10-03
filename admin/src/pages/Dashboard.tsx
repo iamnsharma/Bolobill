@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminStats, type SalesSummary } from "../api/admin";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
@@ -63,9 +64,35 @@ export default function Dashboard() {
         subtitle={
           isSuperAdmin
             ? "Platform overview and admin tools."
-            : "Today’s numbers and shortcuts—like your shop command center."
+            : "Today’s sales, inventory, and shortcuts in one place."
         }
       />
+
+      {!isSuperAdmin &&
+        !loading &&
+        apiAvailable &&
+        stockSummary != null &&
+        stockSummary.totalProducts === 0 && (
+          <div
+            className="alert alert-info d-flex flex-column flex-sm-row align-items-sm-center gap-2 gap-sm-3 mb-4"
+            role="status"
+          >
+            <div className="flex-grow-1">
+              <strong className="d-block mb-1">Get started</strong>
+              <span className="small">
+                Add items in Stock, then create your first bill.
+              </span>
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <Link to="/dashboard/stock" className="btn btn-sm btn-outline-primary">
+                Go to Stock
+              </Link>
+              <Link to="/dashboard/invoices/new" className="btn btn-sm btn-primary">
+                Create bill
+              </Link>
+            </div>
+          </div>
+        )}
 
       {!isSuperAdmin && (
         <SectionPanel flush bodyClassName="p-3">

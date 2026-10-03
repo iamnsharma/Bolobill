@@ -32,7 +32,7 @@ export default function UnitPicker({
           id={id}
           type="search"
           className="form-control"
-          placeholder="Search kg, pcs, ltr…"
+          placeholder="Search pcs, kg, sq ft, service…"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}

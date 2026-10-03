@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminInvoice } from "../api/admin";
 import InvoiceViewModal from "../components/InvoiceViewModal";
+import { VOICE_MIC_FEATURE_ENABLED } from "../utils/voiceComingSoon";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
@@ -209,9 +210,10 @@ export default function Invoices() {
                           <td>{inv.customerName}</td>
                           <td className="merchant-data-table__num">{formatFinance(inv.total)}</td>
                           <td>
-                            <span
-                              className={`badge ${inv.source === "voice" ? "bg-primary" : "bg-secondary"}`}>
-                              {inv.source}
+                            <span className="badge bg-secondary">
+                              {inv.source === "voice" && VOICE_MIC_FEATURE_ENABLED
+                                ? "Voice"
+                                : "Manual"}
                             </span>
                           </td>
                           {isSuperAdmin && (

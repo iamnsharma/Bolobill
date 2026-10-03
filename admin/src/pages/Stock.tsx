@@ -5,7 +5,7 @@ import {
   type StockProduct,
 } from "../api/admin";
 import { VoiceRecorder, type RecordingResult } from "../components/VoiceRecorder";
-import { notifyVoiceComingSoon } from "../utils/voiceComingSoon";
+import { notifyVoiceComingSoon, VOICE_MIC_FEATURE_ENABLED } from "../utils/voiceComingSoon";
 import CategoryChipBar from "../components/pos/CategoryChipBar";
 import StockStatusBadge, { productStockBadge } from "../components/stock/StockStatusBadge";
 import UnitPicker from "../components/stock/UnitPicker";
@@ -375,7 +375,7 @@ export default function Stock() {
       <PageHeader
         title="Stock"
         icon="ti-box"
-        subtitle="Categories, prices, and counts. Sales from Create Bill update stock automatically."
+        subtitle="Your online inventory — categories, prices, and quantities. Bills from Create Bill update counts automatically."
         actions={
           <button type="button" className="btn btn-primary" onClick={() => openAddStockPanel("single")}>
             <i className="ti ti-plus me-1" />
@@ -484,7 +484,7 @@ export default function Stock() {
                 <ExpandableSearch
                   value={searchQ}
                   onChange={setSearchQ}
-                  placeholder="Search products…"
+                  placeholder="Search items…"
                 />
               </div>
               <CategoryChipBar
@@ -499,7 +499,7 @@ export default function Stock() {
                 <div className="p-4 text-center text-muted">Loading…</div>
               ) : products.length === 0 ? (
                 <div className="p-4 text-muted">
-                  No products yet. Tap <strong>Add stock</strong> to add your first items.
+                  No inventory yet. Tap <strong>Add stock</strong> to add your first items.
                 </div>
               ) : (
                 <div
@@ -577,6 +577,7 @@ export default function Stock() {
         size="xl"
       >
         <div className="d-flex flex-wrap gap-2 mb-3 stock-add-modal-tabs">
+          {VOICE_MIC_FEATURE_ENABLED ? (
           <button
             type="button"
             className={`btn btn-sm btn-icon-only rounded-circle ${addStockMode === "voice" ? "btn-dark" : "btn-outline-secondary"}`}
@@ -586,6 +587,7 @@ export default function Stock() {
           >
             <i className="ti ti-microphone" />
           </button>
+          ) : null}
           <button
             type="button"
             className={`btn btn-sm ${addStockMode === "single" ? "btn-primary" : "btn-outline-secondary"}`}

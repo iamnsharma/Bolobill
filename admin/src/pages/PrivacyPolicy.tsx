@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
         <p className="small text-secondary mb-2">We may collect:</p>
         <ul className="small text-secondary mb-0">
           <li>Account information (e.g. phone number, name, business name) that you provide when you sign up.</li>
-          <li>Usage data (e.g. how you use the app, invoices created, voice usage) to provide and improve our services.</li>
+          <li>Usage data (e.g. how you use the app, invoices created) to provide and improve our services.</li>
           <li>Device information (e.g. device type, OS) where necessary for the app to function.</li>
         </ul>
       </section>

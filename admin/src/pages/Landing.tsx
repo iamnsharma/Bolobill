@@ -9,35 +9,37 @@ import feat9 from "../assets/images/features/bb9-whatsapp-bill-share.png";
 import YouTubeEmbed from "../components/landing/YouTubeEmbed";
 import MarketingBackdrop from "../components/marketing/MarketingBackdrop";
 import MarketingHeader from "../components/marketing/MarketingHeader";
+import ConnectWhatsAppButton from "../components/marketing/ConnectWhatsAppButton";
 import { BOLOBILL_CONTACT_EMAIL } from "../config/contact";
+import { OFFLINE_TO_ONLINE_LINE, PRODUCT_TAGLINE_SHORT } from "../config/productCopy";
 
 const FEATURES = [
   {
-    img: feat1,
-    icon: "ti-microphone",
-    title: "Voice to invoice",
-    desc: "Speak item names and prices in Hindi or English — Bolo Bill builds the bill while you serve the next customer.",
+    img: feat2,
+    icon: "ti-receipt-2",
+    title: "Create bills fast",
+    desc: "Pick items from your catalog, adjust quantities, and bill in a few taps — products or services, any category.",
     highlight: true,
-    bullets: ["Hands-free at the counter", "Fewer mistakes than scribbling", "Works alongside typing"],
+    bullets: ["Stock-linked line items", "Clear totals for customers", "Phone or desktop"],
   },
   {
     img: feat9,
     icon: "ti-brand-whatsapp",
     title: "Share on WhatsApp",
-    desc: "Send a clean bill link or PDF in one tap so customers leave with proof, not a crumpled receipt.",
+    desc: "Send a clean bill link or PDF in one tap so customers get a clear digital record, not a paper slip.",
     highlight: true,
-    bullets: ["Instant delivery on phone", "Professional look for your shop", "Customers can save & share"],
+    bullets: ["Instant delivery on phone", "Professional digital bills", "Customers can save & share"],
   },
   {
     img: feat7,
     icon: "ti-chart-bar",
     title: "Sales & analytics",
-    desc: "See today, this week, and this month without digging through notebooks — know what sells and when.",
+    desc: "See today, this week, and this month without manual tally sheets — know what sells and when.",
     highlight: true,
     bullets: ["Daily totals at a glance", "Spot busy hours", "Plan stock smarter"],
   },
   {
-    img: feat2,
+    img: feat1,
     icon: "ti-file-invoice",
     title: "Digital bills & PDF",
     desc: "Every invoice looks consistent — download PDF or share digitally anytime.",
@@ -46,13 +48,13 @@ const FEATURES = [
     img: feat3,
     icon: "ti-package",
     title: "Manage stock",
-    desc: "Track what is in stock, flag out-of-stock items, and restock before you run dry.",
+    desc: "Track inventory levels, flag out-of-stock items, and reorder before you run out.",
   },
   {
     img: feat4,
     icon: "ti-dashboard",
     title: "One dashboard",
-    desc: "Billing, inventory signals, and reports in one merchant panel — no juggling apps.",
+    desc: "Billing, inventory, and reports in one web panel — no juggling apps.",
   },
 ];
 
@@ -101,21 +103,20 @@ export default function Landing() {
           <div className="row align-items-center min-vh-75 py-5">
             <div className="col-lg-6 text-center text-lg-start">
               <span className="landing-hero-badge">
-                Digital billing for every shop
+                {PRODUCT_TAGLINE_SHORT}
               </span>
               <h1 className="landing-hero-title">
-                Speak the bill. Share on WhatsApp. Run your shop smarter.
+                Bill faster. Share on WhatsApp. Run your business smarter.
               </h1>
               <p className="landing-hero-sub">
-                Bolo Bill is built for kirana and small retailers — voice billing,
-                digital invoices, stock signals, and sales insights in one place.
-                Less register book, more time with customers.
+                Bolo Bill is a web panel for any store or clinic — digital bills, live
+                inventory, and sales insights in one place. {OFFLINE_TO_ONLINE_LINE}
               </p>
               <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mt-4 landing-hero-cta-group">
                 <Link
                   to="/signup"
                   className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
-                  Request shop access
+                  Request business access
                 </Link>
                 <a
                   href="#landing-demo"
@@ -130,12 +131,12 @@ export default function Landing() {
               className="col-lg-6 mt-5 mt-lg-0 text-center landing-hero-visual-wrap">
               <div className="landing-hero-visual landing-hero-youtube-wrap rounded-4 overflow-hidden shadow-lg">
                 <YouTubeEmbed
-                  title="Bolo Bill – Voice to bill, Share on WhatsApp"
+                  title="Bolo Bill – Billing, WhatsApp share, business dashboard"
                   className="landing-hero-youtube--inset"
                 />
               </div>
               <p className="landing-hero-video-caption small mt-3 mb-0">
-                2 min overview — voice billing, WhatsApp share, and merchant dashboard
+                2 min overview — billing, WhatsApp share, and business dashboard
               </p>
             </div>
           </div>
@@ -146,8 +147,8 @@ export default function Landing() {
         <div className="container">
           <div className="landing-trust-inner d-flex flex-wrap justify-content-center gap-3 gap-md-4 align-items-center">
             <span className="landing-trust-pill">
-              <i className="ti ti-microphone me-2" aria-hidden />
-              Voice billing
+              <i className="ti ti-receipt-2 me-2" aria-hidden />
+              Fast billing
             </span>
             <span className="landing-trust-pill">
               <i className="ti ti-brand-whatsapp me-2" aria-hidden />
@@ -155,7 +156,7 @@ export default function Landing() {
             </span>
             <span className="landing-trust-pill">
               <i className="ti ti-lock me-2" aria-hidden />
-              Secure merchant login
+              Secure business login
             </span>
             <span className="landing-trust-pill">
               <i className="ti ti-bolt me-2" aria-hidden />
@@ -170,20 +171,20 @@ export default function Landing() {
         data-landing-section="benefits"
         aria-label="Benefits">
         <div className="container py-4">
-          <span className="landing-section-badge">For shopkeepers</span>
+          <span className="landing-section-badge">For merchants</span>
           <div className="row align-items-center g-4">
             <div className="col-lg-6 mb-4 mb-lg-0">
               <h2 className="landing-section-title">
-                Your counter moves fast — your billing should too
+                Your team moves fast — your billing should too
               </h2>
               <p className="landing-section-sub text-muted mb-4">
-                Whether you bill by voice or by tap, everything stays in one merchant
-                panel. No duplicate entries, no lost pages in the register.
+                Whether you sell products or services, everything stays in one panel. No
+                duplicate entries, no lost paper bills or stock sheets.
               </p>
               <ul className="landing-benefits-list">
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>Voice or manual billing — switch anytime during rush hour.</span>
+                  <span>Create bills from your catalog in a few taps.</span>
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
@@ -191,7 +192,7 @@ export default function Landing() {
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
-                  <span>Out-of-stock lists so you restock before shelves go empty.</span>
+                  <span>Out-of-stock lists so you reorder before inventory runs out.</span>
                 </li>
                 <li>
                   <i className="ti ti-check text-primary me-2" aria-hidden />
@@ -201,7 +202,7 @@ export default function Landing() {
             </div>
             <div className="col-lg-6 text-center">
               <div className="landing-benefits-visual rounded-4 overflow-hidden shadow-sm">
-                <img src={feat4} alt="Bolo Bill merchant dashboard" className="img-fluid" />
+                <img src={feat4} alt="Bolo Bill business dashboard" className="img-fluid" />
               </div>
             </div>
           </div>
@@ -216,9 +217,9 @@ export default function Landing() {
         <div className="container py-4">
           <div className="text-center mb-5">
             <span className="landing-section-badge">Core features</span>
-            <h2 className="landing-section-title">What shopkeepers use every day</h2>
+            <h2 className="landing-section-title">What merchants use every day</h2>
             <p className="landing-section-sub text-muted mx-auto">
-              Three workflows that replace the register book — explained simply, built for real counters.
+              Three workflows that replace paper bills and manual stock — simple, built for daily use.
             </p>
           </div>
           <div className="row g-4 landing-bento">
@@ -300,25 +301,25 @@ export default function Landing() {
             <span className="landing-section-badge">3 steps</span>
             <h2 className="landing-section-title">Live in minutes, not days</h2>
             <p className="landing-section-sub text-muted mx-auto">
-              We onboard your shop, you log in with phone + PIN, and billing starts from the browser.
+              We onboard your business, you log in with phone + PIN, and billing starts from the browser.
             </p>
           </div>
           <div className="row g-4 text-center landing-how-steps">
             <div className="col-md-4 landing-step-col">
               <div className="landing-step rounded-4 p-4 h-100">
                 <span className="landing-step-num">1</span>
-                <h3 className="h6 fw-bold mt-2 mb-2">Get shop access</h3>
+                <h3 className="h6 fw-bold mt-2 mb-2">Get business access</h3>
                 <p className="small text-muted mb-0">
-                  Subscribe with BoloBill — we issue merchant credentials after payment.
+                  Subscribe with BoloBill — we issue your login credentials after payment.
                 </p>
               </div>
             </div>
             <div className="col-md-4 landing-step-col">
               <div className="landing-step rounded-4 p-4 h-100">
                 <span className="landing-step-num">2</span>
-                <h3 className="h6 fw-bold mt-2 mb-2">Speak or type items</h3>
+                <h3 className="h6 fw-bold mt-2 mb-2">Add items & bill</h3>
                 <p className="small text-muted mb-0">
-                  Create bills by voice at the counter or add lines manually when you prefer.
+                  Select products from stock (or add lines), review totals, and create the bill.
                 </p>
               </div>
             </div>
@@ -339,7 +340,7 @@ export default function Landing() {
         id="landing-contact"
         className={`landing-section landing-trial py-5 ${visible.has("onboard") ? "landing-in-view" : ""}`}
         data-landing-section="onboard"
-        aria-label="Shop onboarding">
+        aria-label="Business onboarding">
         <div className="container py-3">
           <span className="landing-section-badge d-inline-block mb-3">
             Onboarding
@@ -351,10 +352,10 @@ export default function Landing() {
                 <div className="col-lg-7 text-center text-lg-start mb-4 mb-lg-0">
                   <span className="landing-trial-badge">B2B onboarding</span>
                   <h2 className="landing-trial-title">
-                    We set up your shop account for you
+                    We set up your business account for you
                   </h2>
                   <p className="landing-trial-sub text-white opacity-90 mb-4">
-                    Subscribe with BoloBill, get phone + PIN credentials, then bill from the merchant web panel.
+                    Subscribe with BoloBill, get phone + PIN credentials, then bill from the web panel.
                     Change your PIN anytime in Settings.
                   </p>
                   <ul className="landing-trial-limits list-unstyled text-white opacity-90 mb-0 small">
@@ -395,7 +396,7 @@ export default function Landing() {
         <div className="container py-4 text-center">
           <h2 className="landing-cta-final-title">Ready for digital billing?</h2>
           <p className="landing-cta-final-sub text-muted mb-4">
-            Talk to us to onboard your shop, or log in if you already have credentials.
+            Talk to us to onboard your business, or log in if you already have credentials.
           </p>
           <div className="d-flex flex-wrap gap-3 justify-content-center">
             <Link
@@ -425,6 +426,7 @@ export default function Landing() {
             Questions or feedback? We’d love to hear from you.
           </p>
           <div className="d-flex flex-wrap justify-content-center gap-4 align-items-center">
+            <ConnectWhatsAppButton variant="link" />
             <a
               href={`mailto:${BOLOBILL_CONTACT_EMAIL}`}
               className="text-decoration-none text-dark d-flex align-items-center gap-2"

@@ -311,18 +311,6 @@ export default function ReviewInvoiceModal({
           </div>
         )}
 
-        {initialData?.source === "voice" && (
-          <div className="mt-3">
-            <label className="form-label fw-semibold small">Transcript (optional, on PDF)</label>
-            <textarea
-              className="form-control form-control-sm"
-              rows={2}
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              placeholder="Voice transcript"
-            />
-          </div>
-        )}
       </form>
     </AppModal>
   );

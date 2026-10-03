@@ -1,4 +1,4 @@
-/** Common retail units (India shop / POS). Custom values still allowed via picker input. */
+/** Common units for retail, services, and trades. Custom values still allowed via picker input. */
 export const STOCK_UNIT_OPTIONS = [
   "pcs",
   "kg",
@@ -14,7 +14,9 @@ export const STOCK_UNIT_OPTIONS = [
   "meter",
   "m",
   "ft",
+  "sq ft",
   "pair",
+  "service",
   "set",
   "roll",
   "sheet",
@@ -25,7 +27,16 @@ export const STOCK_UNIT_OPTIONS = [
   "crate",
 ] as const;
 
-export const POPULAR_UNITS = ["pcs", "kg", "ltr", "box", "pack", "dozen", "bag", "bottle"] as const;
+export const POPULAR_UNITS = [
+  "pcs",
+  "kg",
+  "ltr",
+  "sq ft",
+  "pair",
+  "service",
+  "box",
+  "pack",
+] as const;
 
 export function filterStockUnits(query: string): string[] {
   const q = query.trim().toLowerCase();

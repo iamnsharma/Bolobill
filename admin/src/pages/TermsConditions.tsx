@@ -22,7 +22,7 @@ export default function TermsConditions() {
       <section className="legal-section mb-4">
         <h2 className="h6 fw-bold mb-2">2. Description of service</h2>
         <p className="small text-secondary mb-0">
-          Bolo Bill provides digital billing, voice-to-invoice, and related tools for businesses. We may change, suspend, or discontinue features with reasonable notice where feasible.
+          Bolo Bill provides digital billing, stock, and related tools for businesses. We may change, suspend, or discontinue features with reasonable notice where feasible.
         </p>
       </section>
 
@@ -36,7 +36,7 @@ export default function TermsConditions() {
       <section className="legal-section mb-4">
         <h2 className="h6 fw-bold mb-2">4. Free trial and subscriptions</h2>
         <p className="small text-secondary mb-0">
-          We may offer a free trial (e.g. 2 days) with limits such as a cap on invoices or voice usage. After the trial, paid plans may be required to continue. Subscription terms, pricing, and limits are as described at the time of sign-up or on our app/website.
+          We may offer a free trial (e.g. 2 days) with limits such as a cap on invoices or feature usage. After the trial, paid plans may be required to continue. Subscription terms, pricing, and limits are as described at the time of sign-up or on our app/website.
         </p>
       </section>
 

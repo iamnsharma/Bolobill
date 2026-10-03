@@ -344,7 +344,7 @@ export default function Users() {
 
       <AppModal
         show={showCreateMerchant}
-        title={createdMerchant ? "Shop created" : "Onboard new shop"}
+        title={createdMerchant ? "Business created" : "Onboard new business"}
         onClose={closeCreateModal}
         size="md"
         footer={
@@ -372,7 +372,7 @@ export default function Users() {
       >
         {createdMerchant ? (
           <div className="small">
-            <p className="mb-2">Share these credentials securely with the shop owner:</p>
+            <p className="mb-2">Share these credentials securely with the business owner:</p>
             <ul className="list-unstyled mb-0">
               <li>
                 <strong>Phone:</strong> {createdMerchant.phone}

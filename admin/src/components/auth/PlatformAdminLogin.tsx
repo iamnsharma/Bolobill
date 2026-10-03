@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import PinInput from "../PinInput";
 
 /** Platform (super) admin — phone + PIN only (shown after easter-egg unlock on /login). */
 export default function PlatformAdminLogin() {
@@ -53,11 +54,7 @@ export default function PlatformAdminLogin() {
   };
 
   return (
-    <div className="platform-admin-login mt-4 pt-4">
-      <p className="platform-admin-login-label small fw-semibold mb-3">
-        <i className="ti ti-shield-lock me-1" aria-hidden />
-        Platform admin
-      </p>
+    <div className="platform-admin-login">
       {error ? (
         <div className="alert marketing-alert-danger py-2 small mb-3" role="alert">
           {error}
@@ -88,25 +85,21 @@ export default function PlatformAdminLogin() {
           <label htmlFor="platform-pin" className="form-label marketing-label">
             PIN
           </label>
-          <div className="marketing-input-wrap">
-            <span className="marketing-input-icon" aria-hidden>
-              <i className="ti ti-lock" />
-            </span>
-            <input
-              id="platform-pin"
-              type="password"
-              className="form-control marketing-input"
-              placeholder="Admin PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              autoComplete="current-password"
-              maxLength={8}
-            />
-          </div>
+          <PinInput
+            id="platform-pin"
+            value={pin}
+            onChange={setPin}
+            placeholder="Admin PIN"
+            autoComplete="current-password"
+          />
         </div>
-        <button type="submit" className="btn w-100 marketing-submit-btn fw-semibold" disabled={loading}>
+        <button
+          type="submit"
+          className="btn w-100 marketing-submit-btn marketing-submit-btn--platform fw-semibold"
+          disabled={loading}
+        >
           {loading ? <span className="spinner-border spinner-border-sm me-2" /> : null}
-          Sign in as platform admin
+          Enter admin dashboard
         </button>
       </form>
     </div>
