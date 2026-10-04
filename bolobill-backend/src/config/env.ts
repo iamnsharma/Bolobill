@@ -8,7 +8,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3011),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   JWT_SECRET: z.string().min(8, 'JWT_SECRET must be at least 8 chars'),
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  OPENAI_API_KEY: z
+    .string()
+    .min(1, 'OPENAI_API_KEY is required')
+    .transform(s => s.trim()),
   BASE_URL: z.string().url().default('http://localhost:3011'),
   /** Base URL for customer-facing bill pages (admin app), e.g. http://localhost:3000 */
   PUBLIC_BILL_BASE_URL: z.string().url().optional(),

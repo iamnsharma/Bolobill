@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   adminApi,
   type StockCategory,
@@ -377,10 +378,16 @@ export default function Stock() {
         icon="ti-box"
         subtitle="Your online inventory — categories, prices, and quantities. Bills from Create Bill update counts automatically."
         actions={
-          <button type="button" className="btn btn-primary" onClick={() => openAddStockPanel("single")}>
-            <i className="ti ti-plus me-1" />
-            Add stock
-          </button>
+          <div className="d-flex flex-wrap gap-2">
+            <Link to="/dashboard/stock/import" className="btn btn-outline-primary">
+              <i className="ti ti-sparkles me-1" />
+              Import with AI
+            </Link>
+            <button type="button" className="btn btn-primary" onClick={() => openAddStockPanel("single")}>
+              <i className="ti ti-plus me-1" />
+              Add stock
+            </button>
+          </div>
         }
       />
 

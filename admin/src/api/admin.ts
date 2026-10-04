@@ -85,6 +85,50 @@ export interface StockCategory {
   updatedAt?: string;
 }
 
+export type MenuImportDuplicateStatus = 'new' | 'exists';
+
+export type MenuImportPreviewCategory = {
+  tempId: string;
+  name: string;
+  sortOrder: number;
+};
+
+export type MenuImportPreviewItem = {
+  tempId: string;
+  categoryTempId: string;
+  name: string;
+  unit: string;
+  unitPrice: number | null;
+  lowStockThreshold: number | null;
+  duplicateStatus: MenuImportDuplicateStatus;
+  matchedProductId: string | null;
+  matchedProductName: string | null;
+};
+
+export type MenuImportAnalyzeResponse = {
+  summary: { found: number; newCount: number; existsCount: number };
+  categories: MenuImportPreviewCategory[];
+  items: MenuImportPreviewItem[];
+};
+
+export type MenuImportMatchRow = {
+  tempId: string;
+  duplicateStatus: MenuImportDuplicateStatus;
+  matchedProductId: string | null;
+  matchedProductName: string | null;
+};
+
+export type MenuImportCommitProduct = {
+  tempId?: string;
+  categoryName: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  quantityOnHand: number;
+  quantityOnHandProvided: true;
+  lowStockThreshold?: number;
+};
+
 export interface StockProduct {
   _id: string;
   name: string;
@@ -369,6 +413,28 @@ export const adminApi = {
       .post<{ transcript: string; products: StockProduct[] }>('/admin/stock/products/voice', formData, {
         timeout: 60000,
       })
+      .then(r => r.data),
+
+  analyzeMenuImport: (formData: FormData) =>
+    api
+      .post<MenuImportAnalyzeResponse>('/admin/stock/products/menu-import/analyze', formData, {
+        timeout: 120000,
+      })
+      .then(r => r.data),
+
+  matchMenuImportItems: (body: { items: { tempId: string; name: string }[] }) =>
+    api
+      .post<{ matches: MenuImportMatchRow[] }>('/admin/stock/products/menu-import/match', body)
+      .then(r => r.data.matches),
+
+  commitMenuImport: (body: { products: MenuImportCommitProduct[] }) =>
+    api
+      .post<{
+        imported: number;
+        skipped: number;
+        message: string;
+        products: StockProduct[];
+      }>('/admin/stock/products/menu-import/commit', body)
       .then(r => r.data),
 
   lookupAddressBookContact: (phone: string) =>

@@ -17,6 +17,7 @@ import Sales from "./pages/Sales";
 import ItemsSold from "./pages/ItemsSold";
 import OutOfStock from "./pages/OutOfStock";
 import Stock from "./pages/Stock";
+import MenuImport from "./pages/MenuImport";
 import QrCode from "./pages/QrCode";
 import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
@@ -121,6 +122,14 @@ function AppRoutes() {
           element={
             <BusinessOnlyRoute>
               <Stock />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="stock/import"
+          element={
+            <BusinessOnlyRoute>
+              <MenuImport />
             </BusinessOnlyRoute>
           }
         />

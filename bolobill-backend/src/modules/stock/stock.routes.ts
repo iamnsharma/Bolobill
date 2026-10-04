@@ -34,6 +34,31 @@ const upload = multer({
   limits: {fileSize: 25 * 1024 * 1024},
 });
 
+const imageMimeExt: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+};
+
+const menuImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {fileSize: 10 * 1024 * 1024},
+  fileFilter: (_req, file, cb) => {
+    const mime = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
+    const ok =
+      mime.startsWith('image/') ||
+      mime === 'application/octet-stream' ||
+      Boolean(imageMimeExt[mime]);
+    if (ok) {
+      cb(null, true);
+    } else {
+      cb(new Error('Please upload an image file (JPEG, PNG, WebP, or HEIC)'));
+    }
+  },
+});
+
 export const stockRouter = Router();
 
 stockRouter.use(authMiddleware, adminMiddleware);
@@ -48,6 +73,13 @@ stockRouter.get('/products', stockController.listProducts);
 stockRouter.post('/products', stockController.createProduct);
 stockRouter.post('/products/bulk', stockController.bulkCreateProducts);
 stockRouter.post('/products/voice', upload.single('audio'), stockController.intakeFromVoice);
+stockRouter.post(
+  '/products/menu-import/analyze',
+  menuImageUpload.single('image'),
+  stockController.analyzeMenuImport,
+);
+stockRouter.post('/products/menu-import/match', stockController.matchMenuImport);
+stockRouter.post('/products/menu-import/commit', stockController.commitMenuImport);
 stockRouter.post('/products/adjust', stockController.adjustProduct);
 stockRouter.put('/products/:id', stockController.updateProduct);
 stockRouter.delete('/products/:id', stockController.deleteProduct);

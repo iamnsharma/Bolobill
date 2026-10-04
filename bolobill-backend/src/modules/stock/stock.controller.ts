@@ -9,9 +9,12 @@ import {
   bulkCreateProductsSchema,
   createCategorySchema,
   createProductSchema,
+  menuImportCommitSchema,
+  menuImportMatchSchema,
   updateCategorySchema,
   updateProductSchema,
 } from './stock.validation';
+import {menuImportService} from './menuImport.service';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & {adminContext?: AdminContext}).adminContext;
@@ -176,5 +179,50 @@ export const stockController = {
     } finally {
       await invoiceService.cleanupTempFile(req.file.path);
     }
+  }),
+
+  analyzeMenuImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.buffer) {
+      throw new ApiError(400, 'image file is required');
+    }
+    const mime = req.file.mimetype || 'image/jpeg';
+    const result = await menuImportService.analyzeMenuImage(ctx.userId, req.file.buffer, mime);
+    return res.json(result);
+  }),
+
+  matchMenuImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = menuImportMatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const matches = await menuImportService.matchItemNames(ctx.userId, parsed.data.items);
+    return res.json({matches});
+  }),
+
+  commitMenuImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = menuImportCommitSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await menuImportService.commitImport(
+      ctx.userId,
+      parsed.data.products.map(p => ({
+        categoryName: p.categoryName,
+        name: p.name,
+        unit: p.unit,
+        unitPrice: p.unitPrice,
+        quantityOnHand: p.quantityOnHand,
+        lowStockThreshold: p.lowStockThreshold,
+      })),
+    );
+    return res.status(result.imported > 0 ? 201 : 200).json({
+      imported: result.imported,
+      skipped: result.skipped,
+      message: result.message,
+      products: result.products.map(p => toProductVm(p as Record<string, unknown>)),
+    });
   }),
 };
