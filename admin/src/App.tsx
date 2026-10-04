@@ -1,5 +1,7 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { GuestModeProvider, useGuestMode } from "./contexts/GuestModeContext";
 import BusinessOnlyRoute from "./components/BusinessOnlyRoute";
 import SuperAdminOnlyRoute from "./components/SuperAdminOnlyRoute";
 import GuestOnlyRoute from "./components/GuestOnlyRoute";
@@ -41,6 +43,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GuestEntryRedirect() {
+  const { enterGuestMode } = useGuestMode();
+  const navigate = useNavigate();
+  useEffect(() => {
+    enterGuestMode();
+    navigate("/dashboard", { replace: true });
+  }, [enterGuestMode, navigate]);
+  return (
+    <div className="min-vh-100 d-flex align-items-center justify-content-center">
+      <div className="spinner-border text-primary" role="status" />
+    </div>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -71,6 +87,7 @@ function AppRoutes() {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsConditions />} />
       <Route path="/bill/:token" element={<PublicBill />} />
+      <Route path="/guest" element={<GuestEntryRedirect />} />
       <Route
         path="/dashboard"
         element={
@@ -202,8 +219,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <GuestModeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </GuestModeProvider>
   );
 }

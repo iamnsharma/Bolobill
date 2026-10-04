@@ -1159,6 +1159,7 @@
 /* Main content starts below fixed navbar (do not use py-* on #content — it overrides top padding) */
 :root {
   --merchant-topbar-height: 60px;
+  --merchant-topbar-guest-strip: 0px;
 }
 
 #content.content {
@@ -1167,8 +1168,51 @@
 }
 
 #content.content.merchant-content {
-  padding-top: calc(var(--merchant-topbar-height) + 1.25rem);
+  padding-top: calc(
+    var(--merchant-topbar-height) + var(--merchant-topbar-guest-strip) + 1.25rem
+  );
   padding-bottom: 1.5rem;
+}
+
+#content.content.merchant-content.merchant-content--guest {
+  --merchant-topbar-guest-strip: 36px;
+}
+
+.merchant-topbar.merchant-topbar--guest-active,
+.topbar.merchant-topbar.merchant-topbar--guest-active {
+  height: auto;
+  min-height: var(--merchant-topbar-height);
+}
+
+.merchant-topbar-guest-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.75rem;
+  background: linear-gradient(90deg, #1e3a5f 0%, #2d4a6f 100%);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.merchant-topbar-guest-strip__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merchant-topbar-guest-strip__exit {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.merchant-topbar-row {
+  min-height: var(--merchant-topbar-height);
 }
 
 .content .container-fluid {

@@ -258,11 +258,39 @@
   white-space: nowrap;
   text-decoration: none;
   border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
   transition:
     background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+button.marketing-header-btn {
+  appearance: none;
+  background: transparent;
+}
+
+.marketing-header--dark .marketing-header-btn--guest {
+  color: #1e3a5f;
+  background: #fff;
+  border-color: #fff;
+}
+
+.marketing-header--dark .marketing-header-btn--guest:hover {
+  color: #1e3a5f;
+  background: #f0f4f8;
+}
+
+.marketing-header--solid .marketing-header-btn--guest {
+  color: #1e3a5f;
+  background: #f0f4f8;
+  border-color: rgba(30, 58, 95, 0.2);
+}
+
+.marketing-header--solid .marketing-header-btn--guest:hover {
+  background: #e2eaf3;
 }
 
 .marketing-header--dark .marketing-header-btn--ghost {
@@ -871,4 +899,312 @@
 .marketing-legal-card .legal-section h2 {
   font-size: 0.95rem;
   font-weight: 700;
+}
+
+.landing-hero-guest-hint {
+  max-width: 36rem;
+}
+
+.landing-hero-btn--guest {
+  color: #1e3a5f;
+}
+
+.landing-ai-card {
+  background: #fff;
+  border: 1px solid rgba(30, 58, 95, 0.1);
+  box-shadow: 0 8px 24px rgba(30, 58, 95, 0.06);
+}
+
+.landing-ai-card-icon {
+  font-size: 1.75rem;
+  color: var(--bb-red, #b71c1c);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.landing-ai-footnote {
+  border-left: 3px solid rgba(183, 28, 28, 0.35);
+  padding-left: 0.75rem;
+}
+
+.landing-feature-matrix__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+  padding: 0.35rem 0.5rem;
+}
+
+/* Hero AI tags */
+.landing-hero-ai-tags {
+  max-width: 32rem;
+}
+
+.landing-hero-ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+}
+
+.landing-hero-ai-tag .ti {
+  font-size: 1rem;
+  color: #ffc9b8;
+}
+
+/* AI spotlight band */
+.landing-ai-spotlight-panel {
+  background: linear-gradient(135deg, #1a2744 0%, #2d3f5c 45%, #1e3a5f 100%);
+  color: #fff;
+  box-shadow: 0 24px 60px rgba(26, 39, 68, 0.35);
+}
+
+.landing-ai-spotlight-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffd4c8;
+  margin-bottom: 1rem;
+}
+
+.landing-ai-spotlight-title {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.landing-ai-spotlight-sub {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.landing-ai-flow__step {
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+}
+
+.landing-ai-flow__step--accent {
+  background: rgba(230, 98, 57, 0.35);
+  color: #fff;
+}
+
+.landing-ai-flow__arrow {
+  opacity: 0.55;
+  font-size: 0.85rem;
+}
+
+.landing-ai-spotlight-card {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.landing-ai-spotlight-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+  margin-bottom: 0.65rem;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffb4a2;
+  font-size: 1.15rem;
+}
+
+.landing-ai-spotlight-shot {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.landing-ai-spotlight-shot__img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 200px;
+}
+
+/* Import visual */
+.landing-import-visual {
+  position: relative;
+  padding: 1.5rem 0.5rem 2rem;
+}
+
+.landing-import-visual__glow {
+  position: absolute;
+  inset: 10% 5% 15%;
+  background: radial-gradient(circle at 30% 40%, rgba(230, 98, 57, 0.25), transparent 65%);
+  pointer-events: none;
+}
+
+.landing-import-visual__screen {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.landing-import-visual__chips {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: -1.25rem;
+  padding: 0 0.75rem;
+}
+
+.landing-import-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(42, 18, 17, 0.08);
+  color: var(--bb-text, #2a1211);
+}
+
+.landing-import-chip--ai {
+  background: linear-gradient(135deg, #fff5f2 0%, #fff 100%);
+  border-color: rgba(183, 28, 28, 0.2);
+  color: var(--bb-red, #b71c1c);
+}
+
+/* Credit visual column */
+.landing-credit-visual {
+  position: relative;
+  min-height: 320px;
+  padding: 0.5rem 0.5rem 2.5rem;
+}
+
+.landing-credit-visual__glow {
+  position: absolute;
+  inset: 5% 0 20%;
+  background: radial-gradient(circle at 70% 30%, rgba(0, 201, 81, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+.landing-credit-visual__screen {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.landing-credit-mock {
+  position: absolute;
+  z-index: 3;
+  right: 0.5rem;
+  top: 1rem;
+  max-width: 11rem;
+  padding: 0.75rem 0.9rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.landing-credit-mock__head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bb-red, #b71c1c);
+  margin-bottom: 0.35rem;
+}
+
+.landing-credit-mock__name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bb-text, #2a1211);
+}
+
+.landing-credit-mock__amt {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e3a5f;
+}
+
+.landing-credit-tiles {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 576px) {
+  .landing-credit-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-credit-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.65rem 0.4rem;
+  border-radius: 0.85rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 16px rgba(42, 18, 17, 0.06);
+  color: var(--bb-text-muted, #76504d);
+}
+
+.landing-credit-tile .ti {
+  font-size: 1.35rem;
+}
+
+.landing-credit-tile--cash .ti {
+  color: #0d9488;
+}
+
+.landing-credit-tile--credit .ti {
+  color: #1e3a5f;
+}
+
+.landing-credit-tile--phone .ti {
+  color: var(--bb-red, #b71c1c);
+}
+
+.landing-credit-tile--ledger .ti {
+  color: #7c3aed;
+}
+
+.landing-credit-tile--wa .ti {
+  color: #25d366;
+}
+
+#landing-import {
+  scroll-margin-top: calc(var(--marketing-header-height, 4.5rem) + 0.75rem);
 }

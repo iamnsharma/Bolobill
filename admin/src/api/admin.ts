@@ -1,4 +1,6 @@
 import { api } from './client';
+import { isGuestMode } from '../guest/guestMode';
+import { guestAdminApi } from '../guest/guestAdminApi';
 
 export interface AdminUser {
   id: string;
@@ -192,7 +194,7 @@ export interface UserLimits {
   features: string[];
 }
 
-export const adminApi = {
+const realAdminApi = {
   getMe: () =>
     api.get<{ user: AdminUser; isSuperAdmin: boolean }>('/admin/me').then((r) => r.data),
 
@@ -592,6 +594,23 @@ export const adminApi = {
       )
       .then(r => r.data),
 };
+
+type AdminApiShape = typeof realAdminApi;
+
+export const adminApi: AdminApiShape = new Proxy(realAdminApi, {
+  get(target, prop: string | symbol) {
+    if (typeof prop === 'string' && isGuestMode()) {
+      const guestFn = (guestAdminApi as Record<string, unknown>)[prop];
+      if (typeof guestFn === 'function') {
+        return guestFn.bind(guestAdminApi);
+      }
+      return () =>
+        Promise.reject(new Error(`Guest preview does not support "${prop}".`));
+    }
+    const value = (target as Record<string, unknown>)[prop as string];
+    return typeof value === 'function' ? value.bind(target) : value;
+  },
+}) as AdminApiShape;
 
 export interface CreditAccountSummary {
   phone: string;

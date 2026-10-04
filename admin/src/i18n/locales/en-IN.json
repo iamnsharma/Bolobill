@@ -326,5 +326,19 @@
       "upload": "Upload QR image",
       "remove": "Remove QR code"
     }
+  },
+  "guest": {
+    "banner": "Guest preview — data stays on this device only",
+    "exit": "Exit guest mode",
+    "previewLabel": "Guest preview",
+    "exitConfirmTitle": "Exit guest mode?",
+    "exitConfirmMessage": "All sample data on this device will be cleared. You can start a new guest preview anytime from the home page.",
+    "exitConfirmAction": "Exit and clear data",
+    "tryDemo": "Try guest demo",
+    "tryDemoHint": "No login — explore the full merchant panel with sample data"
+  },
+  "landing": {
+    "guestCta": "Try guest demo",
+    "guestCtaSub": "No signup — full dashboard on this device"
   }
 }

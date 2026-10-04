@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import { useGuestMode } from "../contexts/GuestModeContext";
 import { FinancePrivacyProvider, useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import { ShopSettingsProvider, useShopSettings } from "../contexts/ShopSettingsContext";
 import ConfirmModal from "../components/ConfirmModal";
@@ -28,6 +29,8 @@ function DashboardLayoutInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showExitGuestConfirm, setShowExitGuestConfirm] = useState(false);
+  const { isGuest, exitGuestMode } = useGuestMode();
   const [showFinanceUnlock, setShowFinanceUnlock] = useState(false);
   const [showFinancePinSetup, setShowFinancePinSetup] = useState(false);
   const [financeToggleError, setFinanceToggleError] = useState<string | null>(null);
@@ -66,6 +69,12 @@ function DashboardLayoutInner() {
     navigate("/login", { replace: true });
   };
 
+  const handleExitGuestConfirm = () => {
+    setShowExitGuestConfirm(false);
+    exitGuestMode();
+    navigate("/", { replace: true });
+  };
+
   return (
     <>
       <div
@@ -73,7 +82,26 @@ function DashboardLayoutInner() {
         onClick={closeMobile}
         aria-hidden
       />
-      <nav className="navbar bg-white border-bottom fixed-top topbar px-3 merchant-topbar">
+      <nav
+        className={`navbar bg-white border-bottom fixed-top topbar merchant-topbar flex-column align-items-stretch p-0${
+          isGuest ? " merchant-topbar--guest-active" : ""
+        }`}>
+        {isGuest ? (
+          <div className="merchant-topbar-guest-strip" role="status">
+            <span className="merchant-topbar-guest-strip__text">
+              <i className="ti ti-device-laptop me-1" aria-hidden />
+              <span className="d-none d-md-inline">{t("guest.banner")}</span>
+              <span className="d-md-none">{t("guest.previewLabel")}</span>
+            </span>
+            <button
+              type="button"
+              className="btn btn-sm btn-light merchant-topbar-guest-strip__exit"
+              onClick={() => setShowExitGuestConfirm(true)}>
+              {t("guest.exit")}
+            </button>
+          </div>
+        ) : null}
+        <div className="merchant-topbar-row d-flex align-items-center flex-grow-1 w-100 px-3">
         <button
           type="button"
           className="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm"
@@ -154,7 +182,7 @@ function DashboardLayoutInner() {
                 {user?.name?.charAt(0)?.toUpperCase() || "A"}
               </span>
               <span className="d-none d-sm-inline">
-                {user?.name || user?.phone}
+                {isGuest ? t("guest.previewLabel") : user?.name || user?.phone}
               </span>
             </button>
             <ul className="dropdown-menu dropdown-menu-end">
@@ -172,17 +200,20 @@ function DashboardLayoutInner() {
               <li>
                 <hr className="dropdown-divider" />
               </li>
-              <li>
-                <button
-                  type="button"
-                  className="dropdown-item text-danger"
-                  onClick={handleLogoutClick}>
-                  <i className="ti ti-logout me-2" />
-                  {t("nav.logout")}
-                </button>
-              </li>
+              {!isGuest ? (
+                <li>
+                  <button
+                    type="button"
+                    className="dropdown-item text-danger"
+                    onClick={handleLogoutClick}>
+                    <i className="ti ti-logout me-2" />
+                    {t("nav.logout")}
+                  </button>
+                </li>
+              ) : null}
             </ul>
           </div>
+        </div>
         </div>
       </nav>
 
@@ -274,9 +305,20 @@ function DashboardLayoutInner() {
         onCancel={() => setShowLogoutConfirm(false)}
       />
 
+      <ConfirmModal
+        show={showExitGuestConfirm}
+        title={t("guest.exitConfirmTitle")}
+        message={t("guest.exitConfirmMessage")}
+        variant="warning"
+        confirmLabel={t("guest.exitConfirmAction")}
+        cancelLabel={t("common.cancel")}
+        onConfirm={handleExitGuestConfirm}
+        onCancel={() => setShowExitGuestConfirm(false)}
+      />
+
       <main
         id="content"
-        className={`content pb-4 merchant-content ${sidebarCollapsed ? "full" : ""}`}>
+        className={`content pb-4 merchant-content ${sidebarCollapsed ? "full" : ""}${isGuest ? " merchant-content--guest" : ""}`}>
         <div className="container-fluid">
           <Outlet />
         </div>

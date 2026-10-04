@@ -9,6 +9,8 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { adminApi } from "../api/admin";
+import { isGuestMode } from "../guest/guestMode";
+import { loadGuestState } from "../guest/guestStore";
 /** Shown in place of revenue / inventory totals when privacy mode is on. */
 export const FINANCE_MASK = "*****";
 
@@ -36,7 +38,7 @@ type FinancePrivacyContextValue = {
 const FinancePrivacyContext = createContext<FinancePrivacyContextValue | null>(null);
 
 export function FinancePrivacyProvider({ children }: { children: ReactNode }) {
-  const { user, isSuperAdmin, refreshUser } = useAuth();
+  const { user, isSuperAdmin, refreshUser, isGuestPreview } = useAuth();
   const hasInventoryPin = Boolean(user?.hasInventoryPin);
   const [hideFinance, setHideFinance] = useState(false);
   const [financeSyncing, setFinanceSyncing] = useState(false);
@@ -50,6 +52,11 @@ export function FinancePrivacyProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isSuperAdmin) {
       applyHidden(false);
+      return;
+    }
+    if (isGuestPreview || isGuestMode()) {
+      const state = loadGuestState();
+      applyHidden(Boolean(state?.financeReportsHidden));
       return;
     }
     if (!user?.id) return;
@@ -68,7 +75,7 @@ export function FinancePrivacyProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, isSuperAdmin, applyHidden]);
+  }, [user?.id, isSuperAdmin, isGuestPreview, applyHidden]);
 
   const hideFinanceReports = useCallback(
     async (inventoryPin?: string) => {

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { resolveApiBaseUrl, resolveApiFileUrl } from "../config/deployUrls";
 import BoloBillBrandText from "../components/BoloBillBrandText";
+import { findGuestInvoiceByPublicToken, loadGuestState } from "../guest/guestStore";
+import { isGuestMode } from "../guest/guestMode";
 
 type PublicBill = {
   invoiceId: string;
@@ -16,7 +18,27 @@ type PublicBill = {
   publicBillUrl: string;
 };
 
+function guestBillFromToken(token: string): PublicBill | null {
+  const inv = findGuestInvoiceByPublicToken(token);
+  const state = loadGuestState();
+  if (!inv || !state) return null;
+  return {
+    invoiceId: inv.invoiceId,
+    customerName: inv.customerName,
+    items: inv.items,
+    total: inv.total ?? 0,
+    createdAt: inv.createdAt,
+    pdfUrl: "",
+    qrUrl: state.qrCodeUrl ?? "",
+    shopName: state.shopSettings.storeName,
+    shopPhone: state.user.phone,
+    publicBillUrl: inv.publicBillUrl ?? `/bill/${token}`,
+  };
+}
+
 async function fetchPublicBill(token: string): Promise<PublicBill> {
+  const local = guestBillFromToken(token);
+  if (local) return local;
   const apiBase = resolveApiBaseUrl();
   const res = await fetch(`${apiBase}/public/bills/${encodeURIComponent(token)}`);
   if (!res.ok) {
@@ -61,6 +83,8 @@ export default function PublicBill() {
     );
   }
 
+  const guestPreview = isGuestMode();
+
   if (error || !bill) {
     return (
       <div className="public-bill-page min-vh-100 d-flex align-items-center justify-content-center p-4">
@@ -80,6 +104,9 @@ export default function PublicBill() {
     <div className="public-bill-page min-vh-100 py-4 py-md-5">
       <div className="public-bill-card mx-auto">
         <header className="public-bill-card__head text-center">
+          {guestPreview ? (
+            <p className="small text-muted mb-2">Guest preview — sample bill on this device</p>
+          ) : null}
           <p className="public-bill-card__eyebrow mb-1">
             <BoloBillBrandText />
           </p>

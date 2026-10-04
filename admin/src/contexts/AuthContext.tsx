@@ -1,9 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { authApi, AuthUser } from '../api/auth';
 import { adminApi } from '../api/admin';
+import { isGuestMode, repairGuestSession } from '../guest/guestMode';
+import { loadGuestState } from '../guest/guestStore';
 
 interface AuthContextValue {
   user: AuthUser | null;
+  isGuestPreview: boolean;
   isSuperAdmin: boolean;
   loading: boolean;
   login: (phone: string, pin: string) => Promise<void>;
@@ -17,12 +20,70 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function guestUserFromStore(): AuthUser | null {
+  const state = loadGuestState();
+  if (!state) return null;
+  return {
+    id: state.user.id,
+    phone: state.user.phone,
+    name: state.user.name,
+    businessName: state.user.businessName,
+    accountType: 'business',
+    role: 'merchant',
+    financeReportsHidden: state.financeReportsHidden,
+    hasInventoryPin: Boolean(state.inventoryPinHash),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(authApi.getStoredUser());
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (isGuestMode()) {
+      repairGuestSession();
+      return guestUserFromStore();
+    }
+    return authApi.getStoredUser();
+  });
+  const [isGuestPreview, setIsGuestPreview] = useState(
+    () => isGuestMode() && Boolean(guestUserFromStore()),
+  );
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !isGuestMode());
+
+  const syncGuestAuth = useCallback(() => {
+    if (isGuestMode()) {
+      repairGuestSession();
+      const guestUser = guestUserFromStore();
+      setIsGuestPreview(Boolean(guestUser));
+      setUser(guestUser);
+      setIsSuperAdmin(false);
+      setLoading(false);
+      return;
+    }
+    setIsGuestPreview(false);
+  }, []);
 
   useEffect(() => {
+    syncGuestAuth();
+    const onEnter = () => syncGuestAuth();
+    const onExit = () => {
+      setIsGuestPreview(false);
+      setUser(authApi.getStoredUser());
+      setIsSuperAdmin(false);
+      setLoading(false);
+    };
+    window.addEventListener('bolobill-guest-enter', onEnter);
+    window.addEventListener('bolobill-guest-exit', onExit);
+    return () => {
+      window.removeEventListener('bolobill-guest-enter', onEnter);
+      window.removeEventListener('bolobill-guest-exit', onExit);
+    };
+  }, [syncGuestAuth]);
+
+  useEffect(() => {
+    if (isGuestMode()) {
+      syncGuestAuth();
+      return;
+    }
     const token = localStorage.getItem('admin_token');
     if (!token) {
       setLoading(false);
@@ -96,11 +157,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    if (isGuestMode()) return;
     authApi.logout();
     setUser(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
+    if (isGuestMode()) {
+      setUser(guestUserFromStore());
+      return;
+    }
     const token = localStorage.getItem('admin_token');
     if (!token) return;
     const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
@@ -111,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextValue = {
     user,
+    isGuestPreview,
     isSuperAdmin,
     loading,
     login,
@@ -118,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     registerWithOtp,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated: Boolean(user),
     refreshUser,
   };
 

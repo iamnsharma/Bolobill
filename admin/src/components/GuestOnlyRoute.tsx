@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
 /** Renders children only when user is NOT authenticated. Authenticated users are redirected to dashboard. */
 export default function GuestOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -11,6 +10,8 @@ export default function GuestOnlyRoute({ children }: { children: React.ReactNode
       </div>
     );
   }
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
   return <>{children}</>;
 }

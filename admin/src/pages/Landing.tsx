@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useGuestMode } from "../contexts/GuestModeContext";
 import feat1 from "../assets/images/features/bb1.png";
 import feat2 from "../assets/images/features/bb2.png";
 import feat3 from "../assets/images/features/bb3.png";
@@ -56,6 +58,44 @@ const FEATURES = [
     title: "One dashboard",
     desc: "Billing, inventory, and reports in one web panel — no juggling apps.",
   },
+  {
+    img: feat2,
+    icon: "ti-wallet",
+    title: "Credit & khata",
+    desc: "Cash or credit on every bill. Track pending balance by phone and record payments.",
+  },
+  {
+    img: feat3,
+    icon: "ti-sparkles",
+    title: "Smart bulk import",
+    desc: "Add many items at once from a menu photo, spreadsheet, or list — check everything before it goes live.",
+  },
+  {
+    img: feat1,
+    icon: "ti-file-import",
+    title: "Stock & shortage lists",
+    desc: "Bring products in from a file or pasted list — we flag what you already have so you don’t double-enter.",
+  },
+  {
+    img: feat4,
+    icon: "ti-language",
+    title: "Multi-language panel",
+    desc: "English, Hindi, Punjabi, Spanish, and regional English — switch anytime in Settings.",
+  },
+];
+
+const FEATURE_MATRIX = [
+  { label: "Digital bills & PDF", on: true },
+  { label: "WhatsApp bill share", on: true },
+  { label: "Credit / khata by phone", on: true },
+  { label: "Add menu & stock in bulk", on: true },
+  { label: "Spreadsheet or paste import", on: true },
+  { label: "Out-of-stock lists", on: true },
+  { label: "Hide revenue & inventory PIN", on: true },
+  { label: "Address book", on: true },
+  { label: "Payment QR on bills", on: true },
+  { label: "Sales & items-sold reports", on: true },
+  { label: "Public bill link", on: true },
 ];
 
 const INSTAGRAM = import.meta.env.VITE_INSTAGRAM_URL?.trim() || "";
@@ -64,10 +104,49 @@ const LINKEDIN = import.meta.env.VITE_LINKEDIN_URL?.trim() || "";
 const highlightFeatures = FEATURES.filter((f) => f.highlight);
 const gridFeatures = FEATURES.filter((f) => !f.highlight);
 
+const AI_SPOTLIGHT_ITEMS = [
+  {
+    icon: "ti-file-import",
+    title: "From file or list",
+    desc: "Upload a spreadsheet, paste rows, or share a shortage list — Bolo Bill turns it into line items.",
+  },
+  {
+    icon: "ti-sparkles",
+    title: "Help from AI",
+    desc: "Snap a menu or list photo when that’s quicker than typing — you still approve every item.",
+  },
+  {
+    icon: "ti-git-compare",
+    title: "Fewer duplicates",
+    desc: "See what’s new and what’s already in your shop before you save.",
+  },
+  {
+    icon: "ti-checkbox",
+    title: "You stay in control",
+    desc: "Fix names and prices on the review screen — nothing updates until you tap save.",
+  },
+];
+
+const CREDIT_VISUAL_TILES = [
+  { icon: "ti-cash", label: "Cash bill", tone: "cash" },
+  { icon: "ti-credit-card", label: "Credit bill", tone: "credit" },
+  { icon: "ti-phone", label: "Khata by phone", tone: "phone" },
+  { icon: "ti-list-details", label: "Ledger", tone: "ledger" },
+  { icon: "ti-brand-whatsapp", label: "Reminders", tone: "wa" },
+];
+
 export default function Landing() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { enterGuestMode } = useGuestMode();
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState<Set<string>>(new Set());
   const pageRef = useRef<HTMLDivElement>(null);
+
+  const startGuestDemo = () => {
+    enterGuestMode();
+    navigate("/dashboard", { replace: true });
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -112,12 +191,35 @@ export default function Landing() {
                 Bolo Bill is a web panel for any store or clinic — digital bills, live
                 inventory, and sales insights in one place. {OFFLINE_TO_ONLINE_LINE}
               </p>
+              <div
+                className="landing-hero-ai-tags d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start mt-3"
+                aria-label="Product highlights">
+                <span className="landing-hero-ai-tag">
+                  <i className="ti ti-sparkles" aria-hidden />
+                  Add stock faster
+                </span>
+                <span className="landing-hero-ai-tag">
+                  <i className="ti ti-wallet" aria-hidden />
+                  Credit khata
+                </span>
+                <span className="landing-hero-ai-tag">
+                  <i className="ti ti-brand-whatsapp" aria-hidden />
+                  WhatsApp bills
+                </span>
+              </div>
               <div className="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mt-4 landing-hero-cta-group">
                 <Link
                   to="/signup"
                   className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
                   Request business access
                 </Link>
+                <button
+                  type="button"
+                  onClick={startGuestDemo}
+                  className="btn btn-light btn-lg rounded-3 fw-semibold landing-hero-btn landing-hero-btn--guest">
+                  <i className="ti ti-device-laptop me-1" aria-hidden />
+                  {t("landing.guestCta")}
+                </button>
                 <a
                   href="#landing-demo"
                   className="btn btn-outline-light btn-lg rounded-3 fw-semibold landing-hero-btn">
@@ -125,6 +227,9 @@ export default function Landing() {
                   Watch demo
                 </a>
               </div>
+              <p className="landing-hero-guest-hint small mt-3 mb-0 opacity-90">
+                {t("landing.guestCtaSub")}
+              </p>
             </div>
             <div
               id="landing-demo"
@@ -162,6 +267,224 @@ export default function Landing() {
               <i className="ti ti-bolt me-2" aria-hidden />
               Simple setup
             </span>
+            <span className="landing-trust-pill">
+              <i className="ti ti-sparkles me-2" aria-hidden />
+              Smart import
+            </span>
+            <span className="landing-trust-pill">
+              <i className="ti ti-wallet me-2" aria-hidden />
+              Credit / khata
+            </span>
+            <span className="landing-trust-pill">
+              <i className="ti ti-eye-off me-2" aria-hidden />
+              Hide revenue
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className={`landing-section landing-ai-spotlight py-5 ${visible.has("ai-spotlight") ? "landing-in-view" : ""}`}
+        data-landing-section="ai-spotlight"
+        aria-label="Smart stock and menu import">
+        <div className="container py-4">
+          <div className="landing-ai-spotlight-panel rounded-4 overflow-hidden">
+            <div className="row g-0 align-items-stretch">
+              <div className="col-lg-5 landing-ai-spotlight-copy p-4 p-lg-5">
+                <span className="landing-ai-spotlight-badge">
+                  <i className="ti ti-sparkles me-1" aria-hidden />
+                  Smart import
+                </span>
+                <h2 className="landing-ai-spotlight-title">
+                  Add your whole menu or stock — without typing every line
+                </h2>
+                <p className="landing-ai-spotlight-sub mb-4">
+                  Share a file, paste a list, or use a photo. Bolo Bill lines everything up for you,
+                  spots items you already sell, and waits for your OK before updating inventory.
+                </p>
+                <div className="landing-ai-flow d-flex flex-wrap align-items-center gap-2 small">
+                  <span className="landing-ai-flow__step">Add file or photo</span>
+                  <i className="ti ti-arrow-right landing-ai-flow__arrow" aria-hidden />
+                  <span className="landing-ai-flow__step">Check matches</span>
+                  <i className="ti ti-arrow-right landing-ai-flow__arrow" aria-hidden />
+                  <span className="landing-ai-flow__step">Review</span>
+                  <i className="ti ti-arrow-right landing-ai-flow__arrow" aria-hidden />
+                  <span className="landing-ai-flow__step landing-ai-flow__step--accent">Save</span>
+                </div>
+              </div>
+              <div className="col-lg-7 landing-ai-spotlight-grid p-4 p-lg-4">
+                <div className="row g-3">
+                  {AI_SPOTLIGHT_ITEMS.map((item) => (
+                    <div key={item.title} className="col-sm-6">
+                      <div className="landing-ai-spotlight-card h-100">
+                        <span className="landing-ai-spotlight-card__icon">
+                          <i className={`ti ${item.icon}`} aria-hidden />
+                        </span>
+                        <h3 className="h6 fw-bold mb-1">{item.title}</h3>
+                        <p className="small mb-0 opacity-90">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="landing-ai-spotlight-shot mt-3 rounded-3 overflow-hidden">
+                  <img
+                    src={feat3}
+                    alt="Stock and import in Bolo Bill"
+                    className="landing-ai-spotlight-shot__img"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="landing-import"
+        className={`landing-section landing-ai py-5 ${visible.has("ai") ? "landing-in-view" : ""}`}
+        data-landing-section="ai"
+        aria-label="Easy stock and menu import">
+        <div className="container py-4">
+          <div className="row align-items-center g-4">
+            <div className="col-lg-6 order-lg-2">
+              <span className="landing-section-badge">Bulk add items</span>
+              <h2 className="landing-section-title">Update your shop list in minutes</h2>
+              <p className="landing-section-sub text-muted mb-4">
+                Whether you run a kirana, café, or clinic — add products from a spreadsheet, pasted
+                text, or a photo of your menu. You always get a clear review screen before anything
+                is saved.
+              </p>
+              <ul className="landing-benefits-list">
+                <li>
+                  <i className="ti ti-book-2 text-primary me-2" aria-hidden />
+                  <span>
+                    <strong>Menu import</strong> — turn a menu sheet or photo into items and
+                    categories you can edit.
+                  </span>
+                </li>
+                <li>
+                  <i className="ti ti-file-spreadsheet text-primary me-2" aria-hidden />
+                  <span>
+                    <strong>Stock from spreadsheet</strong> — bring hundreds of products in one
+                    go from Excel or similar files.
+                  </span>
+                </li>
+                <li>
+                  <i className="ti ti-list-check text-primary me-2" aria-hidden />
+                  <span>
+                    <strong>Shortage lists</strong> — load what you’re out of so you can share with
+                    suppliers or your team.
+                  </span>
+                </li>
+              </ul>
+              <p className="landing-ai-footnote small text-muted mb-0">
+                In guest demo, sample results are shown on your device only — try it with no login.
+              </p>
+            </div>
+            <div className="col-lg-6 order-lg-1">
+              <div className="landing-import-visual">
+                <div className="landing-import-visual__glow" aria-hidden />
+                <div className="landing-import-visual__screen rounded-4 shadow">
+                  <img src={feat1} alt="Digital billing and imports" className="img-fluid" />
+                </div>
+                <div className="landing-import-visual__chips">
+                  <span className="landing-import-chip">
+                    <i className="ti ti-book-2" aria-hidden /> Menu import
+                  </span>
+                  <span className="landing-import-chip">
+                    <i className="ti ti-file-spreadsheet" aria-hidden /> Spreadsheet
+                  </span>
+                  <span className="landing-import-chip landing-import-chip--ai">
+                    <i className="ti ti-sparkles" aria-hidden /> Photo help
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className={`landing-section landing-credit py-5 bg-light ${visible.has("credit") ? "landing-in-view" : ""}`}
+        data-landing-section="credit"
+        aria-label="Credit and customers">
+        <div className="container py-4">
+          <div className="row align-items-center g-4">
+            <div className="col-lg-6">
+              <div className="landing-credit-visual">
+                <div className="landing-credit-visual__glow" aria-hidden />
+                <div className="landing-credit-visual__screen rounded-4 overflow-hidden shadow">
+                  <img src={feat9} alt="WhatsApp bills and customer share" className="img-fluid" />
+                </div>
+                <div className="landing-credit-mock rounded-3 shadow-sm">
+                  <div className="landing-credit-mock__head">
+                    <i className="ti ti-wallet" aria-hidden />
+                    <span>Pending khata</span>
+                  </div>
+                  <p className="landing-credit-mock__name mb-1">Priya · 91234 56780</p>
+                  <p className="landing-credit-mock__amt mb-0">₹305 due</p>
+                </div>
+                <ul className="landing-credit-tiles list-unstyled mb-0">
+                  {CREDIT_VISUAL_TILES.map((tile) => (
+                    <li
+                      key={tile.label}
+                      className={`landing-credit-tile landing-credit-tile--${tile.tone}`}>
+                      <i className={`ti ${tile.icon}`} aria-hidden />
+                      <span>{tile.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <span className="landing-section-badge">Credit &amp; customers</span>
+              <h2 className="landing-section-title">Cash or credit on every bill</h2>
+              <p className="landing-section-sub text-muted mb-4">
+                Mark a sale as credit, tie it to a customer phone, and see pending khata in one
+                place. Record payments and send WhatsApp reminders when you are ready.
+              </p>
+              <ul className="landing-benefits-list">
+                <li>
+                  <i className="ti ti-check text-primary me-2" aria-hidden />
+                  <span>Credit accounts keyed by phone number.</span>
+                </li>
+                <li>
+                  <i className="ti ti-check text-primary me-2" aria-hidden />
+                  <span>Ledger of sales and payments per customer.</span>
+                </li>
+                <li>
+                  <i className="ti ti-check text-primary me-2" aria-hidden />
+                  <span>Address book auto-fills names on repeat visits.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className={`landing-section landing-privacy py-5 ${visible.has("privacy") ? "landing-in-view" : ""}`}
+        data-landing-section="privacy"
+        aria-label="Privacy and operations">
+        <div className="container py-4">
+          <div className="row g-4">
+            <div className="col-md-6">
+              <span className="landing-section-badge">Privacy &amp; ops</span>
+              <h2 className="landing-section-title h4">Run the shop without oversharing</h2>
+              <p className="text-muted small mb-3">
+                Hide revenue and inventory value behind an inventory PIN. Keep contacts in an
+                address book, show your UPI QR on bills, and share a public bill link customers
+                can open on any phone.
+              </p>
+            </div>
+            <div className="col-md-6">
+              <span className="landing-section-badge">Reports</span>
+              <h2 className="landing-section-title h4">Know what sold and when</h2>
+              <p className="text-muted small mb-3">
+                Dashboard KPIs, sales summary by day, and items-sold breakdowns — filtered by date
+                range so you can reconcile without spreadsheets.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -292,6 +615,31 @@ export default function Landing() {
       </section>
 
       <section
+        className={`landing-section landing-matrix py-5 bg-light ${visible.has("matrix") ? "landing-in-view" : ""}`}
+        data-landing-section="matrix"
+        aria-label="Feature checklist">
+        <div className="container py-3">
+          <div className="text-center mb-4">
+            <span className="landing-section-badge">At a glance</span>
+            <h2 className="landing-section-title h4 mb-0">Everything in the merchant panel</h2>
+          </div>
+          <ul className="landing-feature-matrix list-unstyled row g-2 justify-content-center">
+            {FEATURE_MATRIX.map((row) => (
+              <li key={row.label} className="col-md-6 col-lg-4">
+                <span className="landing-feature-matrix__item">
+                  <i
+                    className={`ti ${row.on ? "ti-circle-check text-primary" : "ti-circle-x text-muted"} me-2`}
+                    aria-hidden
+                  />
+                  {row.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section
         id="landing-how"
         className={`landing-section landing-how py-5 ${visible.has("how") ? "landing-in-view" : ""}`}
         data-landing-section="how"
@@ -365,7 +713,7 @@ export default function Landing() {
                     </li>
                     <li>
                       <i className="ti ti-check me-2" aria-hidden />
-                      WhatsApp bill links for customers (Meta API coming later)
+                      WhatsApp bill links for customers
                     </li>
                   </ul>
                 </div>
@@ -399,14 +747,20 @@ export default function Landing() {
             Talk to us to onboard your business, or log in if you already have credentials.
           </p>
           <div className="d-flex flex-wrap gap-3 justify-content-center">
+            <button
+              type="button"
+              onClick={startGuestDemo}
+              className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn landing-cta-final-btn">
+              {t("landing.guestCta")}
+            </button>
             <Link
               to="/signup"
-              className="btn btn-primary btn-lg rounded-3 fw-semibold landing-hero-btn landing-cta-final-btn">
+              className="btn btn-outline-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
               Request access
             </Link>
             <Link
               to="/login"
-              className="btn btn-outline-primary btn-lg rounded-3 fw-semibold landing-hero-btn">
+              className="btn btn-outline-secondary btn-lg rounded-3 fw-semibold landing-hero-btn">
               Log in
             </Link>
           </div>
