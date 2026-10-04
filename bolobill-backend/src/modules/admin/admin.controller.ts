@@ -12,6 +12,7 @@ import {oosImportCommitSchema, oosImportMatchSchema} from './outOfStockImport.va
 import {stockImportPasteSchema} from '../stock/stock.validation';
 import {financePrivacyService} from './financePrivacy.service';
 import {financeReportsSchema} from '../auth/auth.validation';
+import {assertAiVisionDemoPin, isAiVisionPinRequired} from '../../utils/aiVisionDemoPin';
 import {
   redactDailySales,
   redactInvoiceVm,
@@ -255,6 +256,8 @@ export const adminController = {
       customerName: parsed.data.customerName,
       items,
       note: parsed.data.note,
+      paymentMode: parsed.data.paymentMode,
+      customerPhone: parsed.data.customerPhone,
     });
     const vm = toAdminInvoiceVm(invoice as Parameters<typeof toAdminInvoiceVm>[0]);
     return res.status(201).json({invoice: vm});
@@ -351,6 +354,7 @@ export const adminController = {
 
   analyzeOosImport: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
+    assertAiVisionDemoPin(req.get('x-bolobill-ai-demo-pin'));
     if (!req.file?.buffer) throw new ApiError(400, 'image file is required');
     const result = await outOfStockImportService.analyzeImage(
       ctx.userId,
@@ -432,5 +436,22 @@ export const adminController = {
     const ctx = getAdminContext(req);
     await adminService.deleteQrCode(ctx.userId);
     return res.json({ message: 'QR code removed' });
+  }),
+
+  getAiVisionDemoPinStatus: asyncHandler(async (_req: Request, res: Response) => {
+    return res.json({required: isAiVisionPinRequired()});
+  }),
+
+  verifyAiVisionDemoPin: asyncHandler(async (req: Request, res: Response) => {
+    if (!isAiVisionPinRequired()) {
+      return res.json({ok: true, required: false});
+    }
+    const pin = typeof req.body?.pin === 'string' ? req.body.pin : '';
+    try {
+      assertAiVisionDemoPin(pin);
+    } catch {
+      throw new ApiError(403, 'Invalid demo PIN');
+    }
+    return res.json({ok: true, required: true});
   }),
 };

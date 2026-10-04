@@ -18,6 +18,7 @@ import {
 import {menuImportService} from './menuImport.service';
 import {financePrivacyService} from '../admin/financePrivacy.service';
 import {redactStockSummary} from '../../utils/financeRedact';
+import {assertAiVisionDemoPin} from '../../utils/aiVisionDemoPin';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & {adminContext?: AdminContext}).adminContext;
@@ -189,6 +190,7 @@ export const stockController = {
 
   analyzeMenuImport: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
+    assertAiVisionDemoPin(req.get('x-bolobill-ai-demo-pin'));
     if (!req.file?.buffer) {
       throw new ApiError(400, 'image file is required');
     }

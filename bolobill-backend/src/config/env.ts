@@ -16,6 +16,8 @@ const envSchema = z.object({
   /** Base URL for customer-facing bill pages (admin app), e.g. http://localhost:3000 */
   PUBLIC_BILL_BASE_URL: z.string().url().optional(),
   ALLOW_X_USER_ID_AUTH: z.coerce.boolean().default(true),
+  /** When set, menu/OOS photo analyze requires X-BoloBill-Ai-Demo-Pin header (demo/pitch). */
+  AI_VISION_DEMO_PIN: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.NODE_ENV !== 'production') return;
   const base = data.BASE_URL.toLowerCase();

@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 export const MENU_IMPORT_VALID_TYPES = [
   "image/png",
@@ -24,13 +25,32 @@ export default function MenuImportUploadStep({
   error,
   onFileSelected,
   onCancel,
+  visionPinRequired = false,
+  visionUnlocked = true,
+  onChoosePhoto,
+  fileInputRef,
 }: {
   analyzing: boolean;
   error: string | null;
   onFileSelected: (file: File) => void;
   onCancel: () => void;
+  visionPinRequired?: boolean;
+  visionUnlocked?: boolean;
+  onChoosePhoto?: () => void | Promise<void>;
+  fileInputRef?: RefObject<HTMLInputElement>;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
+  const localInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = fileInputRef ?? localInputRef;
+  const locked = visionPinRequired && !visionUnlocked;
+
+  const openPicker = () => {
+    if (onChoosePhoto) {
+      void onChoosePhoto();
+      return;
+    }
+    inputRef.current?.click();
+  };
 
   return (
     <div className="card border-0 shadow-sm rounded-3">
@@ -48,6 +68,14 @@ export default function MenuImportUploadStep({
           Photo of your menu, price list, or product list. We&apos;ll read item names and prices — you
           add stock before importing.
         </p>
+
+        {visionPinRequired && (
+          <p className="small mb-3">
+            <span className="badge bg-secondary-subtle text-secondary border">
+              {t("pages.aiVisionPin.badge")}
+            </span>
+          </p>
+        )}
 
         {error && (
           <div className="alert alert-danger text-start" role="alert">
@@ -76,10 +104,10 @@ export default function MenuImportUploadStep({
             <button
               type="button"
               className="btn btn-lg px-4 import-ai-cta"
-              onClick={() => inputRef.current?.click()}
+              onClick={openPicker}
             >
               <i className="ti ti-upload me-2" />
-              Choose photo
+              {locked ? t("pages.aiVisionPin.unlockChoosePhoto") : t("pages.aiVisionPin.choosePhoto")}
             </button>
             <p className="small text-muted mt-3 mb-0">JPEG, PNG, or WebP · up to 10MB</p>
           </>

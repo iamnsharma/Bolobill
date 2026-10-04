@@ -15,10 +15,14 @@ export interface AdminUser {
   updatedAt: string;
 }
 
+export type InvoicePaymentMode = 'cash' | 'credit';
+
 export interface AdminInvoice {
   id: string;
   invoiceId: string;
   customerName: string;
+  customerPhone?: string;
+  paymentMode?: InvoicePaymentMode;
   items: Array<{ name: string; quantity: string; totalPrice: number }>;
   total: number | null;
   voiceTranscript: string;
@@ -295,6 +299,8 @@ export const adminApi = {
       quantityNumeric?: number;
     }>;
     note?: string;
+    paymentMode?: InvoicePaymentMode;
+    customerPhone?: string;
   }) =>
     api.post<{ invoice: AdminInvoice }>('/admin/invoices', body).then((r) => r.data.invoice),
 
@@ -451,10 +457,19 @@ export const adminApi = {
       })
       .then(r => r.data),
 
-  analyzeMenuImport: (formData: FormData) =>
+  getAiVisionDemoPinStatus: () =>
+    api.get<{ required: boolean }>('/admin/ai-vision/demo-pin-status').then(r => r.data),
+
+  verifyAiVisionDemoPin: (pin: string) =>
+    api
+      .post<{ ok: boolean; required: boolean }>('/admin/ai-vision/verify-demo-pin', { pin })
+      .then(r => r.data),
+
+  analyzeMenuImport: (formData: FormData, visionPin?: string) =>
     api
       .post<MenuImportAnalyzeResponse>('/admin/stock/products/menu-import/analyze', formData, {
         timeout: 120000,
+        headers: visionPin ? { 'X-BoloBill-Ai-Demo-Pin': visionPin } : undefined,
       })
       .then(r => r.data),
 
@@ -485,10 +500,11 @@ export const adminApi = {
       .post<MenuImportAnalyzeResponse>('/admin/stock/products/import/parse-paste', body)
       .then(r => r.data),
 
-  analyzeOosImport: (formData: FormData) =>
+  analyzeOosImport: (formData: FormData, visionPin?: string) =>
     api
       .post<OosImportPreviewResponse>('/admin/out-of-stock/import/analyze', formData, {
         timeout: 120000,
+        headers: visionPin ? { 'X-BoloBill-Ai-Demo-Pin': visionPin } : undefined,
       })
       .then(r => r.data),
 
@@ -540,4 +556,62 @@ export const adminApi = {
 
   deleteAddressBookContact: (id: string) =>
     api.delete(`/admin/address-book/${id}`).then(r => r.data),
+
+  listCreditAccounts: (params?: {
+    q?: string;
+    pendingOnly?: boolean;
+    page?: number;
+    limit?: number;
+  }) =>
+    api
+      .get<{
+        accounts: CreditAccountSummary[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+        financeRedacted?: boolean;
+      }>('/admin/credit', { params })
+      .then(r => r.data),
+
+  getCreditAccount: (phone: string) =>
+    api
+      .get<{
+        account: CreditAccountSummary;
+        ledger: CreditLedgerEntry[];
+        invoices: AdminInvoice[];
+        financeRedacted?: boolean;
+      }>(`/admin/credit/${encodeURIComponent(phone)}`)
+      .then(r => r.data),
+
+  recordCreditPayment: (phone: string, body: { amount: number; note?: string }) =>
+    api
+      .post<{ account: CreditAccountSummary; entry: CreditLedgerEntry }>(
+        `/admin/credit/${encodeURIComponent(phone)}/payments`,
+        body,
+      )
+      .then(r => r.data),
 };
+
+export interface CreditAccountSummary {
+  phone: string;
+  customerName: string;
+  totalCredited: number | null;
+  totalPaid: number | null;
+  pendingBalance: number | null;
+  lastActivityAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  financeRedacted?: boolean;
+}
+
+export interface CreditLedgerEntry {
+  id: string;
+  type: 'sale' | 'payment';
+  amount: number | null;
+  invoiceId: string | null;
+  invoicePublicId: string;
+  note: string;
+  createdAt: string;
+  financeRedacted?: boolean;
+}

@@ -18,6 +18,10 @@ export default function BillCartPanel({
   onNameChange,
   editableLineTotal,
   onLineTotalChange,
+  paymentMode,
+  onPaymentModeChange,
+  paymentCashLabel = "Cash",
+  paymentCreditLabel = "Credit",
 }: {
   lines: PosCartLine[];
   formatMoney: (amount: number) => string;
@@ -37,6 +41,10 @@ export default function BillCartPanel({
   onNameChange?: (index: number, name: string) => void;
   editableLineTotal?: boolean;
   onLineTotalChange?: (index: number, total: number) => void;
+  paymentMode?: "cash" | "credit";
+  onPaymentModeChange?: (mode: "cash" | "credit") => void;
+  paymentCashLabel?: string;
+  paymentCreditLabel?: string;
 }) {
   return (
     <div className={`pos-cart-panel d-flex flex-column h-100 ${compact ? "" : "pos-cart-sticky"}`}>
@@ -77,6 +85,29 @@ export default function BillCartPanel({
       </div>
 
       <div className="border-top pt-3 mt-auto">
+        {onPaymentModeChange && paymentMode && lines.length > 0 ? (
+          <div
+            className="pos-payment-mode d-flex gap-2 mb-2"
+            role="group"
+            aria-label="Payment type">
+            <button
+              type="button"
+              className={`btn btn-sm pos-payment-mode__btn flex-fill ${
+                paymentMode === "cash" ? "btn-primary" : "btn-outline-secondary"
+              }`}
+              onClick={() => onPaymentModeChange("cash")}>
+              {paymentCashLabel}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm pos-payment-mode__btn flex-fill ${
+                paymentMode === "credit" ? "btn-primary" : "btn-outline-secondary"
+              }`}
+              onClick={() => onPaymentModeChange("credit")}>
+              {paymentCreditLabel}
+            </button>
+          </div>
+        ) : null}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <span className="fw-semibold">Total</span>
           <span className="fs-5 fw-bold">{formatMoney(total)}</span>

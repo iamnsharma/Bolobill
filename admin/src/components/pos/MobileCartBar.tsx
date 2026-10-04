@@ -14,6 +14,10 @@ export default function MobileCartBar({
   onCancel,
   reviewDisabled,
   reviewDisabledReason,
+  paymentMode,
+  onPaymentModeChange,
+  paymentCashLabel,
+  paymentCreditLabel,
 }: {
   lines: PosCartLine[];
   total: number;
@@ -26,6 +30,10 @@ export default function MobileCartBar({
   onCancel: () => void;
   reviewDisabled?: boolean;
   reviewDisabledReason?: string;
+  paymentMode?: "cash" | "credit";
+  onPaymentModeChange?: (mode: "cash" | "credit") => void;
+  paymentCashLabel?: string;
+  paymentCreditLabel?: string;
 }) {
   const offcanvasId = useId().replace(/:/g, "");
   const itemCount = lines.reduce((s, l) => s + (l.quantityNumeric ?? 1), 0);
@@ -90,6 +98,10 @@ export default function MobileCartBar({
             onReview={onReview}
             reviewDisabled={reviewDisabled}
             reviewDisabledReason={reviewDisabledReason}
+            paymentMode={paymentMode}
+            onPaymentModeChange={onPaymentModeChange}
+            paymentCashLabel={paymentCashLabel}
+            paymentCreditLabel={paymentCreditLabel}
             compact
             showActions
           />

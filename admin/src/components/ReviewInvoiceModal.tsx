@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { adminApi } from "../api/admin";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import AppModal from "./AppModal";
 import BillCartPanel from "./pos/BillCartPanel";
@@ -19,6 +21,8 @@ export type ReviewInvoiceItem = {
 
 export type ReviewInvoiceData = {
   customerName: string;
+  customerPhone?: string;
+  paymentMode?: "cash" | "credit";
   items: ReviewInvoiceItem[];
   transcript?: string;
   note?: string;
@@ -110,7 +114,9 @@ export default function ReviewInvoiceModal({
   loading?: boolean;
 }) {
   const { formatMoney } = useFinancePrivacy();
+  const { t } = useTranslation();
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [items, setItems] = useState<ReviewInvoiceItem[]>([]);
   const [transcript, setTranscript] = useState("");
   const [note, setNote] = useState("");
@@ -118,6 +124,7 @@ export default function ReviewInvoiceModal({
   useEffect(() => {
     if (!initialData) return;
     setCustomerName(initialData.customerName);
+    setCustomerPhone(initialData.customerPhone ?? "");
     setItems(
       initialData.items.length
         ? initialData.items.map((i) => normalizeItem(i))
@@ -137,7 +144,14 @@ export default function ReviewInvoiceModal({
     const row = normalizeItem(item);
     return exceedsAvailableStock(row.quantityNumeric ?? 1, row.stockOnHand);
   });
-  const canSubmit = customerName.trim() && validItems.length > 0 && !hasStockConflict;
+  const isCredit = initialData?.paymentMode === "credit";
+  const creditPhoneDigits = customerPhone.replace(/\D/g, "");
+  const creditPhoneValid = creditPhoneDigits.length >= 10;
+  const canSubmit =
+    customerName.trim() &&
+    validItems.length > 0 &&
+    !hasStockConflict &&
+    (!isCredit || creditPhoneValid);
 
   const setItemAt = useCallback((index: number, next: ReviewInvoiceItem) => {
     setItems((prev) => prev.map((row, i) => (i === index ? next : row)));
@@ -207,8 +221,22 @@ export default function ReviewInvoiceModal({
       }),
       transcript: initialData.source === "voice" ? transcript : undefined,
       note: initialData.source === "manual" ? note : undefined,
+      customerPhone: isCredit ? customerPhone.trim() : undefined,
     };
     onConfirm(payload);
+  };
+
+  const lookupPhoneContact = async (raw: string) => {
+    const digits = raw.replace(/\D/g, "");
+    if (digits.length < 10) return;
+    try {
+      const res = await adminApi.lookupAddressBookContact(raw);
+      if (res.found && res.contact?.name) {
+        setCustomerName((prev) => (prev.trim() ? prev : res.contact!.name));
+      }
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
@@ -248,8 +276,15 @@ export default function ReviewInvoiceModal({
           Same cart as Create Bill—adjust quantities here. This is what goes on the PDF.
         </p>
 
+        {isCredit && (
+          <div className="alert alert-info py-2 small mb-3 d-flex align-items-center gap-2">
+            <i className="ti ti-credit-card" aria-hidden />
+            <span>On credit — customer phone required for khata</span>
+          </div>
+        )}
+
         <div className="row g-2 mb-3">
-          <div className="col-md-6">
+          <div className={isCredit ? "col-md-4" : "col-md-6"}>
             <label className="form-label fw-semibold small mb-1">
               Customer name <span className="text-danger">*</span>
             </label>
@@ -261,8 +296,23 @@ export default function ReviewInvoiceModal({
               placeholder="Customer name"
             />
           </div>
+          {isCredit && (
+            <div className="col-md-4">
+              <label className="form-label fw-semibold small mb-1">
+                {t("pages.createBill.customerPhone")} <span className="text-danger">*</span>
+              </label>
+              <input
+                type="tel"
+                className={`form-control${customerPhone && !creditPhoneValid ? " is-invalid" : ""}`}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                onBlur={() => lookupPhoneContact(customerPhone)}
+                placeholder={t("pages.createBill.phonePlaceholder")}
+              />
+            </div>
+          )}
           {initialData?.source === "manual" && (
-            <div className="col-md-6">
+            <div className={isCredit ? "col-md-4" : "col-md-6"}>
               <label className="form-label small mb-1">Note (optional)</label>
               <input
                 type="text"

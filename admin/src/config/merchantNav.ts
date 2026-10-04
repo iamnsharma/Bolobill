@@ -12,6 +12,7 @@ export const BUSINESS_NAV_SECTIONS: MerchantNavSection[] = [
     items: [
       { to: "/dashboard/invoices/new", icon: "ti-plus", labelKey: "nav.createBill" },
       { to: "/dashboard/invoices", icon: "ti-receipt", labelKey: "nav.billsInvoices" },
+      { to: "/dashboard/credit", icon: "ti-credit-card", labelKey: "nav.credit" },
     ],
   },
   {
@@ -33,7 +34,6 @@ export const BUSINESS_NAV_SECTIONS: MerchantNavSection[] = [
     items: [
       { to: "/dashboard/address-book", icon: "ti-address-book", labelKey: "nav.addressBook" },
       { to: "/dashboard/qr-code", icon: "ti-qrcode", labelKey: "nav.qrCode" },
-      { to: "/dashboard/settings", icon: "ti-settings", labelKey: "nav.settings" },
     ],
   },
 ];

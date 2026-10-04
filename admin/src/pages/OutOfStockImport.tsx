@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import AiVisionPinModal from "../components/import/AiVisionPinModal";
+import { useAiVisionPinGate } from "../hooks/useAiVisionPinGate";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { adminApi, type OosImportPreviewResponse } from "../api/admin";
 import ImportWizardShell, { DownloadCsvTemplate } from "../components/import/ImportWizardShell";
@@ -35,6 +37,8 @@ export default function OutOfStockImport() {
   const [draft, setDraft] = useState<OosImportDraft | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const aiVisionPin = useAiVisionPinGate();
 
   useEffect(() => {
     setSource(parseImportSourceParam(searchParams.get("source")));
@@ -56,13 +60,23 @@ export default function OutOfStockImport() {
     const fd = new FormData();
     fd.append("image", file);
     try {
-      goReview(await adminApi.analyzeOosImport(fd));
+      goReview(await adminApi.analyzeOosImport(fd, aiVisionPin.getVisionPin()));
     } catch (e: unknown) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 403) aiVisionPin.clearUnlock();
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleChoosePhoto = useCallback(async () => {
+    if (aiVisionPin.pinRequired && !aiVisionPin.unlocked) {
+      const pin = await aiVisionPin.requestUnlock();
+      if (!pin) return;
+    }
+    photoInputRef.current?.click();
+  }, [aiVisionPin]);
 
   const handleFile = async (file: File) => {
     setLoading(true);
@@ -136,6 +150,10 @@ export default function OutOfStockImport() {
               error={error}
               onFileSelected={handlePhoto}
               onCancel={() => navigate("/dashboard/out-of-stock")}
+              visionPinRequired={aiVisionPin.pinRequired}
+              visionUnlocked={aiVisionPin.unlocked}
+              onChoosePhoto={handleChoosePhoto}
+              fileInputRef={photoInputRef}
             />
           )}
           {(source === "csv" || source === "excel") && (
@@ -207,6 +225,11 @@ export default function OutOfStockImport() {
           <Link to="/dashboard/out-of-stock" className="btn btn-primary">View list</Link>
         </div>
       )}
+      <AiVisionPinModal
+        open={aiVisionPin.modalOpen}
+        onClose={aiVisionPin.handlePinModalCancel}
+        onSubmit={aiVisionPin.handlePinModalSuccess}
+      />
     </ImportWizardShell>
   );
 }

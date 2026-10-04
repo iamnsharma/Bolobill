@@ -19,7 +19,6 @@ const SUPERADMIN_NAV = [
   ...(VOICE_MIC_FEATURE_ENABLED
     ? [{ to: "/dashboard/whisper", icon: "ti-microphone", label: "Whisper" }]
     : []),
-  { to: "/dashboard/settings", icon: "ti-settings", label: "Settings" },
 ];
 
 type NavItem = { to: string; icon: string; label: string };
@@ -247,18 +246,6 @@ function DashboardLayoutInner() {
                   </li>
                 )),
               ])}
-          <li className="px-4 pt-4 pb-2">
-            <small className="nav-text merchant-nav-label">{t("nav.account")}</small>
-          </li>
-          <li>
-            <button
-              type="button"
-              className="nav-link merchant-nav-link border-0 bg-transparent w-100 text-start text-danger"
-              onClick={handleLogoutClick}>
-              <i className="ti ti-logout" />
-              <span className="nav-text">{t("nav.logout")}</span>
-            </button>
-          </li>
         </ul>
       </aside>
 

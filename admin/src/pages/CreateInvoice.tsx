@@ -74,6 +74,7 @@ export default function CreateInvoice() {
   const { formatMoney } = useFinancePrivacy();
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  const [paymentMode, setPaymentMode] = useState<"cash" | "credit">("cash");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -319,6 +320,7 @@ export default function CreateInvoice() {
       })),
       note: note.trim() || undefined,
       source: "manual",
+      paymentMode,
     });
     setReviewOpen(true);
   };
@@ -353,6 +355,8 @@ export default function CreateInvoice() {
             quantityNumeric: i.quantityNumeric,
           })),
           note: data.note,
+          paymentMode: data.paymentMode ?? "cash",
+          customerPhone: data.customerPhone,
         });
       }
       setReviewOpen(false);
@@ -371,6 +375,7 @@ export default function CreateInvoice() {
 
   const resetForm = () => {
     setCustomerName("");
+    setPaymentMode("cash");
     setNote("");
     setLines([]);
     setVoiceRecording(null);
@@ -509,6 +514,10 @@ export default function CreateInvoice() {
                       onReview={openManualReview}
                       reviewDisabled={!customerName.trim() || hasStockConflict}
                       reviewDisabledReason={reviewDisabledReason}
+                      paymentMode={paymentMode}
+                      onPaymentModeChange={setPaymentMode}
+                      paymentCashLabel={t("pages.createBill.paymentCash")}
+                      paymentCreditLabel={t("pages.createBill.paymentCredit")}
                     />
                   </div>
                 </div>
@@ -527,6 +536,10 @@ export default function CreateInvoice() {
             onCancel={() => navigate("/dashboard/invoices")}
             reviewDisabled={!customerName.trim() || hasStockConflict}
             reviewDisabledReason={reviewDisabledReason}
+            paymentMode={paymentMode}
+            onPaymentModeChange={setPaymentMode}
+            paymentCashLabel={t("pages.createBill.paymentCash")}
+            paymentCreditLabel={t("pages.createBill.paymentCredit")}
           />
       </SectionPanel>
 

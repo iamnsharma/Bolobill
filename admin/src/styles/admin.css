@@ -2730,11 +2730,50 @@
   font-size: 1.1rem;
 }
 
+/* Left nav: logo fixed, menu scrolls when items exceed viewport */
+.merchant-sidebar {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+  overflow: hidden;
+}
+
 .merchant-sidebar .merchant-logo-area {
+  position: relative;
+  top: auto;
+  left: auto;
+  flex-shrink: 0;
   padding: 0.75rem 0.85rem;
   height: auto;
   min-height: 64px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.merchant-sidebar .merchant-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem;
+  margin-bottom: 0;
+}
+
+.merchant-sidebar .merchant-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.merchant-sidebar .merchant-nav::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.pos-payment-mode__btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-height: 2rem;
 }
 
 .merchant-logo-link {

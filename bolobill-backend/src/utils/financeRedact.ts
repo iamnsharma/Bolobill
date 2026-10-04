@@ -54,3 +54,27 @@ export function redactInvoiceVm<T extends {total: number; items: unknown[]}>(inv
     financeRedacted: true,
   } as T & {financeRedacted: true};
 }
+
+type CreditAccountVmLike = {
+  totalCredited: number;
+  totalPaid: number;
+  pendingBalance: number;
+};
+
+export function redactCreditAccountVm<T extends CreditAccountVmLike>(account: T): T {
+  return {
+    ...account,
+    totalCredited: null as unknown as number,
+    totalPaid: null as unknown as number,
+    pendingBalance: null as unknown as number,
+    financeRedacted: true,
+  } as T & {financeRedacted: true};
+}
+
+export function redactCreditLedgerVm<T extends {amount: number}>(entry: T): T {
+  return {
+    ...entry,
+    amount: null as unknown as number,
+    financeRedacted: true,
+  } as T & {financeRedacted: true};
+}

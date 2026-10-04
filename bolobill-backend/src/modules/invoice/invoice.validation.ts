@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {normalizePhone} from '../../common/phone';
 
 const itemSchema = z.object({
   name: z.string().min(1),
@@ -8,11 +9,37 @@ const itemSchema = z.object({
   quantityNumeric: z.number().positive().optional(),
 });
 
-export const manualInvoiceSchema = z.object({
-  customerName: z.string().trim().min(1, 'Customer name is required'),
-  items: z.array(itemSchema).min(1),
-  note: z.string().optional(),
-});
+const paymentModeSchema = z.enum(['cash', 'credit']).optional().default('cash');
+
+export const manualInvoiceSchema = z
+  .object({
+    customerName: z.string().trim().min(1, 'Customer name is required'),
+    items: z.array(itemSchema).min(1),
+    note: z.string().optional(),
+    paymentMode: paymentModeSchema,
+    customerPhone: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.paymentMode !== 'credit') return;
+    const raw = data.customerPhone?.trim() ?? '';
+    if (!raw) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Customer phone is required for credit sales',
+        path: ['customerPhone'],
+      });
+      return;
+    }
+    const normalized = normalizePhone(raw);
+    const digits = normalized.length > 10 ? normalized.slice(-10) : normalized;
+    if (digits.length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Enter a valid 10-digit phone number',
+        path: ['customerPhone'],
+      });
+    }
+  });
 
 export const updateInvoiceSchema = z.object({
   customerName: z.string().trim().min(1).optional(),

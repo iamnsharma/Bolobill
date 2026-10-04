@@ -243,6 +243,8 @@ export const adminService = {
       quantityNumeric?: number;
     }[];
     note?: string;
+    paymentMode?: 'cash' | 'credit';
+    customerPhone?: string;
   }) {
     const items = payload.items.map((it) => ({
       name: it.name,
@@ -256,6 +258,8 @@ export const adminService = {
       customerName: payload.customerName,
       items,
       note: payload.note,
+      paymentMode: payload.paymentMode,
+      customerPhone: payload.customerPhone,
     });
   },
 

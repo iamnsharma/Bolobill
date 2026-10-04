@@ -100,6 +100,8 @@ adminRouter.put('/store-links', requireSuperAdmin, asyncHandler(adminController.
 
 // Fixed paths for both superadmin and business admin (business sees own data only)
 adminRouter.get('/me', asyncHandler(adminController.getMe));
+adminRouter.get('/ai-vision/demo-pin-status', asyncHandler(adminController.getAiVisionDemoPinStatus));
+adminRouter.post('/ai-vision/verify-demo-pin', asyncHandler(adminController.verifyAiVisionDemoPin));
 adminRouter.patch('/me/finance-reports', asyncHandler(adminController.patchFinanceReports));
 adminRouter.get('/store-links', asyncHandler(adminController.getStoreLinks));
 adminRouter.get('/qr-code', asyncHandler(adminController.getQrCode));

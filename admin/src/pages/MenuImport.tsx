@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import AiVisionPinModal from "../components/import/AiVisionPinModal";
+import { useAiVisionPinGate } from "../hooks/useAiVisionPinGate";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { adminApi } from "../api/admin";
 import MenuImportUploadStep, {
@@ -38,6 +40,8 @@ export default function MenuImport() {
   const [showStockErrors, setShowStockErrors] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pasteText, setPasteText] = useState("");
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const aiVisionPin = useAiVisionPinGate();
 
   useEffect(() => {
     setSource(parseImportSourceParam(searchParams.get("source")));
@@ -61,8 +65,10 @@ export default function MenuImport() {
     const formData = new FormData();
     formData.append("image", file);
     try {
-      goReview(await adminApi.analyzeMenuImport(formData));
+      goReview(await adminApi.analyzeMenuImport(formData, aiVisionPin.getVisionPin()));
     } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 403) aiVisionPin.clearUnlock();
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           "Couldn't read this photo.",
@@ -70,7 +76,15 @@ export default function MenuImport() {
     } finally {
       setLoading(false);
     }
-  }, [goReview]);
+  }, [goReview, aiVisionPin]);
+
+  const handleChoosePhoto = useCallback(async () => {
+    if (aiVisionPin.pinRequired && !aiVisionPin.unlocked) {
+      const pin = await aiVisionPin.requestUnlock();
+      if (!pin) return;
+    }
+    photoInputRef.current?.click();
+  }, [aiVisionPin]);
 
   const handleSpreadsheetFile = useCallback(
     async (file: File) => {
@@ -203,6 +217,10 @@ export default function MenuImport() {
               error={error}
               onFileSelected={handlePhotoFile}
               onCancel={() => navigate("/dashboard/stock")}
+              visionPinRequired={aiVisionPin.pinRequired}
+              visionUnlocked={aiVisionPin.unlocked}
+              onChoosePhoto={handleChoosePhoto}
+              fileInputRef={photoInputRef}
             />
           )}
           {(source === "csv" || source === "excel") && (
@@ -316,6 +334,11 @@ export default function MenuImport() {
           </button>
         </div>
       )}
+      <AiVisionPinModal
+        open={aiVisionPin.modalOpen}
+        onClose={aiVisionPin.handlePinModalCancel}
+        onSubmit={aiVisionPin.handlePinModalSuccess}
+      />
     </ImportWizardShell>
   );
 }

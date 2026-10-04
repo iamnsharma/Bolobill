@@ -30,9 +30,13 @@ const invoiceSchema = new mongoose.Schema(
       default: () => crypto.randomUUID(),
     },
     source: {type: String, enum: ['voice', 'manual'], required: true},
+    customerPhone: {type: String, trim: true, default: '', index: true},
+    paymentMode: {type: String, enum: ['cash', 'credit'], default: 'cash'},
   },
   {timestamps: true},
 );
+
+invoiceSchema.index({userId: 1, customerPhone: 1, paymentMode: 1});
 
 export type InvoiceDocument = InferSchemaType<typeof invoiceSchema> & {
   _id: mongoose.Types.ObjectId;

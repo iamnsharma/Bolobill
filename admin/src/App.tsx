@@ -25,6 +25,7 @@ import ManageSubscriptions from "./pages/ManageSubscriptions";
 import Whisper from "./pages/Whisper";
 import Settings from "./pages/Settings";
 import AddressBook from "./pages/AddressBook";
+import Credit from "./pages/Credit";
 import PublicBill from "./pages/PublicBill";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -99,6 +100,22 @@ function AppRoutes() {
           element={
             <BusinessOnlyRoute>
               <CreateInvoice />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="credit"
+          element={
+            <BusinessOnlyRoute>
+              <Credit />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="credit/:phone"
+          element={
+            <BusinessOnlyRoute>
+              <Credit />
             </BusinessOnlyRoute>
           }
         />

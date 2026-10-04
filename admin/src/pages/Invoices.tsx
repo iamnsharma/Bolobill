@@ -213,6 +213,11 @@ export default function Invoices() {
                                 ? "Voice"
                                 : t("pages.invoices.manual")}
                             </span>
+                            {inv.paymentMode === "credit" ? (
+                              <span className="badge bg-warning text-dark ms-1">
+                                {t("pages.invoices.creditBadge")}
+                              </span>
+                            ) : null}
                           </td>
                           {isSuperAdmin && (
                             <td>

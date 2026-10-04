@@ -44,6 +44,8 @@ export const toAdminInvoiceVm = (invoice: {
   _id: {toString(): string};
   invoiceId: string;
   customerName: string;
+  customerPhone?: string;
+  paymentMode?: 'cash' | 'credit';
   items: unknown[];
   total: number;
   voiceTranscript: string;
@@ -60,6 +62,8 @@ export const toAdminInvoiceVm = (invoice: {
     id: invoice._id.toString(),
     invoiceId: invoice.invoiceId,
     customerName: invoice.customerName,
+    customerPhone: invoice.customerPhone ?? '',
+    paymentMode: invoice.paymentMode ?? 'cash',
     items: invoice.items,
     total: invoice.total,
     voiceTranscript: invoice.voiceTranscript,

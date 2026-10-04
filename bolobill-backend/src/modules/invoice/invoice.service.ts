@@ -13,6 +13,8 @@ import {
   transcribeAudio,
 } from '../../services/whisper.service';
 import {stockService} from '../stock/stock.service';
+import {creditService} from '../credit/credit.service';
+import {phoneForAddressBook} from '../address-book/addressBook.service';
 
 export type InvoiceLineInput = InvoiceItemInput;
 
@@ -47,12 +49,55 @@ const getStockLines = (items: InvoiceLineInput[]) =>
       name: it.name,
     }));
 
+const resolveInvoicePaymentFields = (input: {
+  paymentMode?: 'cash' | 'credit';
+  customerPhone?: string;
+}) => {
+  const paymentMode = input.paymentMode === 'credit' ? 'credit' : 'cash';
+  let customerPhone = '';
+  const raw = input.customerPhone?.trim();
+  if (raw) {
+    try {
+      customerPhone = phoneForAddressBook(raw);
+    } catch {
+      if (paymentMode === 'credit') throw new ApiError(400, 'Enter a valid 10-digit phone number');
+    }
+  }
+  return {paymentMode, customerPhone};
+};
+
+const applyCreditForInvoice = async (
+  input: {
+    userId: string;
+    customerName: string;
+    customerPhone: string;
+    invoiceMongoId: string;
+    invoicePublicId: string;
+    amount: number;
+  },
+  session?: mongoose.ClientSession,
+) => {
+  await creditService.applyCreditSale(
+    {
+      userId: input.userId,
+      phone: input.customerPhone,
+      customerName: input.customerName,
+      invoiceMongoId: input.invoiceMongoId,
+      invoicePublicId: input.invoicePublicId,
+      amount: input.amount,
+    },
+    session,
+  );
+};
+
 const persistInvoice = async (input: {
   userId: string;
   customerName: string;
   items: InvoiceLineInput[];
   transcript: string;
   source: 'voice' | 'manual';
+  paymentMode?: 'cash' | 'credit';
+  customerPhone?: string;
 }) => {
   const user = await UserModel.findById(input.userId);
   if (!user) {
@@ -60,6 +105,7 @@ const persistInvoice = async (input: {
   }
 
   const billToName = input.customerName?.trim() || 'Customer';
+  const {paymentMode, customerPhone} = resolveInvoicePaymentFields(input);
   const total = input.items.reduce((sum, item) => sum + item.totalPrice, 0);
   const invoiceId = createInvoiceId();
   const stockLines = getStockLines(input.items);
@@ -83,17 +129,32 @@ const persistInvoice = async (input: {
       : undefined,
   });
 
+  const baseInvoiceFields = {
+    userId: user._id,
+    invoiceId,
+    customerName: billToName,
+    items: dbItems,
+    total,
+    voiceTranscript: input.transcript,
+    pdfPath: pdf.pdfPath,
+    source: input.source,
+    paymentMode,
+    customerPhone,
+  };
+
   if (!stockLines.length) {
-    return InvoiceModel.create({
-      userId: user._id,
-      invoiceId,
-      customerName: billToName,
-      items: dbItems,
-      total,
-      voiceTranscript: input.transcript,
-      pdfPath: pdf.pdfPath,
-      source: input.source,
-    });
+    const invoice = await InvoiceModel.create(baseInvoiceFields);
+    if (paymentMode === 'credit' && customerPhone) {
+      await applyCreditForInvoice({
+        userId: input.userId,
+        customerName: billToName,
+        customerPhone,
+        invoiceMongoId: invoice._id.toString(),
+        invoicePublicId: invoice.invoiceId,
+        amount: total,
+      });
+    }
+    return invoice;
   }
 
   return stockService.runWithOptionalTransaction(async session => {
@@ -112,19 +173,27 @@ const persistInvoice = async (input: {
       [
         {
           _id: invoiceObjectId,
-          userId: user._id,
-          invoiceId,
-          customerName: billToName,
+          ...baseInvoiceFields,
           items: dbItems,
-          total,
-          voiceTranscript: input.transcript,
-          pdfPath: pdf.pdfPath,
-          source: input.source,
         },
       ],
       session ? {session} : undefined,
     );
-    return created[0];
+    const invoice = created[0];
+    if (paymentMode === 'credit' && customerPhone) {
+      await applyCreditForInvoice(
+        {
+          userId: input.userId,
+          customerName: billToName,
+          customerPhone,
+          invoiceMongoId: invoice._id.toString(),
+          invoicePublicId: invoice.invoiceId,
+          amount: total,
+        },
+        session ?? undefined,
+      );
+    }
+    return invoice;
   });
 };
 
@@ -285,6 +354,8 @@ export const invoiceService = {
     customerName?: string;
     items: InvoiceLineInput[];
     note?: string;
+    paymentMode?: 'cash' | 'credit';
+    customerPhone?: string;
   }) {
     return persistInvoice({
       userId: input.userId,
@@ -292,6 +363,8 @@ export const invoiceService = {
       items: input.items,
       transcript: input.note ?? '',
       source: 'manual',
+      paymentMode: input.paymentMode,
+      customerPhone: input.customerPhone,
     });
   },
 
