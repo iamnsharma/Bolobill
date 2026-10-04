@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import ChartToggleButton from "../components/merchant/ChartToggleButton";
 import { adminApi, type SalesSummary as SalesSummaryType } from "../api/admin";
 import { SalesChartsSection } from "../components/SalesChartsSection";
@@ -7,19 +8,29 @@ import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
 import MetricTile from "../components/merchant/MetricTile";
-import FilterApplyButton from "../components/merchant/FilterApplyButton";
-import { canApplyDateRangeFilter, isDateRangeComplete } from "../utils/dateRangeFilters";
+import DateRangePresetBar from "../components/merchant/DateRangePresetBar";
+import { useDateRangePresets } from "../hooks/useDateRangePresets";
 
 export default function Sales() {
-  const { formatFinance } = useFinancePrivacy();
+  const { t } = useTranslation();
+  const { formatFinance, financeDataEpoch } = useFinancePrivacy();
   const [summary, setSummary] = useState<SalesSummaryType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
-  const [appliedFrom, setAppliedFrom] = useState("");
-  const [appliedTo, setAppliedTo] = useState("");
   const [showGraph, setShowGraph] = useState(false);
+  const {
+    preset,
+    selectPreset,
+    appliedFrom,
+    appliedTo,
+    draftFrom,
+    setDraftFrom,
+    draftTo,
+    setDraftTo,
+    applyCustomRange,
+    customApplyReady,
+    rangeFiltered,
+  } = useDateRangePresets("all");
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -43,63 +54,29 @@ export default function Sales() {
 
   useEffect(() => {
     fetchSummary();
-  }, [appliedFrom, appliedTo]);
-
-  const dateApplyReady = canApplyDateRangeFilter(
-    draftFrom,
-    draftTo,
-    appliedFrom,
-    appliedTo,
-  );
-  const showFilteredTile = isDateRangeComplete(appliedFrom, appliedTo);
-
-  const onApplyDates = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dateApplyReady) return;
-    setAppliedFrom(draftFrom);
-    setAppliedTo(draftTo);
-  };
+  }, [appliedFrom, appliedTo, financeDataEpoch]);
 
   return (
     <PageShell>
       <PageHeader
-        title="Sales Summary"
+        title={t("pages.sales.title")}
         icon="ti-chart-bar"
-        subtitle="Revenue for today, week, month, and year. Use dates for a custom range."
+        subtitle={t("pages.sales.subtitle")}
       />
 
-      <SectionPanel title="Date range" icon="ti-calendar" className="mb-4">
-          <form
-            className="d-flex flex-wrap gap-3 align-items-end"
-            onSubmit={onApplyDates}
-          >
-            <div>
-              <label className="form-label small text-muted mb-1">
-                From date
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                value={draftFrom}
-                onChange={(e) => setDraftFrom(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="form-label small text-muted mb-1">
-                To date
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                value={draftTo}
-                onChange={(e) => setDraftTo(e.target.value)}
-              />
-            </div>
-            <FilterApplyButton loading={loading} disabled={!dateApplyReady} />
-          </form>
-          <p className="small text-muted mb-0 mt-2">
-            Pick both dates to filter, or clear both and Apply to show all-time totals again.
-          </p>
+      <SectionPanel title={t("pages.sales.dateRange")} icon="ti-calendar" className="mb-4">
+        <DateRangePresetBar
+          preset={preset}
+          onPresetChange={selectPreset}
+          draftFrom={draftFrom}
+          draftTo={draftTo}
+          onDraftFromChange={setDraftFrom}
+          onDraftToChange={setDraftTo}
+          onCustomApply={applyCustomRange}
+          customApplyReady={customApplyReady}
+          customApplyLoading={loading}
+        />
+        <p className="small text-muted mb-0 mt-2">{t("pages.sales.dateHint")}</p>
       </SectionPanel>
 
       {error && (
@@ -149,7 +126,7 @@ export default function Sales() {
             tone="primary"
           />
         </div>
-        {showFilteredTile && (
+        {rangeFiltered && (
           <div className="col-md-6 col-lg-4">
             <MetricTile
               label="Filtered range"
@@ -177,7 +154,7 @@ export default function Sales() {
 
       {showGraph ? (
         <SectionPanel title="Sales trends" icon="ti-chart-area-line" className="mb-4" bodyClassName="p-3 p-md-4">
-          <SalesChartsSection />
+          <SalesChartsSection preset={preset} appliedFrom={appliedFrom} appliedTo={appliedTo} />
         </SectionPanel>
       ) : null}
     </PageShell>

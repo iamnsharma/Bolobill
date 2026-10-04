@@ -1,7 +1,10 @@
 import {v4 as uuidv4} from 'uuid';
 import {ApiError} from '../../common/ApiError';
 import {StockProductModel} from '../../models/StockProduct.model';
-import {extractMenuFromImage} from '../../services/menuImportVision.service';
+import {
+  extractMenuFromImage,
+  type ExtractedMenuCategory,
+} from '../../services/menuImportVision.service';
 import {
   ExistingProductRef,
   findBestExistingProductMatch,
@@ -23,6 +26,7 @@ export type MenuImportPreviewItem = {
   unit: string;
   unitPrice: number | null;
   lowStockThreshold: number | null;
+  prefillQuantityOnHand: number | null;
   duplicateStatus: MenuImportDuplicateStatus;
   matchedProductId: string | null;
   matchedProductName: string | null;
@@ -71,8 +75,8 @@ const attachDuplicateFlags = (
   });
 };
 
-const buildPreviewFromExtracted = (
-  extracted: Awaited<ReturnType<typeof extractMenuFromImage>>,
+export const buildStockImportPreview = (
+  extracted: ExtractedMenuCategory[],
   existing: ExistingProductRef[],
 ): MenuImportAnalyzeResult => {
   const categories: MenuImportPreviewCategory[] = [];
@@ -96,6 +100,7 @@ const buildPreviewFromExtracted = (
         unit: item.unit ?? 'pcs',
         unitPrice: item.unitPrice,
         lowStockThreshold: item.lowStockThreshold,
+        prefillQuantityOnHand: item.quantityOnHand ?? null,
       });
     }
   });
@@ -119,7 +124,35 @@ export const menuImportService = {
       throw new ApiError(400, 'No products found in this image — try another photo');
     }
     const existing = await listAllProductsForUser(userId);
-    return buildPreviewFromExtracted(extracted, existing);
+    return buildStockImportPreview(extracted, existing);
+  },
+
+  async parseSpreadsheetFile(
+    userId: string,
+    buffer: Buffer,
+    filename: string,
+  ): Promise<MenuImportAnalyzeResult> {
+    const {parseStockSpreadsheetBuffer} = await import(
+      '../../services/stockSpreadsheetImport.service'
+    );
+    const extracted = parseStockSpreadsheetBuffer(buffer, filename);
+    const flatCount = extracted.reduce((n, c) => n + c.items.length, 0);
+    if (flatCount === 0) {
+      throw new ApiError(400, 'No products found in this file — check the template');
+    }
+    const existing = await listAllProductsForUser(userId);
+    return buildStockImportPreview(extracted, existing);
+  },
+
+  async parsePasteText(userId: string, text: string): Promise<MenuImportAnalyzeResult> {
+    const {parseStockPasteText} = await import('../../services/stockSpreadsheetImport.service');
+    const extracted = parseStockPasteText(text);
+    const flatCount = extracted.reduce((n, c) => n + c.items.length, 0);
+    if (flatCount === 0) {
+      throw new ApiError(400, 'No products found — paste one item per line');
+    }
+    const existing = await listAllProductsForUser(userId);
+    return buildStockImportPreview(extracted, existing);
   },
 
   async matchItemNames(

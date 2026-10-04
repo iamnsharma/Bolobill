@@ -124,6 +124,14 @@ export const authService = {
     return {message: 'PIN reset successful'};
   },
 
+  async verifyPin(userId: string, pin: string) {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new ApiError(404, 'User not found');
+    const ok = await bcrypt.compare(String(pin).trim(), user.pinHash);
+    if (!ok) throw new ApiError(401, 'Invalid PIN');
+    return {ok: true as const};
+  },
+
   async changePin(userId: string, currentPin: string, newPin: string) {
     const user = await UserModel.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');

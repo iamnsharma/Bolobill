@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { adminApi, type OutOfStockItem } from "../api/admin";
+import ImportIconButton from "../components/import/ImportIconButton";
 import { VoiceRecorder, type RecordingResult, MicIconButton } from "../components/VoiceRecorder";
 import AppModal from "../components/AppModal";
 import PageShell from "../components/merchant/PageShell";
@@ -9,6 +12,7 @@ import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchan
 import { exportOutOfStockPdf } from "../utils/exportOutOfStockPdf";
 
 export default function OutOfStock() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<OutOfStockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +35,7 @@ export default function OutOfStock() {
     } catch (e: unknown) {
       setError(
         (e as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to load list",
+          ?.message ?? t("pages.outOfStock.loadFail"),
       );
       setItems([]);
     } finally {
@@ -135,11 +139,65 @@ export default function OutOfStock() {
   return (
     <PageShell>
       <PageHeader
-        title="Out of Stock"
+        title={t("pages.outOfStock.title")}
         icon="ti-alert-circle"
-        subtitle="Track what you are out of. Share the list as PDF with vendors or your team."
+        subtitle={t("pages.outOfStock.subtitle")}
         actions={
-          <MicIconButton title="Speak items" onClick={() => setShowVoiceModal(true)} />
+          <div className="merchant-header-actions">
+            <div className="btn-group" role="group" aria-label="Import restock list">
+              <Link
+                to="/dashboard/out-of-stock/import?source=photo"
+                className="btn btn-sm import-ai-cta"
+                title="Import list"
+              >
+                <i className="ti ti-sparkles" aria-hidden />
+                <span className="d-none d-md-inline ms-1">{t("pages.outOfStock.import")}</span>
+              </Link>
+              <button
+                type="button"
+                className="btn btn-sm import-ai-cta dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="More import options"
+              />
+              <ul className="dropdown-menu dropdown-menu-end">
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/out-of-stock/import?source=photo">
+                    <i className="ti ti-sparkles me-2" />
+                    Read from photo
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/out-of-stock/import?source=csv">
+                    <i className="ti ti-file-type-csv me-2" />
+                    Upload CSV
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/out-of-stock/import?source=excel">
+                    <i className="ti ti-file-type-csv me-2" />
+                    Upload Excel
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/out-of-stock/import?source=paste">
+                    <i className="ti ti-clipboard-text me-2" />
+                    Paste list
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <ImportIconButton
+              icon="ti-plus"
+              label="Add item"
+              variant="primary"
+              onClick={() => {
+                resetForm();
+                setShowForm(true);
+              }}
+            />
+            <MicIconButton title="Speak items" onClick={() => setShowVoiceModal(true)} />
+          </div>
         }
       />
 
@@ -257,14 +315,13 @@ export default function OutOfStock() {
         flush
         bodyClassName="p-0"
         actions={
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-primary"
+          <ImportIconButton
+            icon="ti-file-type-pdf"
+            label="Export PDF"
+            variant="outline-primary"
             onClick={handleExportPdf}
-            disabled={items.length === 0}>
-            <i className="ti ti-file-export me-1" />
-            Export PDF
-          </button>
+            disabled={items.length === 0}
+          />
         }
       >
           {loading ? (

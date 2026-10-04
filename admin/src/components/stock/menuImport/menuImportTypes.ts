@@ -19,7 +19,10 @@ export function draftFromAnalyze(response: MenuImportAnalyzeResponse): MenuImpor
     categories: response.categories.map(c => ({ ...c })),
     items: response.items.map(item => ({
       ...item,
-      stockQty: "",
+      stockQty:
+        item.prefillQuantityOnHand != null && !Number.isNaN(item.prefillQuantityOnHand)
+          ? String(item.prefillQuantityOnHand)
+          : "",
     })),
   };
 }

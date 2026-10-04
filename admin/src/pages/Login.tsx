@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth";
 import { useAuth } from "../contexts/AuthContext";
-import bolobillLogo from "../assets/images/bolobill-logo.png";
+import BoloBillLogo from "../components/BoloBillLogo";
 
 const LOGO_CLICK_WINDOW_MS = 4000;
 const LOGO_CLICKS_NEEDED = 4;
@@ -262,13 +262,8 @@ export default function Login() {
               className="border-0 bg-transparent p-0 d-inline-block"
               onClick={handleLogoClick}
               aria-label="BoloBill logo">
-              <img
-                src={bolobillLogo}
-                alt="BoloBill"
-                className="auth-logo mb-3"
-              />
+              <BoloBillLogo variant="lockup" className="auth-logo auth-logo--lockup mb-3" />
             </button>
-            <h1 className="h4 fw-bold text-dark mb-1">BoloBill</h1>
             <p className="text-muted small mb-0">
               {showAdminForm
                 ? "Admin sign in (phone + PIN)"

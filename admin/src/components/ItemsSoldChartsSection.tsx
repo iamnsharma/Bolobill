@@ -38,15 +38,20 @@ function truncateLabel(name: string, max = 22): string {
   return `${t.slice(0, max - 1)}…`;
 }
 
+function metricValue(row: ItemSold, metric: Metric): number {
+  if (metric === "quantity") return row.quantity;
+  return row.amount ?? 0;
+}
+
 function buildTopRows(items: ItemSold[], metric: Metric) {
-  const sorted = [...items].sort((a, b) => b[metric] - a[metric]);
+  const sorted = [...items].sort((a, b) => metricValue(b, metric) - metricValue(a, metric));
   const top = sorted.slice(0, TOP_N);
   if (sorted.length > TOP_N) {
     const rest = sorted.slice(TOP_N);
     top.push({
       itemName: `Other (${rest.length} items)`,
       quantity: rest.reduce((s, r) => s + r.quantity, 0),
-      amount: rest.reduce((s, r) => s + r.amount, 0),
+      amount: rest.reduce((s, r) => s + (r.amount ?? 0), 0),
     });
   }
   return top.map((row) => ({
@@ -54,7 +59,7 @@ function buildTopRows(items: ItemSold[], metric: Metric) {
     fullName: row.itemName,
     quantity: row.quantity,
     amount: row.amount,
-    value: row[metric],
+    value: metricValue(row, metric),
   }));
 }
 
@@ -73,7 +78,12 @@ export function ItemsSoldChartsSection({ items, loading }: Props) {
     () => items.reduce((s, r) => s + r.quantity, 0),
     [items],
   );
-  const totalAmt = useMemo(() => items.reduce((s, r) => s + r.amount, 0), [items]);
+  const totalAmt = useMemo(() => {
+    if (hideFinance) return null;
+    const amounts = items.map((r) => r.amount).filter((a): a is number => a != null);
+    if (items.length > 0 && amounts.length === 0) return null;
+    return amounts.reduce((s, a) => s + a, 0);
+  }, [items, hideFinance]);
 
   const yTickAmount = (v: number) =>
     hideFinance ? FINANCE_MASK : v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`;

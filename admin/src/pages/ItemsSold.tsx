@@ -1,36 +1,36 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { adminApi, type ItemSold } from "../api/admin";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
-import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import DateRangePresetBar from "../components/merchant/DateRangePresetBar";
 import { ItemsSoldChartsSection } from "../components/ItemsSoldChartsSection";
 import ChartToggleButton from "../components/merchant/ChartToggleButton";
 import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
-import {
-  canApplyDateRangeFilter,
-  isDateRangeComplete,
-} from "../utils/dateRangeFilters";
+import { useDateRangePresets } from "../hooks/useDateRangePresets";
 
 export default function ItemsSold() {
-  const { formatFinance } = useFinancePrivacy();
+  const { t } = useTranslation();
+  const { formatFinance, financeDataEpoch } = useFinancePrivacy();
   const [items, setItems] = useState<ItemSold[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
-  const [appliedFrom, setAppliedFrom] = useState("");
   const [showGraph, setShowGraph] = useState(false);
-  const [appliedTo, setAppliedTo] = useState("");
-
-  const dateApplyReady = canApplyDateRangeFilter(
-    draftFrom,
-    draftTo,
+  const {
+    preset,
+    selectPreset,
     appliedFrom,
     appliedTo,
-  );
-  const rangeFiltered = isDateRangeComplete(appliedFrom, appliedTo);
+    draftFrom,
+    setDraftFrom,
+    draftTo,
+    setDraftTo,
+    applyCustomRange,
+    customApplyReady,
+    rangeFiltered,
+  } = useDateRangePresets("all");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -54,55 +54,29 @@ export default function ItemsSold() {
 
   useEffect(() => {
     fetchItems();
-  }, [appliedFrom, appliedTo]);
-
-  const onApplyDates = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dateApplyReady) return;
-    setAppliedFrom(draftFrom);
-    setAppliedTo(draftTo);
-  };
+  }, [appliedFrom, appliedTo, financeDataEpoch]);
 
   return (
     <PageShell>
       <PageHeader
-        title="Items Sold"
+        title={t("pages.itemsSold.title")}
         icon="ti-package"
-        subtitle="What sold, how much quantity, and revenue per item for any date range."
+        subtitle={t("pages.itemsSold.subtitle")}
       />
 
-      <SectionPanel title="Date range" icon="ti-calendar" className="mb-4">
-          <form
-            className="d-flex flex-wrap gap-3 align-items-end"
-            onSubmit={onApplyDates}
-          >
-            <div>
-              <label className="form-label small text-muted mb-1">
-                From date
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                value={draftFrom}
-                onChange={(e) => setDraftFrom(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="form-label small text-muted mb-1">
-                To date
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                value={draftTo}
-                onChange={(e) => setDraftTo(e.target.value)}
-              />
-            </div>
-            <FilterApplyButton loading={loading} disabled={!dateApplyReady} />
-          </form>
-          <p className="small text-muted mb-0 mt-2">
-            Leave dates empty and Apply clears the filter (shows all). Both dates required to filter.
-          </p>
+      <SectionPanel title={t("pages.itemsSold.dateRange")} icon="ti-calendar" className="mb-4">
+        <DateRangePresetBar
+          preset={preset}
+          onPresetChange={selectPreset}
+          draftFrom={draftFrom}
+          draftTo={draftTo}
+          onDraftFromChange={setDraftFrom}
+          onDraftToChange={setDraftTo}
+          onCustomApply={applyCustomRange}
+          customApplyReady={customApplyReady}
+          customApplyLoading={loading}
+        />
+        <p className="small text-muted mb-0 mt-2">{t("pages.itemsSold.dateHint")}</p>
       </SectionPanel>
 
       {error && (

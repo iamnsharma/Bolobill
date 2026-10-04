@@ -55,7 +55,7 @@ export function buildBillWhatsAppMessageFromInvoice(
 
   return buildEzoStyleWhatsAppMessage({
     shopName,
-    totalFormatted: formatMoney(invoice.total),
+    totalFormatted: formatMoney(invoice.total ?? 0),
     billUrl,
     customerName: invoice.customerName,
   });

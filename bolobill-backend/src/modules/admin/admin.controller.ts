@@ -7,6 +7,17 @@ import type {AdminContext} from '../../middleware/admin.middleware';
 import {manualInvoiceSchema, updateInvoiceSchema} from '../invoice/invoice.validation';
 import {invoiceService} from '../invoice/invoice.service';
 import {userPlanService} from '../plan/userPlan.service';
+import {outOfStockImportService} from './outOfStockImport.service';
+import {oosImportCommitSchema, oosImportMatchSchema} from './outOfStockImport.validation';
+import {stockImportPasteSchema} from '../stock/stock.validation';
+import {financePrivacyService} from './financePrivacy.service';
+import {financeReportsSchema} from '../auth/auth.validation';
+import {
+  redactDailySales,
+  redactInvoiceVm,
+  redactItemsSold,
+  redactSalesSummary,
+} from '../../utils/financeRedact';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & { adminContext?: AdminContext }).adminContext;
@@ -29,7 +40,29 @@ const parseDate = (q: unknown): Date | undefined => {
   return Number.isNaN(d.getTime()) ? undefined : d;
 };
 
+const shouldRedactFinance = async (ctx: AdminContext) => {
+  if (ctx.isSuperAdmin) return false;
+  return financePrivacyService.getFinanceReportsHidden(ctx.userId);
+};
+
 export const adminController = {
+  patchFinanceReports: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (ctx.isSuperAdmin) {
+      throw new ApiError(400, 'Finance privacy applies to store accounts only');
+    }
+    const parsed = financeReportsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await financePrivacyService.updateFinanceReportsHidden(
+      ctx.userId,
+      parsed.data.hidden,
+      parsed.data.inventoryPin,
+    );
+    return res.json(result);
+  }),
+
   getMe: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
     const user = await adminService.getUserById(ctx.userId);
@@ -129,6 +162,9 @@ export const adminController = {
     const from = parseDate(req.query.from);
     const to = parseDate(req.query.to);
     const summary = await adminService.getSalesSummary(userId, from, to);
+    if (await shouldRedactFinance(ctx)) {
+      return res.json(redactSalesSummary(summary));
+    }
     return res.json(summary);
   }),
 
@@ -146,6 +182,9 @@ export const adminController = {
       throw new ApiError(400, 'from must be before or equal to to');
     }
     const daily = await adminService.getSalesSummaryDaily(userId, from, to);
+    if (await shouldRedactFinance(ctx)) {
+      return res.json({daily: redactDailySales(daily), financeRedacted: true});
+    }
     return res.json({daily});
   }),
 
@@ -157,6 +196,9 @@ export const adminController = {
     const from = parseDate(req.query.from);
     const to = parseDate(req.query.to);
     const items = await adminService.getItemsSold(userId, from, to);
+    if (await shouldRedactFinance(ctx)) {
+      return res.json({items: redactItemsSold(items), financeRedacted: true});
+    }
     return res.json({items});
   }),
 
@@ -178,13 +220,21 @@ export const adminController = {
       from,
       to,
     });
-    const invoices = result.invoices.map((inv) => toAdminInvoiceVm(inv as Parameters<typeof toAdminInvoiceVm>[0]));
+    let invoices = result.invoices.map((inv) =>
+      toAdminInvoiceVm(inv as Parameters<typeof toAdminInvoiceVm>[0]),
+    );
+    if (await shouldRedactFinance(ctx)) {
+      invoices = invoices.map((inv) => redactInvoiceVm(inv));
+    }
     return res.json({
       invoices,
       total: result.total,
       page: result.page,
       limit: result.limit,
       totalPages: result.totalPages,
+      ...(invoices.some((i) => (i as {financeRedacted?: boolean}).financeRedacted)
+        ? {financeRedacted: true}
+        : {}),
     });
   }),
 
@@ -215,7 +265,10 @@ export const adminController = {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const scopeUserId = ctx.isSuperAdmin ? undefined : ctx.userId;
     const invoice = await adminService.getInvoiceById(id, scopeUserId);
-    const vm = toAdminInvoiceVm(invoice as Parameters<typeof toAdminInvoiceVm>[0]);
+    let vm = toAdminInvoiceVm(invoice as Parameters<typeof toAdminInvoiceVm>[0]);
+    if (await shouldRedactFinance(ctx)) {
+      vm = redactInvoiceVm(vm);
+    }
     return res.json({invoice: vm});
   }),
 
@@ -294,6 +347,58 @@ export const adminController = {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     await adminService.deleteOutOfStock(ctx.userId, id);
     return res.json({message: 'Deleted'});
+  }),
+
+  analyzeOosImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.buffer) throw new ApiError(400, 'image file is required');
+    const result = await outOfStockImportService.analyzeImage(
+      ctx.userId,
+      req.file.buffer,
+      req.file.mimetype || 'image/jpeg',
+    );
+    return res.json(result);
+  }),
+
+  parseOosImportFile: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.buffer) throw new ApiError(400, 'file is required');
+    const result = await outOfStockImportService.parseFile(
+      ctx.userId,
+      req.file.buffer,
+      req.file.originalname || 'upload.csv',
+    );
+    return res.json(result);
+  }),
+
+  parseOosImportPaste: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = stockImportPasteSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await outOfStockImportService.parsePaste(ctx.userId, parsed.data.text);
+    return res.json(result);
+  }),
+
+  matchOosImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = oosImportMatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const matches = await outOfStockImportService.matchNames(ctx.userId, parsed.data.items);
+    return res.json({matches});
+  }),
+
+  commitOosImport: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = oosImportCommitSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await outOfStockImportService.commit(ctx.userId, parsed.data.items);
+    return res.status(result.imported > 0 ? 201 : 200).json(result);
   }),
 
   getStoreLinks: asyncHandler(async (_req: Request, res: Response) => {

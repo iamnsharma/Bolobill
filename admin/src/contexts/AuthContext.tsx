@@ -12,6 +12,7 @@ interface AuthContextValue {
   registerWithOtp: (payload: { phone: string; otp: string; name: string; businessName: string; pin: string }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -99,6 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    const { user: me, isSuperAdmin: superAdmin } = await adminApi.getMe();
+    setUser(me);
+    setIsSuperAdmin(superAdmin === true || me?.role === 'superadmin');
+    authApi.setStoredAuth(token, me);
+  }, []);
+
   const value: AuthContextValue = {
     user,
     isSuperAdmin,
@@ -109,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     registerWithOtp,
     logout,
     isAuthenticated: !!user,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

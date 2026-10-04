@@ -32,6 +32,7 @@ export type ExtractedMenuCategory = {
     unitPrice: number | null;
     unit: string | null;
     lowStockThreshold: number | null;
+    quantityOnHand?: number | null;
   }>;
 };
 

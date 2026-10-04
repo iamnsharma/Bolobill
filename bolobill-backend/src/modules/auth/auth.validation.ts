@@ -39,6 +39,25 @@ export const resetPinSchema = z.object({
   newPin: z.string().min(4).max(8),
 });
 
+export const verifyPinSchema = z.object({
+  pin: z.string().min(4).max(8),
+});
+
+export const financeReportsSchema = z
+  .object({
+    hidden: z.boolean(),
+    inventoryPin: z.string().min(4).max(8).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.hidden === false && !data.inventoryPin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Inventory PIN is required to show revenue reports',
+        path: ['inventoryPin'],
+      });
+    }
+  });
+
 export const changePinSchema = z
   .object({
     currentPin: z.string().min(4).max(8),

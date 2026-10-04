@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { resolveApiBaseUrl, resolveApiFileUrl } from "../config/deployUrls";
+import BoloBillBrandText from "../components/BoloBillBrandText";
 
 type PublicBill = {
   invoiceId: string;
@@ -79,7 +80,9 @@ export default function PublicBill() {
     <div className="public-bill-page min-vh-100 py-4 py-md-5">
       <div className="public-bill-card mx-auto">
         <header className="public-bill-card__head text-center">
-          <p className="public-bill-card__eyebrow mb-1">BOLOBILL</p>
+          <p className="public-bill-card__eyebrow mb-1">
+            <BoloBillBrandText />
+          </p>
           <h1 className="public-bill-card__shop mb-2">{bill.shopName}</h1>
           <p className="text-muted small mb-1">Thank you for your business! 🙏</p>
           {bill.customerName ? (
@@ -163,7 +166,7 @@ export default function PublicBill() {
         ) : null}
 
         <p className="text-center text-muted public-bill-card__footer small mb-0">
-          Powered by BoloBill
+          Powered by <BoloBillBrandText />
         </p>
       </div>
     </div>

@@ -1,0 +1,271 @@
+{
+  "datePreset": {
+    "all": "All",
+    "1d": "1d",
+    "1w": "1w",
+    "1m": "1m",
+    "3m": "3m",
+    "1y": "1y",
+    "custom": "Custom"
+  },
+  "common": {
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "view": "View",
+    "delete": "Delete",
+    "loading": "Loading…",
+    "add": "Add",
+    "search": "Search",
+    "from": "From",
+    "to": "To",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "changeLanguage": "Change language",
+    "language": "Language",
+    "currentLanguage": "Current language",
+    "languageHint": "The panel updates immediately. Your choice is saved on this device.",
+    "toggleSidebar": "Toggle sidebar",
+    "openMenu": "Open menu",
+    "failedGeneric": "Something went wrong. Please try again.",
+    "productsTracked": "{{count}} products tracked"
+  },
+  "nav": {
+    "account": "Account",
+    "logout": "Log out",
+    "settings": "Settings",
+    "sections": {
+      "overview": "Overview",
+      "billing": "Billing",
+      "inventory": "Inventory",
+      "reports": "Reports",
+      "store": "Store"
+    },
+    "dashboard": "Dashboard",
+    "createBill": "Create Bill",
+    "billsInvoices": "Bills & Invoices",
+    "stock": "Stock",
+    "outOfStock": "Out of Stock",
+    "salesSummary": "Sales Summary",
+    "itemsSold": "Items Sold",
+    "addressBook": "Address book",
+    "qrCode": "QR Code"
+  },
+  "finance": {
+    "hideRevenue": "Hide revenue",
+    "revenueHidden": "Revenue hidden",
+    "tapToShow": "Tap to show",
+    "tapPinToShow": "Enter Inventory PIN to show",
+    "reportsOnly": "Reports only",
+    "hideTitle": "Hide revenue, sales totals & inventory value from prying eyes",
+    "showTitle": "Revenue & report totals are hidden — enter PIN to show",
+    "showAria": "Show revenue totals",
+    "hideAria": "Hide revenue totals",
+    "hideFailed": "Could not hide revenue. Check connection and restart the API if needed.",
+    "inventoryPin": {
+      "setupTitle": "Set Inventory PIN",
+      "setupHint": "First time hiding revenue & inventory value — choose an Inventory PIN (4–8 digits). Saved on your store account.",
+      "newLabel": "Inventory PIN",
+      "confirmLabel": "Confirm Inventory PIN",
+      "saveAndHide": "Save & hide",
+      "errPinLength": "Inventory PIN must be 4–8 characters",
+      "errMismatch": "PINs do not match"
+    },
+    "unlock": {
+      "title": "Show revenue & reports",
+      "hint": "Enter your Inventory PIN to show sales totals and inventory value again.",
+      "pinLabel": "Inventory PIN",
+      "confirm": "Unlock",
+      "errPinLength": "Inventory PIN must be 4–8 characters",
+      "errInvalid": "Incorrect Inventory PIN. Try again."
+    }
+  },
+  "logoutModal": {
+    "title": "Log out?",
+    "message": "You will need to sign in again to access the admin panel.",
+    "confirm": "Log out"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Personalize your panel — branding, colors, PIN, and language.",
+    "resetDefaults": "Reset to BoloBill defaults",
+    "tiles": {
+      "pin": {
+        "title": "Change PIN",
+        "description": "Update the PIN you use to sign in"
+      },
+      "branding": {
+        "title": "Business branding",
+        "description": "Store name and tagline in the sidebar"
+      },
+      "theme": {
+        "title": "Theme & colors",
+        "description": "Preview and pick your brand colors"
+      },
+      "language": {
+        "title": "Language",
+        "description": "Choose your preferred language"
+      }
+    },
+    "pin": {
+      "title": "Login PIN",
+      "subtitle": "Change the PIN BoloBill shared with you",
+      "current": "Current PIN",
+      "new": "New PIN",
+      "confirm": "Confirm new PIN",
+      "newPlaceholder": "New PIN",
+      "confirmPlaceholder": "Confirm PIN",
+      "update": "Update PIN",
+      "errCurrent": "Enter your current PIN (4–8 digits).",
+      "errNew": "New PIN must be 4–8 characters.",
+      "errMismatch": "New PIN and confirmation do not match.",
+      "errSame": "New PIN must be different from your current PIN.",
+      "success": "PIN updated. Use the new PIN next time you sign in.",
+      "fail": "Could not change PIN."
+    },
+    "branding": {
+      "title": "Business branding",
+      "subtitle": "Name and tagline shown in the sidebar and header after you apply",
+      "storeName": "Business / store name",
+      "tagline": "Tagline (optional)",
+      "apply": "Apply store name",
+      "unsaved": "Not saved yet — sidebar still shows the current name."
+    },
+    "theme": {
+      "previewTitle": "Theme preview",
+      "resetColors": "Reset theme colors only",
+      "previewHint": "Color changes apply immediately. Use Reset to BoloBill defaults at the top for name, tagline, and default theme together.",
+      "colorsTitle": "Theme colors",
+      "colorsSubtitle": "Pick 1 to 4 brand colors",
+      "colorCount1": "1 color",
+      "colorCount2": "2 colors",
+      "colorCount3": "3 colors",
+      "colorCount4": "4 colors",
+      "primary": "Primary",
+      "accent": "Accent",
+      "highlight": "Highlight",
+      "warm": "Warm"
+    }
+  },
+  "pages": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitleMerchant": "Today's sales, inventory, and shortcuts in one place.",
+      "subtitleAdmin": "Platform overview and admin tools.",
+      "getStartedTitle": "Get started",
+      "getStartedBody": "Add items in Stock, then create your first bill.",
+      "goToStock": "Go to Stock",
+      "createBill": "Create bill",
+      "newBill": "New bill",
+      "bills": "Bills",
+      "sales": "Sales",
+      "itemsSold": "Items sold",
+      "serverErrorTitle": "Could not reach the server.",
+      "serverErrorBody": "Start the backend or check VITE_API_URL in admin/.env, then refresh.",
+      "today": "Today",
+      "salesToday": "Sales today",
+      "thisWeek": "This week",
+      "weeklySales": "Weekly sales",
+      "thisMonth": "This month",
+      "monthlySales": "Monthly sales",
+      "thisYear": "This year",
+      "yearToDate": "Year to date",
+      "inventoryValue": "Inventory value",
+      "needRestock": "Need restock",
+      "belowAlert": "Items below alert level"
+    },
+    "createBill": {
+      "title": "Create Bill",
+      "subtitle": "Pick items from stock, review totals, and create the bill.",
+      "billDetails": "Bill details",
+      "customerName": "Customer name",
+      "customerRequired": "Required to create the bill.",
+      "noteOptional": "Note (optional)",
+      "notePlaceholder": "Note on bill",
+      "customerPlaceholder": "Enter customer name",
+      "searchItems": "Search items…",
+      "stockConflict": "Some cart items exceed available stock. You cannot create the bill until quantities are fixed.",
+      "newBill": "New bill"
+    },
+    "invoices": {
+      "title": "Bills & Invoices",
+      "titleAdmin": "Invoices",
+      "subtitle": "Search bills by customer or date. Saved bills cannot be edited.",
+      "subtitleAdmin": "All invoices across the platform.",
+      "searchFilter": "Search & filter",
+      "customerOrInvoice": "Customer or invoice",
+      "customerPlaceholder": "Customer name or invoice ID",
+      "filterHint": "Search works without dates. If you use dates, pick both before Apply.",
+      "allBills": "All bills",
+      "invoiceId": "Invoice ID",
+      "customer": "Customer",
+      "total": "Total",
+      "source": "Source",
+      "created": "Created",
+      "manual": "Manual",
+      "newBill": "New bill",
+      "loadFail": "Failed to load invoices"
+    },
+    "stock": {
+      "title": "Stock",
+      "subtitle": "Your online inventory — categories, prices, and quantities. Bills from Create Bill update counts automatically.",
+      "import": "Import",
+      "addStock": "Add stock",
+      "products": "Products",
+      "categories": "Categories",
+      "inventoryValue": "Inventory value",
+      "needRestock": "Need restock",
+      "belowAlert": "Below alert level",
+      "allProducts": "All products",
+      "newCategory": "New category",
+      "addCategory": "Add category",
+      "yourStock": "Your stock",
+      "searchItems": "Search items…",
+      "loading": "Loading…",
+      "noProducts": "No inventory yet. Tap Add stock to add your first items.",
+      "noProductsFound": "No products found.",
+      "addInStock": "Add products in Stock",
+      "product": "Product",
+      "category": "Category",
+      "price": "Price",
+      "inStock": "In stock",
+      "unit": "Unit",
+      "actions": "Actions",
+      "loadFail": "Failed to load stock"
+    },
+    "outOfStock": {
+      "title": "Out of Stock",
+      "subtitle": "Track items you're waiting on. Share the list with suppliers.",
+      "loadFail": "Failed to load list",
+      "addItem": "Add item",
+      "exportPdf": "Export PDF",
+      "import": "Import"
+    },
+    "sales": {
+      "title": "Sales Summary",
+      "subtitle": "Revenue for today, week, month, and year. Use dates for a custom range.",
+      "dateRange": "Date range",
+      "dateHint": "Pick both dates to filter, or clear both and Apply to show all-time totals again."
+    },
+    "itemsSold": {
+      "title": "Items Sold",
+      "subtitle": "What sold, how much quantity, and revenue per item for any date range.",
+      "dateRange": "Date range",
+      "dateHint": "Leave dates empty and Apply clears the filter (shows all). Both dates required to filter."
+    },
+    "addressBook": {
+      "title": "Address book",
+      "subtitle": "Save customer names and phone numbers for faster billing.",
+      "addContact": "Add contact",
+      "searchPlaceholder": "Search name or phone",
+      "loadFail": "Failed to load contacts"
+    },
+    "qrCode": {
+      "title": "QR Code",
+      "subtitle": "Upload a payment or UPI QR code to show on bills.",
+      "upload": "Upload QR image",
+      "remove": "Remove QR code"
+    }
+  }
+}

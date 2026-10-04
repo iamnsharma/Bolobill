@@ -28,6 +28,8 @@ export interface AuthUser {
   businessName?: string;
   accountType?: string;
   role?: string;
+  financeReportsHidden?: boolean;
+  hasInventoryPin?: boolean;
   subscription?: {
     status: string;
     planId: any;
@@ -76,6 +78,11 @@ export const authApi = {
 
   changePin: async (body: { currentPin: string; newPin: string }): Promise<{ message: string }> => {
     const { data } = await api.post<{ message: string }>('/auth/change-pin', body);
+    return data;
+  },
+
+  verifyPin: async (pin: string): Promise<{ ok: true }> => {
+    const { data } = await api.post<{ ok: true }>('/auth/verify-pin', { pin });
     return data;
   },
 

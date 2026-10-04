@@ -7,6 +7,8 @@ export interface AdminUser {
   businessName: string;
   accountType?: string;
   role?: string;
+  financeReportsHidden?: boolean;
+  hasInventoryPin?: boolean;
   isBlacklisted: boolean;
   usage?: { invoiceRequestSuccessCount?: number; voiceToTextSecondsUsed?: number };
   createdAt: string;
@@ -18,7 +20,7 @@ export interface AdminInvoice {
   invoiceId: string;
   customerName: string;
   items: Array<{ name: string; quantity: string; totalPrice: number }>;
-  total: number;
+  total: number | null;
   voiceTranscript: string;
   pdfUrl: string;
   publicToken?: string;
@@ -54,18 +56,19 @@ export interface WhisperUsage {
 }
 
 export interface SalesSummary {
-  total: number;
-  today: number;
-  thisWeek: number;
-  thisMonth: number;
-  thisYear: number;
-  filteredTotal: number;
+  total: number | null;
+  today: number | null;
+  thisWeek: number | null;
+  thisMonth: number | null;
+  thisYear: number | null;
+  filteredTotal: number | null;
+  financeRedacted?: boolean;
 }
 
 export interface ItemSold {
   itemName: string;
   quantity: number;
-  amount: number;
+  amount: number | null;
 }
 
 export interface OutOfStockItem {
@@ -100,6 +103,7 @@ export type MenuImportPreviewItem = {
   unit: string;
   unitPrice: number | null;
   lowStockThreshold: number | null;
+  prefillQuantityOnHand?: number | null;
   duplicateStatus: MenuImportDuplicateStatus;
   matchedProductId: string | null;
   matchedProductName: string | null;
@@ -116,6 +120,30 @@ export type MenuImportMatchRow = {
   duplicateStatus: MenuImportDuplicateStatus;
   matchedProductId: string | null;
   matchedProductName: string | null;
+};
+
+export type OosImportDuplicateStatus = 'new' | 'exists';
+
+export type OosImportPreviewItem = {
+  tempId: string;
+  name: string;
+  quantity: string;
+  note: string;
+  duplicateStatus: OosImportDuplicateStatus;
+  matchedItemId: string | null;
+  matchedItemName: string | null;
+};
+
+export type OosImportPreviewResponse = {
+  summary: { found: number; newCount: number; existsCount: number };
+  items: OosImportPreviewItem[];
+};
+
+export type OosImportMatchRow = {
+  tempId: string;
+  duplicateStatus: OosImportDuplicateStatus;
+  matchedItemId: string | null;
+  matchedItemName: string | null;
 };
 
 export type MenuImportCommitProduct = {
@@ -163,6 +191,14 @@ export interface UserLimits {
 export const adminApi = {
   getMe: () =>
     api.get<{ user: AdminUser; isSuperAdmin: boolean }>('/admin/me').then((r) => r.data),
+
+  patchFinanceReports: (body: { hidden: boolean; inventoryPin?: string }) =>
+    api
+      .patch<{ financeReportsHidden: boolean; hasInventoryPin: boolean }>(
+        '/admin/me/finance-reports',
+        body,
+      )
+      .then((r) => r.data),
 
   getStats: () =>
     api.get<AdminStats>('/admin/stats').then((r) => r.data),
@@ -435,6 +471,50 @@ export const adminApi = {
         message: string;
         products: StockProduct[];
       }>('/admin/stock/products/menu-import/commit', body)
+      .then(r => r.data),
+
+  parseStockImportFile: (formData: FormData) =>
+    api
+      .post<MenuImportAnalyzeResponse>('/admin/stock/products/import/parse-file', formData, {
+        timeout: 60000,
+      })
+      .then(r => r.data),
+
+  parseStockImportPaste: (body: { text: string }) =>
+    api
+      .post<MenuImportAnalyzeResponse>('/admin/stock/products/import/parse-paste', body)
+      .then(r => r.data),
+
+  analyzeOosImport: (formData: FormData) =>
+    api
+      .post<OosImportPreviewResponse>('/admin/out-of-stock/import/analyze', formData, {
+        timeout: 120000,
+      })
+      .then(r => r.data),
+
+  parseOosImportFile: (formData: FormData) =>
+    api
+      .post<OosImportPreviewResponse>('/admin/out-of-stock/import/parse-file', formData, {
+        timeout: 60000,
+      })
+      .then(r => r.data),
+
+  parseOosImportPaste: (body: { text: string }) =>
+    api.post<OosImportPreviewResponse>('/admin/out-of-stock/import/parse-paste', body).then(r => r.data),
+
+  matchOosImportItems: (body: { items: { tempId: string; name: string }[] }) =>
+    api
+      .post<{ matches: OosImportMatchRow[] }>('/admin/out-of-stock/import/match', body)
+      .then(r => r.data.matches),
+
+  commitOosImport: (body: {
+    items: { name: string; quantity?: string; note?: string }[];
+  }) =>
+    api
+      .post<{ imported: number; skipped: number; message: string }>(
+        '/admin/out-of-stock/import/commit',
+        body,
+      )
       .then(r => r.data),
 
   lookupAddressBookContact: (phone: string) =>

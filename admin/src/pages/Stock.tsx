@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import ImportIconButton from "../components/import/ImportIconButton";
 import {
   adminApi,
   type StockCategory,
@@ -41,11 +43,12 @@ function mergeStockProductUpdate(prev: StockProduct, updated: StockProduct): Sto
 }
 
 export default function Stock() {
-  const { formatMoney, formatFinance } = useFinancePrivacy();
+  const { t } = useTranslation();
+  const { formatMoney, formatFinance, financeDataEpoch } = useFinancePrivacy();
   const [summary, setSummary] = useState<{
     totalProducts: number;
     totalCategories: number;
-    inventoryValue: number;
+    inventoryValue: number | null;
     lowStockCount: number;
   } | null>(null);
   const [categories, setCategories] = useState<StockCategory[]>([]);
@@ -103,14 +106,14 @@ export default function Stock() {
       } catch (e: unknown) {
         setError(
           (e as { response?: { data?: { message?: string } } })?.response?.data
-            ?.message ?? "Failed to load stock",
+            ?.message ?? t("pages.stock.loadFail"),
         );
       } finally {
         setLoading(false);
         setListRefreshing(false);
       }
     },
-    [searchQ, selectedCategoryId],
+    [searchQ, selectedCategoryId, financeDataEpoch, t],
   );
 
   useEffect(() => {
@@ -372,21 +375,62 @@ export default function Stock() {
   };
 
   return (
-    <PageShell className="stock-page">
+    <PageShell className="stock-page stock-page--viewport-lock">
       <PageHeader
-        title="Stock"
+        title={t("pages.stock.title")}
         icon="ti-box"
-        subtitle="Your online inventory — categories, prices, and quantities. Bills from Create Bill update counts automatically."
+        subtitle={t("pages.stock.subtitle")}
         actions={
-          <div className="d-flex flex-wrap gap-2">
-            <Link to="/dashboard/stock/import" className="btn btn-outline-primary">
-              <i className="ti ti-sparkles me-1" />
-              Import with AI
-            </Link>
-            <button type="button" className="btn btn-primary" onClick={() => openAddStockPanel("single")}>
-              <i className="ti ti-plus me-1" />
-              Add stock
-            </button>
+          <div className="merchant-header-actions">
+            <div className="btn-group" role="group" aria-label="Import products">
+              <Link
+                to="/dashboard/stock/import?source=photo"
+                className="btn btn-sm import-ai-cta"
+                title="Import from photo"
+              >
+                <i className="ti ti-sparkles" aria-hidden />
+                <span className="d-none d-md-inline ms-1">{t("pages.stock.import")}</span>
+              </Link>
+              <button
+                type="button"
+                className="btn btn-sm import-ai-cta dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="More import options"
+              />
+              <ul className="dropdown-menu dropdown-menu-end">
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/stock/import?source=photo">
+                    <i className="ti ti-sparkles me-2" />
+                    Read from photo
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/stock/import?source=csv">
+                    <i className="ti ti-file-type-csv me-2" />
+                    Upload CSV
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/stock/import?source=excel">
+                    <i className="ti ti-file-spreadsheet me-2" />
+                    Upload Excel
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/dashboard/stock/import?source=paste">
+                    <i className="ti ti-clipboard-text me-2" />
+                    Paste list
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <ImportIconButton
+              icon="ti-plus"
+              label={t("pages.stock.addStock")}
+              variant="primary"
+              onClick={() => openAddStockPanel("single")}
+            />
           </div>
         }
       />
@@ -398,10 +442,10 @@ export default function Stock() {
       )}
 
       {summary && (
-        <div className="row g-3 mb-4">
+        <div className="row g-3 mb-4 stock-page-metrics">
           <div className="col-md-3 col-6">
             <MetricTile
-              label="Products"
+              label={t("pages.stock.products")}
               value={summary.totalProducts}
               icon="ti-package"
               tone="primary"
@@ -409,7 +453,7 @@ export default function Stock() {
           </div>
           <div className="col-md-3 col-6">
             <MetricTile
-              label="Categories"
+              label={t("pages.stock.categories")}
               value={summary.totalCategories}
               icon="ti-category"
               tone="success"
@@ -417,7 +461,7 @@ export default function Stock() {
           </div>
           <div className="col-md-3 col-6">
             <MetricTile
-              label="Inventory value"
+              label={t("pages.stock.inventoryValue")}
               value={formatFinance(summary.inventoryValue)}
               icon="ti-cash"
               tone="info"
@@ -425,9 +469,9 @@ export default function Stock() {
           </div>
           <div className="col-md-3 col-6">
             <MetricTile
-              label="Need restock"
+              label={t("pages.stock.needRestock")}
               value={summary.lowStockCount}
-              hint="Below alert level"
+              hint={t("pages.stock.belowAlert")}
               icon="ti-alert-triangle"
               tone="warning"
             />
@@ -435,63 +479,68 @@ export default function Stock() {
         </div>
       )}
 
-      <div className="row g-4">
-        <div className="col-lg-3 d-none d-lg-block">
-          <div className="card border-0 shadow-sm rounded-3">
-            <div className="card-body p-3">
-              <h2 className="h6 fw-bold mb-3">Categories</h2>
-              <button
-                type="button"
-                className={`btn btn-sm w-100 mb-2 text-start ${selectedCategoryId === "" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setSelectedCategoryId("")}
+      <div className="stock-page-split">
+        <div className="stock-page-split__sidebar d-none d-lg-block">
+          <div className="card border-0 shadow-sm rounded-3 h-100">
+            <div className="card-body p-3 stock-page-sidebar">
+              <h2 className="h6 fw-bold mb-3 flex-shrink-0">{t("pages.stock.categories")}</h2>
+              <div className="stock-page-sidebar-scroll">
+                <button
+                  type="button"
+                  className={`btn btn-sm w-100 mb-2 text-start ${selectedCategoryId === "" ? "btn-primary" : "btn-outline-secondary"}`}
+                  onClick={() => setSelectedCategoryId("")}
+                >
+                  {t("pages.stock.allProducts")}
+                </button>
+                {categories.map((c) => (
+                  <div key={c._id} className="d-flex gap-1 mb-2">
+                    <button
+                      type="button"
+                      className={`btn btn-sm flex-grow-1 text-start ${selectedCategoryId === c._id ? "btn-primary" : "btn-outline-secondary"}`}
+                      onClick={() => setSelectedCategoryId(c._id)}
+                    >
+                      {c.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger category-row-delete"
+                      onClick={() => setCategoryToDelete(c)}
+                      aria-label={`Delete category ${c.name}`}
+                      title="Delete category"
+                    >
+                      <i className="ti ti-trash" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form
+                onSubmit={handleAddCategory}
+                className="mt-3 pt-3 border-top stock-page-sidebar-footer flex-shrink-0"
               >
-                All products
-              </button>
-              {categories.map((c) => (
-                <div key={c._id} className="d-flex gap-1 mb-2">
-                  <button
-                    type="button"
-                    className={`btn btn-sm flex-grow-1 text-start ${selectedCategoryId === c._id ? "btn-primary" : "btn-outline-secondary"}`}
-                    onClick={() => setSelectedCategoryId(c._id)}
-                  >
-                    {c.name}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-danger category-row-delete"
-                    onClick={() => setCategoryToDelete(c)}
-                    aria-label={`Delete category ${c.name}`}
-                    title="Delete category"
-                  >
-                    <i className="ti ti-trash" />
-                  </button>
-                </div>
-              ))}
-              <form onSubmit={handleAddCategory} className="mt-3 pt-3 border-top">
                 <input
                   type="text"
                   className="form-control form-control-sm mb-2"
-                  placeholder="New category"
+                  placeholder={t("pages.stock.newCategory")}
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                 />
                 <button type="submit" className="btn btn-sm btn-outline-primary w-100">
-                  Add category
+                  {t("pages.stock.addCategory")}
                 </button>
               </form>
             </div>
           </div>
         </div>
 
-        <div className="col-lg-9">
-          <div className="card border-0 shadow-sm rounded-3">
-            <div className="card-body p-4 pb-0">
+        <div className="stock-page-split__main">
+          <div className="card border-0 shadow-sm rounded-3 h-100 stock-page-main-card">
+            <div className="card-body p-4 pb-0 stock-page-main-head">
               <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <h2 className="h6 fw-bold mb-0 me-auto">Your stock</h2>
+                <h2 className="h6 fw-bold mb-0 me-auto">{t("pages.stock.yourStock")}</h2>
                 <ExpandableSearch
                   value={searchQ}
                   onChange={setSearchQ}
-                  placeholder="Search items…"
+                  placeholder={t("pages.stock.searchItems")}
                 />
               </div>
               <CategoryChipBar
@@ -501,26 +550,26 @@ export default function Stock() {
                 className="d-lg-none mb-3"
               />
             </div>
-            <div className="card-body p-0 pt-0">
+            <div className="stock-page-table-scroll">
               {loading ? (
-                <div className="p-4 text-center text-muted">Loading…</div>
+                <div className="p-4 text-center text-muted">{t("pages.stock.loading")}</div>
               ) : products.length === 0 ? (
                 <div className="p-4 text-muted">
-                  No inventory yet. Tap <strong>Add stock</strong> to add your first items.
+                  {t("pages.stock.noProducts")}
                 </div>
               ) : (
                 <div
-                  className={`table-responsive merchant-data-table stock-table-wrap${listRefreshing ? " is-refreshing" : ""}`}
+                  className={`merchant-data-table stock-table-wrap${listRefreshing ? " is-refreshing" : ""}`}
                 >
                   <table className="table table-hover mb-0 align-middle">
                     <thead className="table-light">
                       <tr>
-                        <th scope="col">Product</th>
-                        <th scope="col">Category</th>
-                        <th scope="col" className="merchant-data-table__num">Price</th>
-                        <th scope="col" className="merchant-data-table__num">In stock</th>
-                        <th scope="col">Unit</th>
-                        <th scope="col" className="merchant-data-table__num">Actions</th>
+                        <th scope="col">{t("pages.stock.product")}</th>
+                        <th scope="col">{t("pages.stock.category")}</th>
+                        <th scope="col" className="merchant-data-table__num">{t("pages.stock.price")}</th>
+                        <th scope="col" className="merchant-data-table__num">{t("pages.stock.inStock")}</th>
+                        <th scope="col">{t("pages.stock.unit")}</th>
+                        <th scope="col" className="merchant-data-table__num">{t("pages.stock.actions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -562,7 +611,7 @@ export default function Stock() {
                                 className="btn btn-sm btn-outline-primary"
                                 onClick={() => openEditProduct(p)}
                               >
-                                Edit
+                                {t("common.edit")}
                               </button>
                             </td>
                           </tr>

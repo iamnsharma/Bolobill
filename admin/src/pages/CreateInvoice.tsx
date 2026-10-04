@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { adminApi, type StockCategory, type StockProduct } from "../api/admin";
 import {
@@ -68,6 +69,7 @@ const commitLineQtyInput = (row: LineItem): LineItem => {
 
 
 export default function CreateInvoice() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { formatMoney } = useFinancePrivacy();
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -386,11 +388,11 @@ export default function CreateInvoice() {
       : undefined;
 
   return (
-    <PageShell>
+    <PageShell className="pos-create-bill-page">
       <PageHeader
-        title="Create Bill"
+        title={t("pages.createBill.title")}
         icon="ti-receipt-2"
-        subtitle="Pick items from stock, review totals, and create the bill."
+        subtitle={t("pages.createBill.subtitle")}
         actions={
           VOICE_MIC_FEATURE_ENABLED ? (
             <MicIconButton
@@ -405,7 +407,7 @@ export default function CreateInvoice() {
       {hasStockConflict && lines.length > 0 && !error && !voiceError && (
         <div className="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
           <i className="ti ti-alert-circle" />
-          Some cart items exceed available stock. You cannot create the bill until quantities are fixed.
+          {t("pages.createBill.stockConflict")}
         </div>
       )}
 
@@ -418,16 +420,20 @@ export default function CreateInvoice() {
         </div>
       )}
 
-      <SectionPanel title="Bill details" icon="ti-shopping-cart" className="pos-create-bill-manual">
-            <div className="row g-2 mb-3">
+      <SectionPanel
+        title={t("pages.createBill.billDetails")}
+        icon="ti-shopping-cart"
+        className="pos-create-bill-manual pos-create-bill-panel"
+      >
+            <div className="row g-2 mb-3 pos-create-bill-customer-row">
               <div className="col-md-6">
                 <label className="form-label fw-semibold small mb-1">
-                  Customer name <span className="text-danger">*</span>
+                  {t("pages.createBill.customerName")} <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   className={`form-control${needsCustomerName ? " is-invalid" : ""}`}
-                  placeholder="Enter customer name"
+                  placeholder={t("pages.createBill.customerPlaceholder")}
                   value={customerName}
                   onChange={(e) => {
                     setCustomerName(e.target.value);
@@ -436,24 +442,24 @@ export default function CreateInvoice() {
                   aria-invalid={needsCustomerName}
                 />
                 {needsCustomerName ? (
-                  <div className="invalid-feedback d-block">Required to create the bill.</div>
+                  <div className="invalid-feedback d-block">{t("pages.createBill.customerRequired")}</div>
                 ) : null}
               </div>
               <div className="col-md-6">
-                <label className="form-label small mb-1">Note (optional)</label>
+                <label className="form-label small mb-1">{t("pages.createBill.noteOptional")}</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Note on bill"
+                  placeholder={t("pages.createBill.notePlaceholder")}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="row g-4">
-              <div className="col-lg-7">
-                <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+            <div className="pos-create-bill-split">
+              <div className="pos-create-bill-split__left">
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap pos-create-bill-picker-tools">
                   <CategoryChipBar
                     categories={stockCategories}
                     value={stockCategoryId}
@@ -463,31 +469,33 @@ export default function CreateInvoice() {
                   <ExpandableSearch
                     value={stockSearch}
                     onChange={setStockSearch}
-                    placeholder="Search items…"
+                    placeholder={t("pages.createBill.searchItems")}
                   />
                 </div>
-                <ProductCatalogList
-                  products={stockProducts}
-                  loading={stockPickerLoading && stockProducts.length === 0}
-                  subtleLoading={stockPickerLoading && stockProducts.length > 0}
-                  formatMoney={formatMoney}
-                  cartQtyByProductId={cartQtyByProductId}
-                  recentlyAddedId={recentlyAddedId}
-                  onAdd={(p) => addProductToBill(p, 1)}
-                  emptyAction={
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => navigate("/dashboard/stock")}
-                    >
-                      Add products in Stock
-                    </button>
-                  }
-                />
+                <div className="pos-create-bill-catalog-scroll">
+                  <ProductCatalogList
+                    products={stockProducts}
+                    loading={stockPickerLoading && stockProducts.length === 0}
+                    subtleLoading={stockPickerLoading && stockProducts.length > 0}
+                    formatMoney={formatMoney}
+                    cartQtyByProductId={cartQtyByProductId}
+                    recentlyAddedId={recentlyAddedId}
+                    onAdd={(p) => addProductToBill(p, 1)}
+                    emptyAction={
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => navigate("/dashboard/stock")}
+                      >
+                        {t("pages.stock.addInStock")}
+                      </button>
+                    }
+                  />
+                </div>
               </div>
 
-              <div className="col-lg-5 d-none d-lg-block">
-                <div className="card bg-light border-0 h-100">
+              <div className="pos-create-bill-split__right d-none d-lg-flex">
+                <div className="card bg-light border-0 h-100 w-100">
                   <div className="card-body">
                     <BillCartPanel
                       lines={lines}

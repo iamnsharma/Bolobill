@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema(
       expiresAt: {type: Date},
     },
     qrCodePath: {type: String, default: '', trim: true},
+    /** When true, sales/inventory-value report totals are hidden until account PIN unlock. */
+    financeReportsHidden: {type: Boolean, default: false},
+    /** Hashed PIN to show inventory value / revenue after hide; set on first hide. */
+    inventoryPinHash: {type: String, default: ''},
   },
   {timestamps: true},
 );

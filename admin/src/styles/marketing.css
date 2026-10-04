@@ -93,6 +93,7 @@
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .marketing-back-home {
@@ -162,8 +163,30 @@
   }
 }
 
-.marketing-brand-accent {
+.marketing-brand-logo {
+  height: 46px;
+  width: auto;
+  max-width: min(220px, 62vw);
+  object-fit: contain;
+  display: block;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.marketing-brand-accent,
+.bolobill-brand-text__accent {
   color: var(--bb-accent, #e66239);
+}
+
+.marketing-header--dark .bolobill-brand-text {
+  color: #fff;
+}
+
+.marketing-header--dark .bolobill-brand-text__accent {
+  color: #ffb4a2;
 }
 
 .marketing-header--dark .marketing-brand-accent {

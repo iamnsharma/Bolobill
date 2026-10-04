@@ -11,6 +11,7 @@ import {
   verifyOtpSchema,
   resetPinSchema,
   changePinSchema,
+  verifyPinSchema,
 } from './auth.validation';
 
 export const authController = {
@@ -100,6 +101,16 @@ export const authController = {
     }
 
     const result = await authService.resetPin(parsed.data);
+    return res.json(result);
+  },
+
+  async verifyPin(req: Request, res: Response) {
+    if (!req.user?.userId) throw new ApiError(401, 'Unauthorized');
+    const parsed = verifyPinSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await authService.verifyPin(req.user.userId, parsed.data.pin);
     return res.json(result);
   },
 

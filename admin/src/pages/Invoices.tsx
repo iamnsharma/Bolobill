@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminInvoice } from "../api/admin";
@@ -9,12 +10,15 @@ import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
 import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import MerchantFilterField from "../components/merchant/MerchantFilterField";
+import DateRangePresetBar from "../components/merchant/DateRangePresetBar";
 import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
-import { canSubmitListFilters } from "../utils/dateRangeFilters";
+import { useDateRangePresets } from "../hooks/useDateRangePresets";
 
 export default function Invoices() {
+  const { t } = useTranslation();
   const { isSuperAdmin } = useAuth();
-  const { formatFinance } = useFinancePrivacy();
+  const { formatFinance, financeDataEpoch } = useFinancePrivacy();
   const [searchParams] = useSearchParams();
   const userIdFromQuery = searchParams.get("userId") ?? "";
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
@@ -29,11 +33,19 @@ export default function Invoices() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [draftSearch, setDraftSearch] = useState("");
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [appliedFrom, setAppliedFrom] = useState("");
-  const [appliedTo, setAppliedTo] = useState("");
+  const {
+    preset,
+    selectPreset,
+    appliedFrom,
+    appliedTo,
+    draftFrom,
+    setDraftFrom,
+    draftTo,
+    setDraftTo,
+    applyCustomRange,
+    customApplyReady,
+  } = useDateRangePresets("all");
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -57,7 +69,7 @@ export default function Invoices() {
     } catch (e: unknown) {
       setError(
         (e as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to load invoices",
+          ?.message ?? t("pages.invoices.loadFail"),
       );
       setData({ invoices: [], total: 0, page: 1, limit: 20, totalPages: 0 });
     } finally {
@@ -67,90 +79,76 @@ export default function Invoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, isSuperAdmin, userIdFromQuery, appliedSearch, appliedFrom, appliedTo]);
+  }, [page, isSuperAdmin, userIdFromQuery, appliedSearch, appliedFrom, appliedTo, financeDataEpoch]);
 
-  const filtersApplyReady = canSubmitListFilters({
-    draftFrom,
-    draftTo,
-    appliedFrom,
-    appliedTo,
-    draftSearch,
-    appliedSearch,
-  });
+  useEffect(() => {
+    setPage(1);
+  }, [appliedFrom, appliedTo, preset]);
 
-  const onApplyFilters = (e: React.FormEvent) => {
+  const searchApplyReady = draftSearch.trim() !== appliedSearch.trim();
+
+  const onApplySearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!filtersApplyReady) return;
+    if (!searchApplyReady) return;
     setPage(1);
     setAppliedSearch(draftSearch);
-    setAppliedFrom(draftFrom);
-    setAppliedTo(draftTo);
   };
 
   return (
     <PageShell>
       <PageHeader
-        title={isSuperAdmin ? "Invoices" : "Bills & Invoices"}
+        title={isSuperAdmin ? t("pages.invoices.titleAdmin") : t("pages.invoices.title")}
         icon="ti-receipt"
         subtitle={
           isSuperAdmin
             ? userIdFromQuery
               ? "Invoices for this user."
-              : "All invoices across the platform."
-            : "Search bills by customer or date. Saved bills cannot be edited."
+              : t("pages.invoices.subtitleAdmin")
+            : t("pages.invoices.subtitle")
         }
         actions={
           !isSuperAdmin ? (
             <Link
               to="/dashboard/invoices/new"
-              className="btn btn-primary d-inline-flex align-items-center gap-1">
-              <i className="ti ti-plus" />
-              New bill
+              className="btn btn-primary btn-icon btn-sm import-icon-btn"
+              title={t("pages.invoices.newBill")}
+              aria-label={t("pages.invoices.newBill")}
+            >
+              <i className="ti ti-plus" aria-hidden />
             </Link>
           ) : undefined
         }
       />
 
-      <SectionPanel title="Search & filter" icon="ti-filter" className="mb-4">
-          <form
-            className="d-flex flex-wrap gap-3 align-items-end"
-            onSubmit={onApplyFilters}>
-            <div className="d-flex align-items-center gap-2">
-              <i className="ti ti-search text-muted" />
-              <input
-                type="search"
-                className="form-control"
-                style={{ maxWidth: 260 }}
-                placeholder="Customer name or invoice ID"
-                value={draftSearch}
-                onChange={(e) => setDraftSearch(e.target.value)}
-              />
-            </div>
-            <div className="d-flex align-items-center gap-2">
-              <label className="small text-muted mb-0">From</label>
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                style={{ width: 140 }}
-                value={draftFrom}
-                onChange={(e) => setDraftFrom(e.target.value)}
-              />
-            </div>
-            <div className="d-flex align-items-center gap-2">
-              <label className="small text-muted mb-0">To</label>
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                style={{ width: 140 }}
-                value={draftTo}
-                onChange={(e) => setDraftTo(e.target.value)}
-              />
-            </div>
-            <FilterApplyButton loading={loading} disabled={!filtersApplyReady} />
-          </form>
-          <p className="small text-muted mb-0 mt-2">
-            Search works without dates. If you use dates, pick both before Apply.
-          </p>
+      <SectionPanel title={t("pages.invoices.searchFilter")} icon="ti-filter" className="mb-4">
+        <DateRangePresetBar
+          preset={preset}
+          onPresetChange={selectPreset}
+          draftFrom={draftFrom}
+          draftTo={draftTo}
+          onDraftFromChange={setDraftFrom}
+          onDraftToChange={setDraftTo}
+          onCustomApply={applyCustomRange}
+          customApplyReady={customApplyReady}
+          customApplyLoading={loading}
+          className="mb-3"
+        />
+        <form className="merchant-filter-bar" onSubmit={onApplySearch}>
+          <MerchantFilterField
+            label={t("pages.invoices.customerOrInvoice")}
+            className="merchant-filter-field--grow"
+          >
+            <input
+              type="search"
+              className="form-control"
+              placeholder={t("pages.invoices.customerPlaceholder")}
+              value={draftSearch}
+              onChange={(e) => setDraftSearch(e.target.value)}
+            />
+          </MerchantFilterField>
+          <FilterApplyButton loading={loading} disabled={!searchApplyReady} />
+        </form>
+        <p className="small text-muted mb-0 mt-2">{t("pages.invoices.filterHint")}</p>
       </SectionPanel>
 
       {error && (
@@ -159,7 +157,7 @@ export default function Invoices() {
         </div>
       )}
 
-      <SectionPanel title="All bills" icon="ti-list" flush bodyClassName="p-0">
+      <SectionPanel title={t("pages.invoices.allBills")} icon="ti-list" flush bodyClassName="p-0">
           {loading ? (
             <div className="p-5 text-center">
               <div className="spinner-border text-primary" role="status" />
@@ -170,16 +168,16 @@ export default function Invoices() {
                   <thead className="bg-light">
                     <tr>
                       <th scope="col">
-                        <MerchantTableHeadLabel>Invoice ID</MerchantTableHeadLabel>
+                        <MerchantTableHeadLabel>{t("pages.invoices.invoiceId")}</MerchantTableHeadLabel>
                       </th>
                       <th scope="col">
-                        <MerchantTableHeadLabel>Customer</MerchantTableHeadLabel>
+                        <MerchantTableHeadLabel>{t("pages.invoices.customer")}</MerchantTableHeadLabel>
                       </th>
                       <th scope="col" className="merchant-data-table__num">
-                        <MerchantTableHeadLabel numeric>Total</MerchantTableHeadLabel>
+                        <MerchantTableHeadLabel numeric>{t("pages.invoices.total")}</MerchantTableHeadLabel>
                       </th>
                       <th scope="col">
-                        <MerchantTableHeadLabel>Source</MerchantTableHeadLabel>
+                        <MerchantTableHeadLabel>{t("pages.invoices.source")}</MerchantTableHeadLabel>
                       </th>
                       {isSuperAdmin && (
                         <th scope="col">
@@ -187,7 +185,7 @@ export default function Invoices() {
                         </th>
                       )}
                       <th scope="col">
-                        <MerchantTableHeadLabel>Created</MerchantTableHeadLabel>
+                        <MerchantTableHeadLabel>{t("pages.invoices.created")}</MerchantTableHeadLabel>
                       </th>
                       <th scope="col" className="merchant-data-table__num" aria-label="Actions" />
                     </tr>
@@ -213,7 +211,7 @@ export default function Invoices() {
                             <span className="badge bg-secondary">
                               {inv.source === "voice" && VOICE_MIC_FEATURE_ENABLED
                                 ? "Voice"
-                                : "Manual"}
+                                : t("pages.invoices.manual")}
                             </span>
                           </td>
                           {isSuperAdmin && (
@@ -240,7 +238,7 @@ export default function Invoices() {
                               className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
                               onClick={() => setViewInvoiceId(inv.id)}>
                               <i className="ti ti-eye" />
-                              View
+                              {t("common.view")}
                             </button>
                           </td>
                         </tr>

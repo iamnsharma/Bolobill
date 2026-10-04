@@ -18,6 +18,7 @@ import ItemsSold from "./pages/ItemsSold";
 import OutOfStock from "./pages/OutOfStock";
 import Stock from "./pages/Stock";
 import MenuImport from "./pages/MenuImport";
+import OutOfStockImport from "./pages/OutOfStockImport";
 import QrCode from "./pages/QrCode";
 import CreateInvoice from "./pages/CreateInvoice";
 import ManageSubscriptions from "./pages/ManageSubscriptions";
@@ -138,6 +139,14 @@ function AppRoutes() {
           element={
             <BusinessOnlyRoute>
               <OutOfStock />
+            </BusinessOnlyRoute>
+          }
+        />
+        <Route
+          path="out-of-stock/import"
+          element={
+            <BusinessOnlyRoute>
+              <OutOfStockImport />
             </BusinessOnlyRoute>
           }
         />

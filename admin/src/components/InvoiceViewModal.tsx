@@ -72,7 +72,7 @@ export default function InvoiceViewModal({
       customerName: invoice.customerName,
       createdBy: createdBy || undefined,
       items: invoice.items,
-      total: invoice.total,
+      total: invoice.total ?? 0,
       createdAt: invoice.createdAt,
       source: invoice.source,
       qrImageSrc: qrImageDataUrl,

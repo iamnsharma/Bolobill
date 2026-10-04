@@ -11,10 +11,13 @@ import {
   createProductSchema,
   menuImportCommitSchema,
   menuImportMatchSchema,
+  stockImportPasteSchema,
   updateCategorySchema,
   updateProductSchema,
 } from './stock.validation';
 import {menuImportService} from './menuImport.service';
+import {financePrivacyService} from '../admin/financePrivacy.service';
+import {redactStockSummary} from '../../utils/financeRedact';
 
 const getAdminContext = (req: Request): AdminContext => {
   const ctx = (req as Request & {adminContext?: AdminContext}).adminContext;
@@ -51,6 +54,9 @@ export const stockController = {
   getSummary: asyncHandler(async (req: Request, res: Response) => {
     const ctx = getAdminContext(req);
     const summary = await stockService.getSummary(ctx.userId);
+    if (!ctx.isSuperAdmin && await financePrivacyService.getFinanceReportsHidden(ctx.userId)) {
+      return res.json(redactStockSummary(summary));
+    }
     return res.json(summary);
   }),
 
@@ -199,6 +205,30 @@ export const stockController = {
     }
     const matches = await menuImportService.matchItemNames(ctx.userId, parsed.data.items);
     return res.json({matches});
+  }),
+
+  parseStockImportFile: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    if (!req.file?.buffer) {
+      throw new ApiError(400, 'file is required');
+    }
+    const filename = req.file.originalname || 'upload.csv';
+    const result = await menuImportService.parseSpreadsheetFile(
+      ctx.userId,
+      req.file.buffer,
+      filename,
+    );
+    return res.json(result);
+  }),
+
+  parseStockImportPaste: asyncHandler(async (req: Request, res: Response) => {
+    const ctx = getAdminContext(req);
+    const parsed = stockImportPasteSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, parsed.error.issues[0]?.message ?? 'Invalid body');
+    }
+    const result = await menuImportService.parsePasteText(ctx.userId, parsed.data.text);
+    return res.json(result);
   }),
 
   commitMenuImport: asyncHandler(async (req: Request, res: Response) => {

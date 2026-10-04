@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminStats, type SalesSummary } from "../api/admin";
 import { useFinancePrivacy } from "../contexts/FinancePrivacyContext";
@@ -12,12 +13,13 @@ import SectionPanel from "../components/merchant/SectionPanel";
 const EMPTY = "—";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { isSuperAdmin } = useAuth();
-  const { formatFinance } = useFinancePrivacy();
+  const { formatFinance, financeDataEpoch } = useFinancePrivacy();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
   const [stockSummary, setStockSummary] = useState<{
-    inventoryValue: number;
+    inventoryValue: number | null;
     lowStockCount: number;
     totalProducts: number;
   } | null>(null);
@@ -51,20 +53,17 @@ export default function Dashboard() {
         })
         .finally(() => setLoading(false));
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, financeDataEpoch]);
 
-  const formatAmount = (n: number) =>
-    n != null ? formatFinance(n) : EMPTY;
+  const formatAmount = (n: number | null | undefined) => formatFinance(n);
 
   return (
     <PageShell>
       <PageHeader
-        title="Dashboard"
+        title={t("pages.dashboard.title")}
         icon="ti-layout-dashboard"
         subtitle={
-          isSuperAdmin
-            ? "Platform overview and admin tools."
-            : "Today’s sales, inventory, and shortcuts in one place."
+          isSuperAdmin ? t("pages.dashboard.subtitleAdmin") : t("pages.dashboard.subtitleMerchant")
         }
       />
 
@@ -78,17 +77,15 @@ export default function Dashboard() {
             role="status"
           >
             <div className="flex-grow-1">
-              <strong className="d-block mb-1">Get started</strong>
-              <span className="small">
-                Add items in Stock, then create your first bill.
-              </span>
+              <strong className="d-block mb-1">{t("pages.dashboard.getStartedTitle")}</strong>
+              <span className="small">{t("pages.dashboard.getStartedBody")}</span>
             </div>
             <div className="d-flex flex-wrap gap-2">
               <Link to="/dashboard/stock" className="btn btn-sm btn-outline-primary">
-                Go to Stock
+                {t("pages.dashboard.goToStock")}
               </Link>
               <Link to="/dashboard/invoices/new" className="btn btn-sm btn-primary">
-                Create bill
+                {t("pages.dashboard.createBill")}
               </Link>
             </div>
           </div>
@@ -100,14 +97,14 @@ export default function Dashboard() {
             actions={[
               {
                 to: "/dashboard/invoices/new",
-                label: "New bill",
+                label: t("pages.dashboard.newBill"),
                 icon: "ti-plus",
                 emphasis: true,
               },
-              { to: "/dashboard/stock", label: "Stock", icon: "ti-box" },
-              { to: "/dashboard/invoices", label: "Bills", icon: "ti-receipt" },
-              { to: "/dashboard/sales", label: "Sales", icon: "ti-chart-bar" },
-              { to: "/dashboard/out-of-stock", label: "Restock list", icon: "ti-alert-circle" },
+              { to: "/dashboard/stock", label: t("nav.stock"), icon: "ti-box" },
+              { to: "/dashboard/invoices", label: t("pages.dashboard.bills"), icon: "ti-receipt" },
+              { to: "/dashboard/sales", label: t("pages.dashboard.sales"), icon: "ti-chart-bar" },
+              { to: "/dashboard/items-sold", label: t("pages.dashboard.itemsSold"), icon: "ti-package" },
             ]}
           />
         </SectionPanel>
@@ -117,10 +114,8 @@ export default function Dashboard() {
         <div className="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
           <i className="ti ti-plug-connected-x mt-1" aria-hidden />
           <div>
-            <strong>Could not reach the server.</strong>
-            <span className="d-block small">
-              Start the backend or check VITE_API_URL in admin/.env, then refresh.
-            </span>
+            <strong>{t("pages.dashboard.serverErrorTitle")}</strong>
+            <span className="d-block small">{t("pages.dashboard.serverErrorBody")}</span>
           </div>
         </div>
       )}
@@ -200,7 +195,7 @@ export default function Dashboard() {
           <div className="row g-3 mb-4 mt-1">
             <div className="col-lg-3 col-6">
               <MetricTile
-                label="Today"
+                label={t("pages.dashboard.today")}
                 value={
                   loading
                     ? "…"
@@ -208,7 +203,7 @@ export default function Dashboard() {
                       ? formatAmount(salesSummary.today)
                       : EMPTY
                 }
-                hint="Sales today"
+                hint={t("pages.dashboard.salesToday")}
                 icon="ti-calendar"
                 tone="primary"
                 href="/dashboard/sales"
@@ -216,7 +211,7 @@ export default function Dashboard() {
             </div>
             <div className="col-lg-3 col-6">
               <MetricTile
-                label="This week"
+                label={t("pages.dashboard.thisWeek")}
                 value={
                   loading
                     ? "…"
@@ -224,7 +219,7 @@ export default function Dashboard() {
                       ? formatAmount(salesSummary.thisWeek)
                       : EMPTY
                 }
-                hint="Weekly sales"
+                hint={t("pages.dashboard.weeklySales")}
                 icon="ti-chart-bar"
                 tone="success"
                 href="/dashboard/sales"
@@ -232,7 +227,7 @@ export default function Dashboard() {
             </div>
             <div className="col-lg-3 col-6">
               <MetricTile
-                label="This month"
+                label={t("pages.dashboard.thisMonth")}
                 value={
                   loading
                     ? "…"
@@ -240,7 +235,7 @@ export default function Dashboard() {
                       ? formatAmount(salesSummary.thisMonth)
                       : EMPTY
                 }
-                hint="Monthly sales"
+                hint={t("pages.dashboard.monthlySales")}
                 icon="ti-calendar-month"
                 tone="info"
                 href="/dashboard/sales"
@@ -248,7 +243,7 @@ export default function Dashboard() {
             </div>
             <div className="col-lg-3 col-6">
               <MetricTile
-                label="This year"
+                label={t("pages.dashboard.thisYear")}
                 value={
                   loading
                     ? "…"
@@ -256,7 +251,7 @@ export default function Dashboard() {
                       ? formatAmount(salesSummary.thisYear)
                       : EMPTY
                 }
-                hint="Year to date"
+                hint={t("pages.dashboard.yearToDate")}
                 icon="ti-calendar-year"
                 tone="warning"
                 href="/dashboard/sales"
@@ -267,9 +262,9 @@ export default function Dashboard() {
             <div className="row g-3 mb-4">
               <div className="col-lg-4 col-md-6">
                 <MetricTile
-                  label="Inventory value"
+                  label={t("pages.dashboard.inventoryValue")}
                   value={formatAmount(stockSummary.inventoryValue)}
-                  hint={`${stockSummary.totalProducts} products tracked`}
+                  hint={t("common.productsTracked", { count: stockSummary.totalProducts })}
                   icon="ti-box"
                   tone="info"
                   href="/dashboard/stock"
@@ -278,9 +273,9 @@ export default function Dashboard() {
               {stockSummary.lowStockCount > 0 && (
                 <div className="col-lg-4 col-md-6">
                   <MetricTile
-                    label="Need restock"
+                    label={t("pages.dashboard.needRestock")}
                     value={stockSummary.lowStockCount}
-                    hint="Items below alert level"
+                    hint={t("pages.dashboard.belowAlert")}
                     icon="ti-alert-triangle"
                     tone="warning"
                     href="/dashboard/stock"

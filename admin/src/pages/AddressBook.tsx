@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { adminApi, type AddressBookContact } from "../api/admin";
 import AppModal from "../components/AppModal";
 import ConfirmModal from "../components/ConfirmModal";
@@ -8,6 +9,7 @@ import SectionPanel from "../components/merchant/SectionPanel";
 import MerchantDataTable, { MerchantTableHeadLabel } from "../components/merchant/MerchantDataTable";
 
 export default function AddressBook() {
+  const { t } = useTranslation();
   const [contacts, setContacts] = useState<AddressBookContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function AddressBook() {
     } catch (e: unknown) {
       setError(
         (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to load contacts",
+          t("pages.addressBook.loadFail"),
       );
       setContacts([]);
     } finally {
@@ -92,12 +94,12 @@ export default function AddressBook() {
   return (
     <PageShell>
       <PageHeader
-        title="Address book"
-        subtitle="Customer phone numbers for quick WhatsApp billing"
+        title={t("pages.addressBook.title")}
+        subtitle={t("pages.addressBook.subtitle")}
         actions={
           <button type="button" className="btn btn-primary btn-sm" onClick={openAdd}>
             <i className="ti ti-user-plus me-1" aria-hidden />
-            Add contact
+            {t("pages.addressBook.addContact")}
           </button>
         }
       />
@@ -111,7 +113,7 @@ export default function AddressBook() {
             <input
               type="search"
               className="form-control"
-              placeholder="Search by name or phone number"
+              placeholder={t("pages.addressBook.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

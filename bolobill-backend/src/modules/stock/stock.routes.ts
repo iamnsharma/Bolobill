@@ -42,6 +42,23 @@ const imageMimeExt: Record<string, string> = {
   'image/gif': '.gif',
 };
 
+const spreadsheetUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {fileSize: 10 * 1024 * 1024},
+  fileFilter: (_req, file, cb) => {
+    const name = (file.originalname || '').toLowerCase();
+    const ok =
+      name.endsWith('.csv') ||
+      name.endsWith('.xlsx') ||
+      name.endsWith('.xls') ||
+      file.mimetype === 'text/csv' ||
+      file.mimetype === 'application/vnd.ms-excel' ||
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (ok) cb(null, true);
+    else cb(new Error('Upload CSV or Excel (.csv, .xlsx, .xls)'));
+  },
+});
+
 const menuImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: {fileSize: 10 * 1024 * 1024},
@@ -80,6 +97,12 @@ stockRouter.post(
 );
 stockRouter.post('/products/menu-import/match', stockController.matchMenuImport);
 stockRouter.post('/products/menu-import/commit', stockController.commitMenuImport);
+stockRouter.post(
+  '/products/import/parse-file',
+  spreadsheetUpload.single('file'),
+  stockController.parseStockImportFile,
+);
+stockRouter.post('/products/import/parse-paste', stockController.parseStockImportPaste);
 stockRouter.post('/products/adjust', stockController.adjustProduct);
 stockRouter.put('/products/:id', stockController.updateProduct);
 stockRouter.delete('/products/:id', stockController.deleteProduct);

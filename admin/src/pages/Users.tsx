@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { adminApi, type AdminUser } from "../api/admin";
 import AppModal from "../components/AppModal";
 import FilterApplyButton from "../components/merchant/FilterApplyButton";
+import MerchantFilterField from "../components/merchant/MerchantFilterField";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
 import SectionPanel from "../components/merchant/SectionPanel";
@@ -214,25 +215,22 @@ export default function Users() {
       />
 
       <SectionPanel title="Filters" icon="ti-filter" className="mb-4">
-        <form className="d-flex gap-2 flex-wrap align-items-end" onSubmit={onApplyFilters}>
-          <div>
-            <label className="form-label small text-muted mb-1">Search</label>
+        <form className="merchant-filter-bar" onSubmit={onApplyFilters}>
+          <MerchantFilterField label="Search" className="merchant-filter-field--grow">
             <input
               type="search"
               className="form-control"
-              style={{ maxWidth: 280 }}
               placeholder="Name, phone, or business"
               value={draftSearch}
               onChange={(e) => setDraftSearch(e.target.value)}
             />
-          </div>
+          </MerchantFilterField>
           {isSuperAdmin && (
             <>
-              <div>
-                <label className="form-label small text-muted mb-1">Gained</label>
+              <MerchantFilterField label="Gained">
                 <select
                   className="form-select"
-                  style={{ width: "auto", minWidth: 140 }}
+                  style={{ minWidth: 140 }}
                   value={draftGainedFilter}
                   onChange={(e) => setDraftGainedFilter(e.target.value as GainedFilter)}
                 >
@@ -243,27 +241,25 @@ export default function Users() {
                   <option value="1y">Last year</option>
                   <option value="custom">Custom range</option>
                 </select>
-              </div>
+              </MerchantFilterField>
               {draftGainedFilter === "custom" && (
                 <>
-                  <div>
-                    <label className="form-label small text-muted mb-1">From</label>
+                  <MerchantFilterField label="From">
                     <input
                       type="date"
                       className="form-control"
                       value={draftGainedFrom}
                       onChange={(e) => setDraftGainedFrom(e.target.value)}
                     />
-                  </div>
-                  <div>
-                    <label className="form-label small text-muted mb-1">To</label>
+                  </MerchantFilterField>
+                  <MerchantFilterField label="To">
                     <input
                       type="date"
                       className="form-control"
                       value={draftGainedTo}
                       onChange={(e) => setDraftGainedTo(e.target.value)}
                     />
-                  </div>
+                  </MerchantFilterField>
                 </>
               )}
             </>

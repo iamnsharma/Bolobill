@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { adminApi } from "../api/admin";
 import PageShell from "../components/merchant/PageShell";
 import PageHeader from "../components/merchant/PageHeader";
@@ -6,6 +7,7 @@ import SectionPanel from "../components/merchant/SectionPanel";
 import { resolveApiFileUrl } from "../config/deployUrls";
 
 export default function QrCode() {
+  const { t } = useTranslation();
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -86,9 +88,9 @@ export default function QrCode() {
   return (
     <PageShell>
       <PageHeader
-        title="Payment QR"
+        title={t("pages.qrCode.title")}
         icon="ti-qrcode"
-        subtitle="Upload your payment QR (UPI, bank, or wallet). It appears on bill PDFs and customer bill links."
+        subtitle={t("pages.qrCode.subtitle")}
       />
 
       {message && (
@@ -125,7 +127,7 @@ export default function QrCode() {
                       onClick={handleDelete}
                       disabled={deleting}
                     >
-                      {deleting ? "Removing…" : "Remove QR code"}
+                      {deleting ? t("common.loading") : t("pages.qrCode.remove")}
                     </button>
                   </div>
                 </div>

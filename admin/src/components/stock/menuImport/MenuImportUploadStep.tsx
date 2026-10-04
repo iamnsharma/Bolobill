@@ -75,7 +75,7 @@ export default function MenuImportUploadStep({
             />
             <button
               type="button"
-              className="btn btn-primary btn-lg px-4"
+              className="btn btn-lg px-4 import-ai-cta"
               onClick={() => inputRef.current?.click()}
             >
               <i className="ti ti-upload me-2" />

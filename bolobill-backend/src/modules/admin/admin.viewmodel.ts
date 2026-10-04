@@ -11,7 +11,18 @@ const toPdfUrl = (pdfPath: string) => {
 
 type UserLike = Pick<
   UserDocument,
-  '_id' | 'name' | 'phone' | 'businessName' | 'accountType' | 'role' | 'isBlacklisted' | 'usage' | 'createdAt' | 'updatedAt'
+  | '_id'
+  | 'name'
+  | 'phone'
+  | 'businessName'
+  | 'accountType'
+  | 'role'
+  | 'isBlacklisted'
+  | 'usage'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'financeReportsHidden'
+  | 'inventoryPinHash'
 >;
 
 export const toAdminUserVm = (user: UserLike) => ({
@@ -22,6 +33,8 @@ export const toAdminUserVm = (user: UserLike) => ({
   accountType: user.accountType,
   role: user.role,
   isBlacklisted: user.isBlacklisted ?? false,
+  financeReportsHidden: Boolean(user.financeReportsHidden),
+  hasInventoryPin: Boolean(user.inventoryPinHash),
   usage: user.usage,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,

@@ -70,3 +70,7 @@ export const menuImportCommitItemSchema = z.object({
 export const menuImportCommitSchema = z.object({
   products: z.array(menuImportCommitItemSchema).min(0).max(200),
 });
+
+export const stockImportPasteSchema = z.object({
+  text: z.string().min(1).max(500_000),
+});

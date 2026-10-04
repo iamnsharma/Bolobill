@@ -2,23 +2,15 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-
-export const HIDE_FINANCE_STORAGE_KEY = "bolobill_admin_hide_finance";
-
+import { useAuth } from "./AuthContext";
+import { adminApi } from "../api/admin";
 /** Shown in place of revenue / inventory totals when privacy mode is on. */
 export const FINANCE_MASK = "*****";
-
-function readStoredHideFinance(): boolean {
-  try {
-    return localStorage.getItem(HIDE_FINANCE_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
 
 function rupee(amount: number): string {
   return `₹${Number(amount).toLocaleString()}`;
@@ -26,47 +18,123 @@ function rupee(amount: number): string {
 
 type FinancePrivacyContextValue = {
   hideFinance: boolean;
-  setHideFinance: (hidden: boolean) => void;
-  toggleHideFinance: () => void;
+  financeSyncing: boolean;
+  /** Bumps after server hide/unlock so report pages refetch. */
+  financeDataEpoch: number;
+  hasInventoryPin: boolean;
+  /** Hide reports on server; pass inventoryPin on first hide to create Inventory PIN. */
+  hideFinanceReports: (inventoryPin?: string) => Promise<void>;
+  /** Show reports after Inventory PIN on server. */
+  unlockFinanceReports: (inventoryPin: string) => Promise<void>;
   /** Always shows amount — stock prices, cart, billing, quantities. */
   formatMoney: (amount: number) => string;
   /** Masks when privacy is on — dashboard revenue, sales reports, inventory value total. */
-  formatFinance: (amount: number) => string;
+  formatFinance: (amount: number | null | undefined) => string;
   maskText: (text: string) => string;
 };
 
 const FinancePrivacyContext = createContext<FinancePrivacyContextValue | null>(null);
 
 export function FinancePrivacyProvider({ children }: { children: ReactNode }) {
-  const [hideFinance, setHideFinanceState] = useState(readStoredHideFinance);
+  const { user, isSuperAdmin, refreshUser } = useAuth();
+  const hasInventoryPin = Boolean(user?.hasInventoryPin);
+  const [hideFinance, setHideFinance] = useState(false);
+  const [financeSyncing, setFinanceSyncing] = useState(false);
+  const [financeDataEpoch, setFinanceDataEpoch] = useState(0);
 
-  const setHideFinance = useCallback((hidden: boolean) => {
-    setHideFinanceState(hidden);
-    try {
-      localStorage.setItem(HIDE_FINANCE_STORAGE_KEY, hidden ? "true" : "false");
-    } catch {
-      /* ignore */
-    }
+  const applyHidden = useCallback((hidden: boolean) => {
+    setHideFinance(hidden);
   }, []);
 
-  const toggleHideFinance = useCallback(() => {
-    setHideFinance(!hideFinance);
-  }, [hideFinance, setHideFinance]);
+  // Sync from server once per login — avoid re-applying stale `user` while hide/unlock is in flight.
+  useEffect(() => {
+    if (isSuperAdmin) {
+      applyHidden(false);
+      return;
+    }
+    if (!user?.id) return;
+
+    let cancelled = false;
+    adminApi
+      .getMe()
+      .then(({ user: me }) => {
+        if (!cancelled) applyHidden(Boolean(me.financeReportsHidden));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          applyHidden(Boolean(user.financeReportsHidden));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, isSuperAdmin, applyHidden]);
+
+  const hideFinanceReports = useCallback(
+    async (inventoryPin?: string) => {
+      if (isSuperAdmin) return;
+      setFinanceSyncing(true);
+      try {
+        const body: { hidden: boolean; inventoryPin?: string } = { hidden: true };
+        if (inventoryPin?.trim()) body.inventoryPin = inventoryPin.trim();
+        const { financeReportsHidden } = await adminApi.patchFinanceReports(body);
+        applyHidden(financeReportsHidden);
+        setFinanceDataEpoch((n) => n + 1);
+        void refreshUser?.().catch(() => {});
+      } finally {
+        setFinanceSyncing(false);
+      }
+    },
+    [isSuperAdmin, applyHidden, refreshUser],
+  );
+
+  const unlockFinanceReports = useCallback(
+    async (pin: string) => {
+      if (isSuperAdmin) return;
+      setFinanceSyncing(true);
+      try {
+        const { financeReportsHidden } = await adminApi.patchFinanceReports({
+          hidden: false,
+          inventoryPin: pin.trim(),
+        });
+        applyHidden(financeReportsHidden);
+        setFinanceDataEpoch((n) => n + 1);
+        void refreshUser?.().catch(() => {});
+      } catch (err) {
+        throw err;
+      } finally {
+        setFinanceSyncing(false);
+      }
+    },
+    [isSuperAdmin, applyHidden, refreshUser],
+  );
 
   const value = useMemo((): FinancePrivacyContextValue => {
     const formatMoney = (amount: number) => rupee(amount);
-    const formatFinance = (amount: number) =>
-      hideFinance ? FINANCE_MASK : rupee(amount);
+    const formatFinance = (amount: number | null | undefined) => {
+      if (hideFinance || amount == null || Number.isNaN(amount)) return FINANCE_MASK;
+      return rupee(amount);
+    };
     const maskText = (text: string) => (hideFinance ? FINANCE_MASK : text);
     return {
       hideFinance,
-      setHideFinance,
-      toggleHideFinance,
+      hasInventoryPin,
+      financeSyncing,
+      financeDataEpoch,
+      hideFinanceReports,
+      unlockFinanceReports,
       formatMoney,
       formatFinance,
       maskText,
     };
-  }, [hideFinance, setHideFinance, toggleHideFinance]);
+  }, [
+    hideFinance,
+    hasInventoryPin,
+    financeSyncing,
+    financeDataEpoch,
+    hideFinanceReports,
+    unlockFinanceReports,
+  ]);
 
   return (
     <FinancePrivacyContext.Provider value={value}>{children}</FinancePrivacyContext.Provider>
@@ -78,10 +146,14 @@ export function useFinancePrivacy(): FinancePrivacyContextValue {
   if (!ctx) {
     return {
       hideFinance: false,
-      setHideFinance: () => {},
-      toggleHideFinance: () => {},
+      hasInventoryPin: false,
+      financeSyncing: false,
+      financeDataEpoch: 0,
+      hideFinanceReports: async () => {},
+      unlockFinanceReports: async () => {},
       formatMoney: rupee,
-      formatFinance: rupee,
+      formatFinance: (amount: number | null | undefined) =>
+        amount == null || Number.isNaN(amount) ? FINANCE_MASK : rupee(amount),
       maskText: (text: string) => text,
     };
   }

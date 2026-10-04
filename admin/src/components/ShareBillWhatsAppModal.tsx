@@ -168,7 +168,7 @@ export default function ShareBillWhatsAppModal({
         </span>
         <p className="fw-semibold mb-1">Your bill was saved successfully.</p>
         <p className="small text-muted mb-0">
-          {invoice.invoiceId} · {invoice.customerName} · {formatMoney(invoice.total)}
+          {invoice.invoiceId} · {invoice.customerName} · {formatMoney(invoice.total ?? 0)}
         </p>
       </div>
 

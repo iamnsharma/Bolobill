@@ -7,4 +7,6 @@ export const toAuthUserVm = (user: UserDocument) => ({
   phone: user.phone,
   accountType: user.accountType,
   ...(user.role && {role: user.role}),
+  financeReportsHidden: Boolean(user.financeReportsHidden),
+  hasInventoryPin: Boolean(user.inventoryPinHash),
 });

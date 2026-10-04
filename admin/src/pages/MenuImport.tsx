@@ -1,8 +1,6 @@
-import { useCallback, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { adminApi } from "../api/admin";
-import PageShell from "../components/merchant/PageShell";
-import PageHeader from "../components/merchant/PageHeader";
 import MenuImportUploadStep, {
   validateMenuImportFile,
 } from "../components/stock/menuImport/MenuImportUploadStep";
@@ -14,43 +12,101 @@ import {
   validateNewItemsForImport,
   type MenuImportDraft,
 } from "../components/stock/menuImport/menuImportTypes";
+import ImportWizardShell, { DownloadCsvTemplate } from "../components/import/ImportWizardShell";
+import ImportSourcePicker from "../components/import/ImportSourcePicker";
+import { parseImportSourceParam, type ImportSourceId } from "../components/import/importTypes";
+import StockImportFileStep from "../components/import/StockImportFileStep";
+import StockImportPasteStep from "../components/import/StockImportPasteStep";
+const STOCK_TEMPLATE = `category,name,unit,unitPrice,quantityOnHand
+Beverages,Coca Cola 500ml,bottle,40,
+Snacks,Lays Classic,pack,20,
+`;
 
-type Step = "upload" | "review" | "summary" | "success";
+type Step = "source" | "review" | "summary" | "success";
 
 export default function MenuImport() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("upload");
-  const [analyzing, setAnalyzing] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [source, setSource] = useState<ImportSourceId>(() =>
+    parseImportSourceParam(searchParams.get("source")),
+  );
+  const [step, setStep] = useState<Step>("source");
+  const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<MenuImportDraft | null>(null);
   const [showStockErrors, setShowStockErrors] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pasteText, setPasteText] = useState("");
 
-  const handleFileSelected = useCallback(async (file: File) => {
+  useEffect(() => {
+    setSource(parseImportSourceParam(searchParams.get("source")));
+  }, [searchParams]);
+
+  const goReview = useCallback((result: Awaited<ReturnType<typeof adminApi.analyzeMenuImport>>) => {
+    setDraft(draftFromAnalyze(result));
+    setShowStockErrors(false);
+    setStep("review");
+    setError(null);
+  }, []);
+
+  const handlePhotoFile = useCallback(async (file: File) => {
     const validationError = validateMenuImportFile(file);
     if (validationError) {
       setError(validationError);
       return;
     }
+    setLoading(true);
     setError(null);
-    setAnalyzing(true);
     const formData = new FormData();
     formData.append("image", file);
     try {
-      const result = await adminApi.analyzeMenuImport(formData);
-      setDraft(draftFromAnalyze(result));
-      setShowStockErrors(false);
-      setStep("review");
+      goReview(await adminApi.analyzeMenuImport(formData));
     } catch (err: unknown) {
-      const msg =
+      setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Couldn't read this photo — try a clearer picture.";
-      setError(msg);
+          "Couldn't read this photo.",
+      );
     } finally {
-      setAnalyzing(false);
+      setLoading(false);
     }
-  }, []);
+  }, [goReview]);
+
+  const handleSpreadsheetFile = useCallback(
+    async (file: File) => {
+      setLoading(true);
+      setError(null);
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        goReview(await adminApi.parseStockImportFile(formData));
+      } catch (err: unknown) {
+        setError(
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+            "Could not read file.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [goReview],
+  );
+
+  const handlePasteSubmit = useCallback(async () => {
+    if (!pasteText.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      goReview(await adminApi.parseStockImportPaste({ text: pasteText }));
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Could not read pasted text.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [pasteText, goReview]);
 
   const rematchItem = useCallback(
     async (tempId: string) => {
@@ -81,70 +137,18 @@ export default function MenuImport() {
           };
         });
       } catch {
-        /* keep previous flags */
+        /* noop */
       }
     },
     [draft],
   );
 
-  const handleAddCategory = () => {
-    if (!draft) return;
-    const tempId = crypto.randomUUID();
-    setDraft({
-      ...draft,
-      categories: [
-        ...draft.categories,
-        { tempId, name: "New category", sortOrder: draft.categories.length },
-      ],
-    });
-  };
-
-  const handleRemoveCategory = (tempId: string) => {
-    if (!draft) return;
-    if (!window.confirm("Remove this category and all items in it?")) return;
-    setDraft({
-      categories: draft.categories.filter(c => c.tempId !== tempId),
-      items: draft.items.filter(i => i.categoryTempId !== tempId),
-    });
-  };
-
-  const handleAddItem = (categoryTempId: string) => {
-    if (!draft) return;
-    setDraft({
-      ...draft,
-      items: [
-        ...draft.items,
-        {
-          tempId: crypto.randomUUID(),
-          categoryTempId,
-          name: "",
-          unit: "pcs",
-          unitPrice: null,
-          lowStockThreshold: null,
-          duplicateStatus: "new",
-          matchedProductId: null,
-          matchedProductName: null,
-          stockQty: "",
-        },
-      ],
-    });
-  };
-
-  const handleRemoveItem = (tempId: string) => {
-    if (!draft) return;
-    setDraft({ ...draft, items: draft.items.filter(i => i.tempId !== tempId) });
-  };
-
-  const handleContinueToSummary = () => {
-    if (!draft) return;
-    setShowStockErrors(true);
-    const validationError = validateNewItemsForImport(draft);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  const resetToSource = () => {
+    setDraft(null);
+    setStep("source");
     setError(null);
-    setStep("summary");
+    setShowStockErrors(false);
+    setSuccessMessage(null);
   };
 
   const handleImport = async () => {
@@ -157,80 +161,131 @@ export default function MenuImport() {
     setImporting(true);
     setError(null);
     try {
-      const result = await adminApi.commitMenuImport({
-        products: buildCommitPayload(draft),
-      });
+      const result = await adminApi.commitMenuImport({ products: buildCommitPayload(draft) });
       setSuccessMessage(result.message);
       setStep("success");
     } catch (err: unknown) {
-      const msg =
+      setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Import failed. Try again.";
-      setError(msg);
+          "Import failed.",
+      );
     } finally {
       setImporting(false);
     }
   };
 
-  const resetToUpload = () => {
-    setDraft(null);
-    setStep("upload");
-    setError(null);
-    setShowStockErrors(false);
-    setSuccessMessage(null);
-  };
-
-  const stepSubtitle =
-    step === "upload"
-      ? "Upload menu → Review items → Add stock → Import"
-      : step === "review"
-        ? "Review items and enter stock for each new product"
-        : step === "summary"
-          ? "Confirm and import new items only"
-          : "Done";
-
   return (
-    <PageShell className="menu-import-page">
-      <PageHeader
-        title="Import with AI"
-        icon="ti-sparkles"
-        subtitle={stepSubtitle}
-        actions={
-          <Link to="/dashboard/stock" className="btn btn-outline-secondary">
-            <i className="ti ti-arrow-left me-1" />
-            Stock
-          </Link>
-        }
-      />
-
-      {step === "upload" && (
-        <MenuImportUploadStep
-          analyzing={analyzing}
-          error={error}
-          onFileSelected={handleFileSelected}
-          onCancel={() => navigate("/dashboard/stock")}
-        />
+    <ImportWizardShell
+      title="Import products"
+      backTo="/dashboard/stock"
+      backLabel="Stock"
+      step={step}
+      actions={
+        <Link to="/dashboard/stock" className="btn btn-outline-secondary btn-sm" title="Back to stock">
+          <i className="ti ti-arrow-left" aria-hidden />
+          <span className="d-none d-sm-inline ms-1">Stock</span>
+        </Link>
+      }
+    >
+      {step === "source" && (
+        <>
+          <ImportSourcePicker value={source} onChange={setSource} />
+          {(source === "csv" || source === "excel") && (
+            <p className="small text-muted mb-2">
+              <DownloadCsvTemplate filename="bolobill-stock-template.csv" content={STOCK_TEMPLATE} />
+              <span className="mx-2">·</span>
+              From Google Sheets: File → Download → CSV
+            </p>
+          )}
+          {source === "photo" && (
+            <MenuImportUploadStep
+              analyzing={loading}
+              error={error}
+              onFileSelected={handlePhotoFile}
+              onCancel={() => navigate("/dashboard/stock")}
+            />
+          )}
+          {(source === "csv" || source === "excel") && (
+            <StockImportFileStep
+              source={source}
+              loading={loading}
+              error={error}
+              onFile={handleSpreadsheetFile}
+            />
+          )}
+          {source === "paste" && (
+            <StockImportPasteStep
+              value={pasteText}
+              onChange={setPasteText}
+              loading={loading}
+              error={error}
+              onSubmit={handlePasteSubmit}
+            />
+          )}
+        </>
       )}
 
       {step === "review" && draft && (
         <>
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <div className="alert alert-danger">{error}</div>}
           <MenuImportPreviewStep
             draft={draft}
             showStockErrors={showStockErrors}
             onDraftChange={setDraft}
-            onAddCategory={handleAddCategory}
-            onRemoveCategory={handleRemoveCategory}
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
+            onAddCategory={() => {
+              const tempId = crypto.randomUUID();
+              setDraft({
+                ...draft,
+                categories: [
+                  ...draft.categories,
+                  { tempId, name: "New category", sortOrder: draft.categories.length },
+                ],
+              });
+            }}
+            onRemoveCategory={tempId => {
+              if (!window.confirm("Remove category and its items?")) return;
+              setDraft({
+                categories: draft.categories.filter(c => c.tempId !== tempId),
+                items: draft.items.filter(i => i.categoryTempId !== tempId),
+              });
+            }}
+            onAddItem={categoryTempId => {
+              setDraft({
+                ...draft,
+                items: [
+                  ...draft.items,
+                  {
+                    tempId: crypto.randomUUID(),
+                    categoryTempId,
+                    name: "",
+                    unit: "pcs",
+                    unitPrice: null,
+                    lowStockThreshold: null,
+                    prefillQuantityOnHand: null,
+                    duplicateStatus: "new",
+                    matchedProductId: null,
+                    matchedProductName: null,
+                    stockQty: "",
+                  },
+                ],
+              });
+            }}
+            onRemoveItem={tempId =>
+              setDraft({ ...draft, items: draft.items.filter(i => i.tempId !== tempId) })
+            }
             onItemNameBlur={rematchItem}
-            onContinue={handleContinueToSummary}
-            onReupload={resetToUpload}
-            onBack={resetToUpload}
+            onContinue={() => {
+              setShowStockErrors(true);
+              const v = validateNewItemsForImport(draft);
+              if (v) {
+                setError(v);
+                return;
+              }
+              setError(null);
+              setStep("summary");
+            }}
+            onReupload={resetToSource}
+            onBack={resetToSource}
           />
         </>
       )}
@@ -250,24 +305,17 @@ export default function MenuImport() {
       )}
 
       {step === "success" && (
-        <div className="card border-0 shadow-sm rounded-3">
-          <div className="card-body p-4 p-md-5 text-center">
-            <div className="text-success mb-3">
-              <i className="ti ti-circle-check fs-1" aria-hidden />
-            </div>
-            <h2 className="h5 fw-bold mb-2">Success</h2>
-            <p className="text-muted mb-4">{successMessage ?? "Items added to your inventory."}</p>
-            <div className="d-flex flex-wrap gap-2 justify-content-center">
-              <button type="button" className="btn btn-primary" onClick={() => navigate("/dashboard/stock")}>
-                View stock
-              </button>
-              <button type="button" className="btn btn-outline-secondary" onClick={resetToUpload}>
-                Import another menu
-              </button>
-            </div>
-          </div>
+        <div className="card border-0 shadow-sm rounded-3 text-center p-5">
+          <i className="ti ti-circle-check fs-1 text-success mb-3 d-block" />
+          <p className="mb-4">{successMessage}</p>
+          <button type="button" className="btn btn-primary me-2" onClick={() => navigate("/dashboard/stock")}>
+            View stock
+          </button>
+          <button type="button" className="btn btn-outline-secondary" onClick={resetToSource}>
+            Import again
+          </button>
         </div>
       )}
-    </PageShell>
+    </ImportWizardShell>
   );
 }

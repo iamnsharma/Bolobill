@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import BoloBillLogo from "../BoloBillLogo";
 
 type MarketingHeaderProps = {
   mode?: "transparent" | "solid" | "platform";
@@ -26,8 +27,7 @@ export default function MarketingHeader({
   const isPlatformHeader = mode === "platform" || platformAdminMode;
   const isSolid =
     !isPlatformHeader &&
-    !onAuth &&
-    (mode === "solid" || (mode === "transparent" && scrolled));
+    (mode === "solid" || (mode === "transparent" && !onAuth && scrolled));
 
   return (
     <header
@@ -55,15 +55,11 @@ export default function MarketingHeader({
                 className="marketing-brand marketing-brand--tap border-0 bg-transparent p-0"
                 onClick={onBrandSecretTap}
                 aria-label="BoloBill home">
-                <span className="marketing-brand-text">
-                  Bolo<span className="marketing-brand-accent">Bill</span>
-                </span>
+                <BoloBillLogo variant="lockup" className="marketing-brand-logo" />
               </button>
             ) : (
               <Link to="/" className="marketing-brand text-decoration-none">
-                <span className="marketing-brand-text">
-                  Bolo<span className="marketing-brand-accent">Bill</span>
-                </span>
+                <BoloBillLogo variant="lockup" className="marketing-brand-logo" />
               </Link>
             )}
           </div>
